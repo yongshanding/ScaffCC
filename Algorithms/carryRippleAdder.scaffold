@@ -28,8 +28,8 @@ void computeCarry(qbit **a, qbit **b, qbit **res, int i) {
 	CNOT(anc2[0], carry[0]);
 	CNOT(carry[0], res[i]);
 	all_anc[0] = carry[0];
-	all_anc[0] = anc[0];
-	all_anc[0] = anc2[0];
+	all_anc[1] = anc[0];
+	all_anc[2] = anc2[0];
 	release(&res[i], 1, all_anc, 3);
 }
 

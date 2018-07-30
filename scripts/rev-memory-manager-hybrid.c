@@ -42,7 +42,7 @@
 
 // Policy switch
 int allocPolicy = _GLOBAL;
-int freePolicy = _EAGER; 
+int freePolicy = _NOFREE; 
 
 // DEBUG switch
 bool trackGates = true;

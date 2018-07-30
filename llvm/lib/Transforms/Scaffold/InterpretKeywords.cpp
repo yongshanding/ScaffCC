@@ -395,7 +395,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 		ArrayType *arrayType = ArrayType::get(qbit_type, nOut);
 		AllocaInst *new_copy = new AllocaInst(arrayType, new_name, BB);
 		TargetData TD = TargetData(M);
-		new_copy->setAlignment(TD.getTypeAllocSize(arrayType));
+		new_copy->setAlignment(TD.getTypeAllocSize(qbit_type));
 		Value *Idx[2];
 		Idx[0] = Constant::getNullValue(Type::getInt32Ty(getGlobalContext()));  
 		Idx[1] = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0);
