@@ -17,14 +17,17 @@
 
 // FIXME: Move to this file: BasicBlock::removePredecessor, BB::splitBasicBlock
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/BasicBlock.h"
+#include "llvm/InstrTypes.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/Support/DebugLoc.h"
 
 namespace llvm {
-
+class DominatorTree;
 class AliasAnalysis;
 class Instruction;
+class LoopInfo;
 class Pass;
 class ReturnInst;
 
@@ -205,6 +208,33 @@ ReturnInst *FoldReturnIntoUncondBranch(ReturnInst *RI, BasicBlock *BB,
 /// GetFirstDebugLocInBasicBlock - Return first valid DebugLoc entry in a
 /// given basic block.
 DebugLoc GetFirstDebugLocInBasicBlock(const BasicBlock *BB);
+
+// Split the containing block at the specified instruction - everything before
+// SplitBefore stays in the old basic block, and the rest of the instructions
+// in the BB are moved to a new block. The two blocks are connected by a
+// conditional branch (with value of Cmp being the condition).
+// Before:
+//   Head
+//   SplitBefore
+//   Tail
+// After:
+//   Head
+//   if (Cond)
+//     ThenBlock
+//   SplitBefore
+//   Tail
+//
+// If Unreachable is true, then ThenBlock ends with
+// UnreachableInst, otherwise it branches to Tail.
+// Returns the NewBasicBlock's terminator.
+//
+// Updates DT and LI if given.
+TerminatorInst *SplitBlockAndInsertIfThen(Value *Cond, Instruction *SplitBefore,
+                                          bool Unreachable, BasicBlock::iterator IT,
+                                          MDNode *BranchWeights = 0,
+                                          DominatorTree *DT = 0,
+                                          LoopInfo *LI = 0);
+
 
 } // End llvm namespace
 

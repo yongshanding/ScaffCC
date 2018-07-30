@@ -106,6 +106,8 @@ def llvm_f80_ty        : LLVMType<f80>;
 def llvm_f128_ty       : LLVMType<f128>;
 def llvm_ppcf128_ty    : LLVMType<ppcf128>;
 def llvm_ptr_ty        : LLVMPointerType<llvm_i8_ty>;             // i8*
+def llvm_p16_ty        : LLVMPointerType<llvm_i16_ty>;            // i16*
+def llvm_panyint_ty    : LLVMPointerType<llvm_anyint_ty>;         // iany*
 def llvm_ptrptr_ty     : LLVMPointerType<llvm_ptr_ty>;            // i8**
 def llvm_anyptr_ty     : LLVMAnyPointerType<llvm_i8_ty>;          // (space)i8*
 def llvm_empty_ty      : LLVMType<OtherVT>;                       // { }
@@ -184,25 +186,25 @@ class GCCBuiltin<string name> {
   string GCCBuiltinName = name;
 }
 
-// Scaffold
-def int_CNOT : Intrinsic<[], [llvm_anyint_ty, llvm_anyint_ty], [], "llvm.CNOT">;
-def int_X : Intrinsic<[], [llvm_anyint_ty], [], "llvm.X">;        
-def int_Y : Intrinsic<[], [llvm_anyint_ty], [], "llvm.Y">;        
-def int_Z : Intrinsic<[], [llvm_anyint_ty], [], "llvm.Z">;        
-def int_H : Intrinsic<[], [llvm_anyint_ty], [], "llvm.H">;        
-def int_T : Intrinsic<[], [llvm_anyint_ty], [], "llvm.T">;        
-def int_Tdag : Intrinsic<[], [llvm_anyint_ty], [], "llvm.Tdag">;        
-def int_S : Intrinsic<[], [llvm_anyint_ty], [], "llvm.S">;        
-def int_Sdag : Intrinsic<[], [llvm_anyint_ty], [], "llvm.Sdag">;        
-def int_Rx : Intrinsic<[], [llvm_anyint_ty, llvm_double_ty], [], "llvm.Rx">;        
-def int_Ry : Intrinsic<[], [llvm_anyint_ty, llvm_double_ty], [], "llvm.Ry">;        
-def int_Rz : Intrinsic<[], [llvm_anyint_ty, llvm_double_ty], [], "llvm.Rz">;        
-def int_PrepX : Intrinsic<[], [llvm_anyint_ty, llvm_i32_ty], [], "llvm.PrepX">;        
-def int_PrepZ : Intrinsic<[], [llvm_anyint_ty, llvm_i32_ty], [], "llvm.PrepZ">;        
-def int_MeasX : Intrinsic<[llvm_cbit_ty], [llvm_anyint_ty], [], "llvm.MeasX">;
-def int_MeasZ : Intrinsic<[llvm_cbit_ty], [llvm_anyint_ty], [], "llvm.MeasZ">;
-def int_Toffoli : Intrinsic<[], [llvm_anyint_ty, llvm_anyint_ty, llvm_anyint_ty], [], "llvm.Toffoli">;        
-def int_Fredkin : Intrinsic<[], [llvm_anyint_ty, llvm_anyint_ty, llvm_anyint_ty], [], "llvm.Fredkin">;        
+// Scaffold : before it was llvm_anyint_ty
+def int_CNOT : Intrinsic<[], [llvm_anyptr_ty, llvm_anyptr_ty], [], "llvm.CNOT">;
+def int_X : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.X">;        
+def int_Y : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.Y">;        
+def int_Z : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.Z">;        
+def int_H : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.H">;        
+def int_T : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.T">;        
+def int_Tdag : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.Tdag">;        
+def int_S : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.S">;        
+def int_Sdag : Intrinsic<[], [llvm_anyptr_ty], [], "llvm.Sdag">;        
+def int_Rx : Intrinsic<[], [llvm_anyptr_ty, llvm_double_ty], [], "llvm.Rx">;        
+def int_Ry : Intrinsic<[], [llvm_anyptr_ty, llvm_double_ty], [], "llvm.Ry">;        
+def int_Rz : Intrinsic<[], [llvm_anyptr_ty, llvm_double_ty], [], "llvm.Rz">;        
+def int_PrepX : Intrinsic<[], [llvm_anyptr_ty, llvm_i32_ty], [], "llvm.PrepX">;        
+def int_PrepZ : Intrinsic<[], [llvm_anyptr_ty, llvm_i32_ty], [], "llvm.PrepZ">;        
+def int_MeasX : Intrinsic<[llvm_cbit_ty], [llvm_anyptr_ty], [], "llvm.MeasX">;
+def int_MeasZ : Intrinsic<[llvm_cbit_ty], [llvm_anyptr_ty], [], "llvm.MeasZ">;
+def int_Toffoli : Intrinsic<[], [llvm_anyptr_ty, llvm_anyptr_ty, llvm_anyptr_ty], [], "llvm.Toffoli">;        
+def int_Fredkin : Intrinsic<[], [llvm_anyptr_ty, llvm_anyptr_ty, llvm_anyptr_ty], [], "llvm.Fredkin">;        
 
 // RKQC
 def int_cnot : Intrinsic<[], [llvm_anyint_ty, llvm_anyint_ty], [], "llvm.rkqc.cnot">;

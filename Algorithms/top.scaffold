@@ -1,0 +1,17 @@
+void test(qbit *q, int n) {
+	qbit a[1];
+	CNOT(q[n], a[0]);
+}
+
+void func(qbit *in, int n) {
+	CNOT(in[0], in[1]);
+	X(in[n]);
+	test(&in[0], 1);
+}
+
+int main() {
+	qbit anc[3];
+	Toffoli(anc[0], anc[1], anc[2]);
+	func(anc, 2);
+	return 1;
+}

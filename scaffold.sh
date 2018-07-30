@@ -9,13 +9,14 @@ if [ $(echo $PATH | grep ${RKQC_PATH} | wc -l) -eq 0 ]; then
 fi
 
 function show_help {
-    echo "Usage: $0 [-hv] [-rqfRTFckdso] [-l #] [-P #] <filename>.scaffold"
+    echo "Usage: $0 [-hv] [-rqfRTMFckdso] [-l #] [-P #] <filename>.scaffold"
     echo "    -r   Generate resource estimate (default)"
     echo "    -q   Generate QASM"
     echo "    -f   Generate flattened QASM"
     echo "    -b   Generate OpenQASM"
     echo "    -R   Enable rotation decomposition"
     echo "    -T   Enable Toffoli decomposition"
+    echo "    -M   Enable Reversible Memory Management"
     echo "    -l   Levels of recursion to run (default=1)"
     echo "    -P   Set precision of rotation decomposition in decimal digits (default=10)"
     echo "    -F   Force running all steps"
@@ -42,13 +43,14 @@ purge=1
 res=0
 rot=0
 toff=0
+revmem=0
 flat=0
 openqasm=0
 qc=0
 precision=4
 targets=""
 optimize=0
-while getopts "h?vcdfbsFkqroTRl:P:" opt; do
+while getopts "h?vcdfbsFkqroTMRl:P:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -77,6 +79,8 @@ while getopts "h?vcdfbsFkqroTRl:P:" opt; do
     R) rot=1
         ;;
     T) toff=1
+        ;;        
+    M) revmem=1
         ;;        
     s) qc=1
         ;;
@@ -149,6 +153,6 @@ if [ ${clean} -eq 1 ]; then
 	make -f $ROOT/scaffold/Scaffold.makefile ${dryrun} ROOT=$ROOT DIRNAME=${dir} FILENAME=${filename} FILE=${file} CFILE=${cfile} clean
     exit
 fi
-make -f $ROOT/scaffold/Scaffold.makefile ${dryrun} ROOT=$ROOT DIRNAME=${dir} FILENAME=${filename} FILE=${file} CFILE=${cfile} TOFF=${toff} RKQC=${rkqc} ROTATIONS=${rot} PRECISION=${precision} OPTIMIZE=${optimize} ${targets}
+make -f $ROOT/scaffold/Scaffold.makefile ${dryrun} ROOT=$ROOT DIRNAME=${dir} FILENAME=${filename} FILE=${file} CFILE=${cfile} TOFF=${toff} REVMEM=${revmem} RKQC=${rkqc} ROTATIONS=${rot} PRECISION=${precision} OPTIMIZE=${optimize} ${targets}
 
 exit 0

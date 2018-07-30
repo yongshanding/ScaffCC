@@ -18,6 +18,7 @@
 #include "llvm/IntrinsicInst.h"
 #include "llvm/Constant.h"
 #include "llvm/Type.h"
+#include "llvm/LLVMContext.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -680,3 +681,50 @@ DebugLoc llvm::GetFirstDebugLocInBasicBlock(const BasicBlock *BB) {
   // does not have valid location info.
   return DebugLoc();
 }
+
+
+TerminatorInst *
+llvm::SplitBlockAndInsertIfThen(Value *Cond, Instruction *SplitBefore,
+                                bool Unreachable, BasicBlock::iterator IT, 
+																MDNode *BranchWeights,
+                                DominatorTree *DT, LoopInfo *LI) {
+  BasicBlock *Head = SplitBefore->getParent();
+  //BasicBlock *Tail = Head->splitBasicBlock(SplitBefore->getIterator());
+  BasicBlock *Tail = Head->splitBasicBlock(IT);
+  TerminatorInst *HeadOldTerm = Head->getTerminator();
+  LLVMContext &C = Head->getContext();
+  BasicBlock *ThenBlock = BasicBlock::Create(C, "", Head->getParent(), Tail);
+  TerminatorInst *CheckTerm;
+  if (Unreachable)
+    CheckTerm = new UnreachableInst(C, ThenBlock);
+  else
+    CheckTerm = BranchInst::Create(Tail, ThenBlock);
+  CheckTerm->setDebugLoc(SplitBefore->getDebugLoc());
+  BranchInst *HeadNewTerm =
+    BranchInst::Create(/*ifTrue*/ThenBlock, /*ifFalse*/Tail, Cond);
+  HeadNewTerm->setMetadata(LLVMContext::MD_prof, BranchWeights);
+  ReplaceInstWithInst(HeadOldTerm, HeadNewTerm);
+
+  if (DT) {
+    if (DomTreeNode *OldNode = DT->getNode(Head)) {
+      std::vector<DomTreeNode *> Children(OldNode->begin(), OldNode->end());
+
+      DomTreeNode *NewNode = DT->addNewBlock(Tail, Head);
+      for (DomTreeNode *Child : Children)
+        DT->changeImmediateDominator(Child, NewNode);
+
+      // Head dominates ThenBlock.
+      DT->addNewBlock(ThenBlock, Head);
+    }
+  }
+
+  if (LI) {
+    if (Loop *L = LI->getLoopFor(Head)) {
+      L->addBasicBlockToLoop(ThenBlock, (*LI).getBase());
+      L->addBasicBlockToLoop(Tail, (*LI).getBase());
+    }
+  }
+
+  return CheckTerm;
+}
+

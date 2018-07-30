@@ -8,6 +8,7 @@ FILENAME=""
 FILE=""
 CFILE=""
 TOFF=0
+REVMEM=0
 CTQG=0
 ROTATIONS=0
 
@@ -103,6 +104,17 @@ $(FILE)4.ll: $(FILE)1.ll
 	@$(OPT) -S $(FILE)2.ll -targetlibinfo -no-aa -tbaa -basicaa -globalopt -ipsccp -o $(FILE)3.ll > /dev/null
 	@$(OPT) -S $(FILE)3.ll -instcombine -simplifycfg -basiccg -prune-eh -always-inline -functionattrs -domtree -early-cse -lazy-value-info -jump-threading -correlated-propagation -simplifycfg -instcombine -tailcallelim -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -iv-users -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -memcpyopt -sccp -instcombine -lazy-value-info -jump-threading -correlated-propagation -domtree -memdep -dse -adce -simplifycfg -instcombine -strip-dead-prototypes -preverify -domtree -verify -o $(FILE)4.ll > /dev/null
 
+# Parsing reversible memory management keywords
+$(FILE)5.ll: $(FILE)4.ll
+	@if [ $(REVMEM) -eq 1 ]; then \
+		echo "[Scaffold.makefile] Reversible Memory Management..." && \
+		$(OPT) -S -load $(SCAFFOLD_LIB) -InterpretKeywords $(FILE)4.ll -o $(FILE)4a.ll > /dev/null; \
+  	echo "[Scaffold.makefile] $b: Resolve reverse function ..." && \
+		$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionReverse ${FILE}4a.ll -o ${FILE}5.ll > /dev/null; \
+	else \
+		cp $(FILE)4.ll $(FILE)5.ll; \
+	fi
+
 # Perform loop unrolling until completely unrolled, then remove dead code
 #
 # Gory details:
@@ -110,19 +122,20 @@ $(FILE)4.ll: $(FILE)1.ll
 # *4 is used to create *6tmp; *6tmp is copied over *4 for each iteration to retry 'diff'
 # As a weird consquence, we need to first rename *4 to *6tmp and create an empty *4 to diff
 # This screws with the intermediate results, but they are mostly for debugging anyway
-$(FILE)6.ll: $(FILE)4.ll
+$(FILE)6.ll: $(FILE)5.ll
 	@UCNT=0; \
-	mv $(FILE)4.ll $(FILE)6tmp.ll; \
-	touch $(FILE)4.ll; \
-	while [ -n "$$(diff -q $(FILE)4.ll $(FILE)6tmp.ll)" ]; do \
+	cp $(FILE)5.ll $(FILE)5orig.ll; \
+	mv $(FILE)5.ll $(FILE)6tmp.ll; \
+	touch $(FILE)5.ll; \
+	while [ -n "$$(diff -q $(FILE)5.ll $(FILE)6tmp.ll)" ]; do \
 		UCNT=$$(expr $$UCNT + 1); \
 		echo "[Scaffold.makefile] Unrolling Loops ($$UCNT) ..."; \
-		cp $(FILE)6tmp.ll $(FILE)4.ll; \
-		$(OPT) -S $(FILE)4.ll -mem2reg -loops -loop-simplify -loop-rotate -lcssa -loop-unroll -unroll-threshold=100000000 -sccp -simplifycfg -o $(FILE)5.ll > /dev/null && \
+		cp $(FILE)6tmp.ll $(FILE)5.ll; \
+		$(OPT) -S $(FILE)5.ll -mem2reg -loops -loop-simplify -loop-rotate -lcssa -loop-unroll -unroll-threshold=100000000 -sccp -simplifycfg -o $(FILE)5a.ll > /dev/null && \
 		echo "[Scaffold.makefile] Cloning Functions ($$UCNT) ..." && \
-		$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionClone -sccp $(FILE)5.ll -o $(FILE)5a.ll > /dev/null && \
+		$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionClone -sccp $(FILE)5a.ll -o $(FILE)5b.ll > /dev/null && \
 		echo "[Scaffold.makefile] Dead Argument Elimination ($$UCNT) ..." && \
-		$(OPT) -S -deadargelim $(FILE)5a.ll -o $(FILE)6tmp.ll > /dev/null; \
+		$(OPT) -S -deadargelim $(FILE)5b.ll -o $(FILE)6tmp.ll > /dev/null; \
 	done && \
 	$(OPT) -S $(FILE)6tmp.ll -internalize -globaldce -adce -o $(FILE)6.ll > /dev/null  
 	
@@ -152,8 +165,8 @@ $(FILE)9.ll: $(FILE)8.ll
         echo "[Scaffold.makefile] Compiling RKQC Functions ..."; \
         $(OPT) -S -load $(SCAFFOLD_LIB) -GenRKQC $(FILE)8.ll -o $(FILE)9.ll > /dev/null 2> $(FILE).errs; \
 	else \
-		mv $(FILE)8.ll $(FILE)9.ll; \
-    fi
+		cp $(FILE)8.ll $(FILE)9.ll; \
+  fi
 
 # Perform Toffoli decomposition if TOFF is 1
 $(FILE)11.ll: $(FILE)9.ll
@@ -166,8 +179,11 @@ $(FILE)11.ll: $(FILE)9.ll
 
 # Insert reverse functions if REVERSE is 1
 $(FILE)12.ll: $(FILE)11.ll
-	@echo "[Scaffold.makefile] Inserting Reverse Functions..."
-	@$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionReverse $(FILE)11.ll -o $(FILE)12.ll > /dev/null
+	@cp $(FILE)11.ll $(FILE)12.ll; 
+
+# @echo "[Scaffold.makefile] Inserting Reverse Functions..."
+# @$(OPT) -S -load $(SCAFFOLD_LIB) -FunctionReverse $(FILE)11.ll -o $(FILE)12.ll > /dev/null
+
 
 # Generate resource counts from final LLVM output
 $(FILE).resources: $(FILE)12.ll

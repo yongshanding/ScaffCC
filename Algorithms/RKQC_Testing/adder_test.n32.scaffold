@@ -1,0 +1,9 @@
+rkqc ADD(qint a[32], qint b[32]) {
+	a_eq_a_plus_b(a, b, 32);
+}
+int main() {
+	qbit a[32];
+	qbit b[32];
+	ADD(a,b);
+	return 0;
+}

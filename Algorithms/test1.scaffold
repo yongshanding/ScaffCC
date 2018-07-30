@@ -1,0 +1,32 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include "qalloc.h"
+
+//void acquire(int n, qbit **addr) {
+//	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
+//	*addr = new;
+//}
+//
+//void release(qbit **out, int n1, qbit **anc, int n2);
+
+void level1(qbit **in, int n) {
+	qbit *anc[4];
+	acquire(4, anc);
+	X(in[0]);
+	for (int i = 0; i < 4; i++) {
+		CNOT(in[i], anc[i]);
+	}
+	X(in[4]);
+	release(in, 1, anc, 4);	
+	return;
+}
+
+int main() {
+	qbit *top[5];
+	acquire(5, top);
+	X(top[1]);
+	for (int i = 0; i < 2; i++) {
+		level1(top, 5);
+	}
+	return 0;
+}

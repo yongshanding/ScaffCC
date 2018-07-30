@@ -70,7 +70,8 @@ namespace {
                 std::vector<Type*> v;
                 //errs() << "About to get type pointers\n";
                 Type *aa = Type::getInt8Ty(M->getContext());
-                Type *qq = Type::getInt16Ty(M->getContext());
+                // Type *qq = Type::getInt16Ty(M->getContext());
+                Type *qq = Type::getInt16Ty(M->getContext())->getPointerTo();
                 Type *dd = Type::getDoubleTy(M->getContext());
                 Type *ii = Type::getInt32Ty(M->getContext());
                 /*

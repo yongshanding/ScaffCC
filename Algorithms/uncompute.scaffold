@@ -1,0 +1,61 @@
+#include <stdlib.h>
+#include <stdio.h>
+
+void acquire(int n, qbit **addr) {
+	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
+	*addr = new;
+}
+
+
+void release(qbit **out, int n1, qbit **anc, int n2);
+//void release(qbit* out, int n1, qbit* anc, int n2) {}
+//void release(qbit* out, int n1, qbit* anc, int n2){
+//	qbit *new = acquire(n1); // placeholder;
+//	for (int i = 0; i < n1; i++) {
+//		CNOT(out[i], new[i]);
+//	}
+//}
+
+
+void level2(qbit **in, int n) {
+	qbit *anc[1];
+  acquire(1, anc);
+	for (int i = 0; i < n-1; i++) {
+		CNOT(*(in[i]), *(in[i+1]));
+	}
+	X(*(anc[0]));
+	X(*(in[0]));
+	release(&in[2], 2, anc, 1);
+}
+
+void level1(qbit **in, int n) {
+	for (int i = 0; i < n/3; i++) {
+		level2(&in[3*i], 3);
+	}
+	X(*(in[0]));
+	Toffoli(*(in[0]), *(in[1]), *(in[2]));
+	for (int i = 0; i < n/3; i++) {
+		level2(&in[3*i], 3);
+	}
+}
+
+void about(qbit **in) {
+	qbit *new[2];
+	acquire(2, new);
+	X(*(in[0]));
+	X(*(new[0]));
+	X(*(new[1]));
+	release(in, 1, new, 2);
+}
+
+int main() {
+	qbit *top[3];
+	acquire(3, top);
+	qbit *bottom[9];
+	acquire(9, bottom);
+	level1(top, 3);
+	level1(bottom, 9);
+
+	about(top);
+	return 1;
+}
