@@ -1,0 +1,45 @@
+#include <stdlib.h>
+#include "qalloc.h"
+
+//void acquire(int n, qbit **addr) {
+//	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
+//	*addr = new;
+//}
+//
+//void release(qbit **out, int n1, qbit **anc, int n2);
+
+void addMod(qbit **a, qbit **b, int n) {
+	qbit *c[1];
+	acquire(1, c);
+	
+	CNOT(a[0], b[0]);
+	CNOT(a[0], c[0]);
+	Toffoli(c[0], b[0], a[0]);
+	for (int i = 1; i < n-1; i++) {
+		CNOT(a[i],b[i]);
+		CNOT(a[i],a[i-1]);
+		Toffoli(a[i-1],b[i],a[i]);
+	}
+	CNOT(a[n-1], b[n-1]);
+	CNOT(a[n-2], b[n-1]);
+
+	for (int i = 2; i < n; i++) {
+		Toffoli(a[n-i-1],b[n-i],a[n-i]);
+		CNOT(a[n-i],a[n-i-1]);
+		CNOT(b[n-i],a[n-i-1]);
+	}
+	Toffoli(c[0], b[0], a[0]);
+	CNOT(a[0], c[0]);
+	CNOT(c[0], b[0]);
+	release(b, 64, c, 1);
+}
+int main() {
+	int n = 64;
+	qbit *new[2*n];
+	acquire(2*n, new);
+	qbit **a = &new[0];
+	qbit **b = &new[n];
+	addMod(a,b,n);
+	return 0;
+	
+}
