@@ -38,6 +38,7 @@
 
 using namespace llvm;
 
+bool ReverseDebug = false;
 namespace {
     // We need to use a ModulePass in order to insert new 
     // Functions into the target code
@@ -72,8 +73,8 @@ namespace {
                 Type *aa = Type::getInt8Ty(M->getContext());
                 // Type *qq = Type::getInt16Ty(M->getContext());
                 Type *qq = Type::getInt16Ty(M->getContext())->getPointerTo();
-                Type *dd = Type::getDoubleTy(M->getContext());
-                Type *ii = Type::getInt32Ty(M->getContext());
+                //Type *dd = Type::getDoubleTy(M->getContext());
+                //Type *ii = Type::getInt32Ty(M->getContext());
                 /*
                 v.push_back(aa);
                 v.push_back(dd);
@@ -255,14 +256,43 @@ namespace {
             }
             // Returns a pointer to the inverse of the specified
             // function and creates it if it doesn't exist yet
-            Function *GetOrCreateInverseFunction(Function *Func) {
+            Function *GetOrCreateInverseFunction(Function *Func, int depth) {
+								
+								if (ReverseDebug) errs() << "Func name: << " << Func->getName() << " \n"; 
                 if (IntrinsicInverses.count(Func)) {
                     return IntrinsicInverses[Func];
                 }
+
+                StringRef ForwardFunctionName = Func->getName();
+								
+								if (Func->getName().startswith(REVERSE_PREFIX)) {
+                    // Stores the number of times a reverse function is 
+                    // prefixed with '_reverse_'; If this number is odd, it 
+                    // it will be replaced by the function's reverse 
+                    // otherwiseit will be replaced by the function itself
+                    int numReverses = 0;
+                    
+                    while(ForwardFunctionName.startswith(REVERSE_PREFIX)){
+                        ForwardFunctionName = ForwardFunctionName.drop_front
+                            (REVERSE_PREFIX.size());
+                        ++numReverses;
+                    }
+										if (depth % 2 == 1) {
+												Function *FFunc = M->getFunction(ForwardFunctionName);
+												if (FFunc != NULL) {
+														return FFunc;
+												} else {
+														errs() << "Error: forward function not found!\n";
+												}
+										}
+								}
+
                 const std::string ReverseFuncName = 
-                    Func->getName().str() + "_Reverse";
+                    ForwardFunctionName.str() + "_Reverse";
+                    //Func->getName().str() + "_Reverse";
                 Function *ReverseFunc = M->getFunction(ReverseFuncName);
                 // If it doesn't exist yet, create it
+								//errs() <<"eee\n"; 
                 if (!ReverseFunc) {
                     ValueMap<const Value*, WeakVH> VMap;
                     ReverseFunc = CloneFunction
@@ -276,8 +306,13 @@ namespace {
                     BasicBlock::iterator E = BB.end();
                     CallInst *CI;
                     
+										//errs() <<"eeue\n"; 
                     for (It = BB.begin(); It != E; It++) {
                         if ( (CI = dyn_cast<CallInst>(&*It)) ) {
+														Function *f = CI->getCalledFunction();
+														if (f->getName() == "malloc" || f->getName().startswith("acquire")) {
+															continue;
+														}
                             V.push_back(CI);
                         }
                     }
@@ -288,9 +323,11 @@ namespace {
                     std::vector<CallInst *>::reverse_iterator I;
                     Function *Inverse;
                     std::vector<CallInst *>::reverse_iterator F = V.rend();
+										//errs() <<"eeee\n"; 
                     for (I = V.rbegin(); I != F; I++) {
+												//errs() <<"eeeie\n"; 
                         Inverse = GetOrCreateInverseFunction
-                            ((*I)->getCalledFunction());
+                            ((*I)->getCalledFunction(), depth+1);
                         (*I)->setCalledFunction(Inverse);
                         (*I)->removeFromParent();
                         BB.getInstList().insert(&BB.back(), *I);
@@ -306,6 +343,7 @@ namespace {
             void visitCallInst(CallInst &I) {
                 // Get the current function
                 Function *CF = I.getCalledFunction();
+								if (ReverseDebug) errs() << "Called:: " << CF->getName() << "\n";
                 if (CF->getName().startswith(REVERSE_PREFIX)) {
                     // Stores the number of times a reverse function is 
                     // prefixed with '_reverse_'; If this number is odd, it 
@@ -320,6 +358,7 @@ namespace {
                         ++numReverses;
                     }
                     
+										//errs() <<"h?\n"; 
                     Function *ForwardFunction;
                     // The Toffoli function is special becuase it has 
                     // been rewritten to have a different function name
@@ -337,6 +376,7 @@ namespace {
                         ForwardFunction = M->getFunction
                             (IntrinsicForwardFunctionName);
                     }
+										//errs() <<"h\n"; 
 
                     // If no function exists for the base after the 
                     // _reverse_, print an error message
@@ -355,8 +395,9 @@ namespace {
                                << ForwardFunctionName << "\n";
                     }
 
+										//errs() <<"hh\n"; 
                     Function *ReplacementFunction = numReverses % 2 == 1 ? 
-                        GetOrCreateInverseFunction(ForwardFunction) 
+                        GetOrCreateInverseFunction(ForwardFunction, 0) 
                         : ForwardFunction;
                     // Now that we have the replacement function, this 
                     // performs the insertion into the target code
@@ -370,6 +411,7 @@ namespace {
                     CallInst::Create(ReplacementFunction, 
                         ArrayRef<Value*>(Args), "", &I);
                     I.eraseFromParent();
+										//errs() <<"hhh\n"; 
                 }
             } // visitCallInst()
         }; // struct InsertReverseFunctionsVisitor

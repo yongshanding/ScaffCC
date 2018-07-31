@@ -40,25 +40,26 @@ for f in $*; do
   fi
 done
 
-#for f in $*; do
-#	UCNT=0
-#	cp ${b}/${b}.ll ${b}/${b}5.ll
-#	cp ${b}/${b}5.ll ${b}/${b}5orig.ll; \
-#	mv ${b}/${b}5.ll ${b}/${b}6tmp.ll; \
-#	touch ${b}/${b}5.ll; \
-#	while [ -n "$(diff -q ${b}/${b}5.ll ${b}/${b}6tmp.ll)" ]; do \
-#		UCNT=$(expr $UCNT + 1); \
-#		echo "[Scaffold.makefile] Unrolling Loops ($UCNT) ..."; \
-#		cp ${b}/${b}6tmp.ll ${b}/${b}5.ll; \
-#		$OPT -S ${b}/${b}5.ll -mem2reg -loops -loop-simplify -loop-rotate -lcssa -loop-unroll -unroll-threshold=100000000 -sccp -simplifycfg -o ${b}/${b}5a.ll > /dev/null && \
-#		echo "[Scaffold.makefile] Cloning Functions ($UCNT) ..." && \
-#		$OPT -S -load $SCAF -FunctionClone -sccp ${b}/${b}5a.ll -o ${b}/${b}5b.ll > /dev/null && \
-#		echo "[Scaffold.makefile] Dead Argument Elimination ($UCNT) ..." && \
-#		$OPT -S -deadargelim ${b}/${b}5b.ll -o ${b}/${b}6tmp.ll > /dev/null; \
-#	done && \
-#	$OPT -S ${b}/${b}6tmp.ll -internalize -globaldce -adce -o ${b}/${b}6.ll > /dev/null  
-#	cp ${b}/${b}6.ll ${b}/${b}.ll
-#done
+for f in $*; do
+  b=$(basename $f .scaffold)  
+	UCNT=0
+	cp ${b}/${b}.ll ${b}/${b}5.ll
+	cp ${b}/${b}5.ll ${b}/${b}5orig.ll; \
+	mv ${b}/${b}5.ll ${b}/${b}6tmp.ll; \
+	touch ${b}/${b}5.ll; \
+	while [ -n "$(diff -q ${b}/${b}5.ll ${b}/${b}6tmp.ll)" ]; do \
+		UCNT=$(expr $UCNT + 1); \
+		echo "[gen-rev-mem-optimized.sh] Unrolling Loops ($UCNT) ..."; \
+		cp ${b}/${b}6tmp.ll ${b}/${b}5.ll; \
+		$OPT -S ${b}/${b}5.ll -mem2reg -loops -loop-simplify -loop-rotate -lcssa -loop-unroll -unroll-threshold=100000000 -sccp -simplifycfg -o ${b}/${b}5a.ll > /dev/null && \
+		echo "[gen-rev-mem-optimized.sh] Cloning Functions ($UCNT) ..." && \
+		$OPT -S -load $SCAF -FunctionClone -sccp ${b}/${b}5a.ll -o ${b}/${b}5b.ll > /dev/null && \
+		echo "[gen-rev-mem-optimized.sh] Dead Argument Elimination ($UCNT) ..." && \
+		$OPT -S -deadargelim ${b}/${b}5b.ll -o ${b}/${b}6tmp.ll > /dev/null; \
+	done && \
+	$OPT -S ${b}/${b}6tmp.ll -internalize -globaldce -adce -o ${b}/${b}6.ll > /dev/null  
+	cp ${b}/${b}6.ll ${b}/${b}.ll
+done
 
 for f in $*; do
   b=$(basename $f .scaffold)  

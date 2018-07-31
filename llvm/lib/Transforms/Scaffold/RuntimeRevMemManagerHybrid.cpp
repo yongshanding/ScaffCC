@@ -329,7 +329,7 @@ namespace {
       }
 			else {
 
-				errs() << "calling: << " << CF->getName() << "\n";
+				//errs() << "calling: << " << CF->getName() << "\n";
 
 				if (CF->getName().find("acquire") != std::string::npos) {
 					// repalce with memHeapAlloc

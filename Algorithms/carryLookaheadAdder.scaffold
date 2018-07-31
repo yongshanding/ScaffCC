@@ -99,7 +99,7 @@ void lookaheadHelper(qbit **carry, qbit **IR, qbit **res, int i, int adderSize, 
 	for (int k = 1; k < 9; k++) {
 		out[k] = res[i * adderSize + k];
 	}
-	release(out, 9, temp, 1); //adderSize = 8
+	release(out, 9, temp, 1); //1+adderSize = 9
 }
 
 void carryLookaheadAdder(qbit **a, qbit **b, qbit **res, int n) {
