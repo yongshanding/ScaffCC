@@ -31,18 +31,18 @@ void addMod(qbit **a, qbit **b, int n) {
 	Toffoli(c[0], b[0], a[0]);
 	CNOT(a[0], c[0]);
 	CNOT(c[0], b[0]);
-	release(b, 32, c, 1);
+	//release(b, 32, c, 1, NULL);
 }
 
-void ch(qbit **e, qbit **f, qbit **g, qbit **t, qbit **h, int n){
-	qbit *anc[n];
-	acquire(32, anc);
-	//qbit **t = &anc[32];
+void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
+	qbit *anc[2*n];
+	acquire(64, anc);
+	qbit **t = &anc[32];
 	for (int i = 0; i < n; i++){
 		Toffoli(e[i], f[i], anc[i]);
 		Toffoli(anc[i], g[i], t[i]);
 	}
-	release(t,32,anc,32);
+	release(h,32,anc,64,t);
 }
 
 void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
@@ -52,23 +52,24 @@ void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
 	}
 }
 
-void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t){
+void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 	qbit *anc[1];
 	acquire(1, anc);
 	Toffoli(a,b,anc[0]);
 	Toffoli(a,c,anc[0]);
 	Toffoli(b,c,anc[0]);
 	CNOT(anc[0], t);
-	release(&t, 1, anc, 1);
+	release(&t, 1, anc, 1, &ttemp);
 }
 
 void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
-	qbit *t[32];
-	acquire(32, t);
+	qbit *t[33];
+	acquire(33,t);
+	qbit **ttemp = &t[32];
 	for (int i = 0; i < n; i++){
-		toffLoopHelper(a[i],b[i],c[i], t[i]);	
+		toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
 	}
-	release(t, 32, t, 32);
+	release(h, 32, t, 32, t);
 }
 
 void rot(qbit **a, qbit **b, int n, int shift){
@@ -83,7 +84,10 @@ void rot(qbit **a, qbit **b, int n, int shift){
 	}
 }
 
-void s0(qbit **a, qbit **t, int n){
+void s0(qbit **a, qbit **h, int n){
+	qbit *t[32];
+	acquire(32,t);
+
 	qbit *a2[32];
 	qbit *a13[32];
 	qbit *a22[32];
@@ -97,8 +101,12 @@ void s0(qbit **a, qbit **t, int n){
 		CNOT(a13[i], t[i]);	
 		CNOT(a22[i], t[i]);	
 	}
+	release(h,32,t,32,t);
 }
-void s1(qbit **a, qbit **t, int n){
+void s1(qbit **a, qbit **h, int n){
+	qbit *t[32];
+	acquire(32,t);
+
 	qbit *a6[32];
 	qbit *a11[32];
 	qbit *a25[32];
@@ -112,20 +120,20 @@ void s1(qbit **a, qbit **t, int n){
 		CNOT(a11[i], t[i]);
 		CNOT(a25[i], t[i]);
 	}
-
+	release(h,32,t,32,t);
 }
 
-void ch_addMod(qbit **e, qbit **f, qbit **g, qbit **h, qbit **t0, int n){
-	qbit *anc[32];
-	acquire(32,anc);
-	ch_param(e,f,g,t0,anc,32);
-	addMod(t0,h,32);
-	release(h,32,anc,32);
-}
+//void ch_addMod(qbit **e, qbit **f, qbit **g, qbit **h, qbit **t0, int n){
+//	qbit *anc[32];
+//	acquire(32,anc);
+//	ch_param(e,f,g,t0,anc,32);
+//	addMod(t0,h,32);
+//	release(h,32,anc,32,);
+//}
 
 void hsh(qbit **k, qbit **w, qbit **x){
-	qbit *t[32];
-	acquire(32, t);
+	//qbit *htemp[32];
+	//acquire(32,htemp);
 	qbit **a = &x[0];
 	qbit **b = &x[32];
 	qbit **c = &x[64];
@@ -136,19 +144,19 @@ void hsh(qbit **k, qbit **w, qbit **x){
 	qbit **h = &x[224];
 	//ch_addMod(e,f,g,h,t0,32);
 
-	ch(e, f, g, t, h, 32);
-	////addMod(k,w,32);
-	//s0(a, h, 32);
+	ch(e, f, g, h, 32);
+	//addMod(k,w,32);
+	s0(a, h, 32);
 	////addMod(t1,h,32);
-	//addMod(w, h, 32);
-	//addMod(k, h, 32);
-	//addMod(h, d, 32);
-	//ma(a, b, c, h, 32);
+	addMod(w, h, 32);
+	addMod(k, h, 32);
+	addMod(h, d, 32);
+	ma(a, b, c, h, 32);
 	////addMod(t2, h, 32);
-	//s1(e, h, 32);
+	s1(e, h, 32);
 	//addMod(t3, h, 32);
 
-	//release(x, 256, all_anc,128);
+	//release(x, 256, t,32, xtemp);
 
 }
 
@@ -161,9 +169,11 @@ void sha2Looper(qbit **k, qbit **w, qbit **x, int val){
 }
 
 void sha2(qbit **k, qbit **w, qbit **x, int n){
+	//qbit *xtemp[256];
+	//acquire(256,xtemp);
 	for (int i = 0; i < n; i++){
 		int idx = (32 * i) % 256;
-		sha2Looper(k,w,x, idx);
+		sha2Looper(k,w,x,idx);
 	}
 }
 
