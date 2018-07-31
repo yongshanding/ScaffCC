@@ -55,10 +55,10 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _GLOBAL;
-int freePolicy = _NOFREE; 
+int freePolicy = _EAGER; 
 
 // DEBUG switch
-bool debugRTRevMemHyb = false;
+bool debugRTRevMemHyb = true;
 
 
 namespace {
@@ -159,11 +159,11 @@ namespace {
 			unsigned num_outs= 0; // num of out bits that's copied
 			unsigned num_gates= 0; // num of gates copied
 			unsigned total_narg = CI->getNumArgOperands();
-			// assume release(x,...,x, out, nOut, anc, nAnc, alloc, nAlloc)
-			if (total_narg < 6) {
-				errs() << "Invalid Release function encountered: numArg = " << total_narg << " < 6.\n";
+			// assume release(x,...,x, out, nOut, anc, nAnc, cpy, alloc, nAlloc)
+			if (total_narg < 7) {
+				errs() << "Invalid Release function encountered: numArg = " << total_narg << " < 7.\n";
 			}
-			unsigned nAnc_idx = total_narg - 3; // or total_narg - 1
+			unsigned nAnc_idx = total_narg - 4; // or total_narg - 1
 			ConstantInt *nQ = dyn_cast<ConstantInt>(CI->getArgOperand(nAnc_idx));
 			if (nQ == NULL) {
 				// nAnc is undef
@@ -189,6 +189,7 @@ namespace {
 			freeArgs.push_back(res);
 			CallInst::Create(memHeapFree, ArrayRef<Value*>(freeArgs), "", Bterm);
 		
+			errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
 			//if(delAfterInst)
 			//  vInstRemove.push_back((Instruction*)CI);
 

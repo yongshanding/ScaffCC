@@ -46,7 +46,7 @@ using namespace std;
  ***********************************************************************/
 /* 1. acquire(n): 
  *   - Obtain n qubits from optimized memory pool, as supposed to allocate new.
- * 2: release(args, copy, free):
+ * 2: release(out, #out, anc, #anc, cpy):
  *   - Signal to *optionally* recycle the specified qubit(s) to memory pool.
  * 3: afree(args, copy, free):
  *   - Signal to *forcefully* recycle the specified qubit(s) to memory pool.
@@ -247,11 +247,13 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 
 	// Build function arguments
 	size_t Fnumargs = F->arg_size();
-	std::vector<Type*> ArgTypes(Fnumargs+4+2);
-	std::vector<Value*>  Args(Fnumargs+4+2);
-	std::vector<Value*>  newArgs(Fnumargs+4+2);
-	std::vector<Value*>  newForwardArgs(Fnumargs+4+2);
-	std::vector<Value*>  newRevArgs(Fnumargs+4+2);
+	// 0~Fnumargs-1: caller arguments; 
+	// +0: out; +1: #out; +2: anc; +3: #anc, +4: cpy; +5: acq; +6: #acq
+	std::vector<Type*> ArgTypes(Fnumargs+4+1+2);
+	std::vector<Value*>  Args(Fnumargs+4+1+2);
+	std::vector<Value*>  newArgs(Fnumargs+4+1+2);
+	std::vector<Value*>  newForwardArgs(Fnumargs+4+1+2);
+	std::vector<Value*>  newRevArgs(Fnumargs+4+1+2);
 	// First original arguments from F
 	size_t i = 0;
 	for (Function::arg_iterator ai=F->arg_begin(); ai != F->arg_end(); ++ai) {
@@ -265,6 +267,9 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 	if (ACI->getNumArgOperands() != 2) {
 		errs() << "Error: Acquire needs 2 arguments, " << ACI->getNumArgOperands()<< " found.\n"; 
 	}
+	if (CI->getNumArgOperands() != 5) {
+		errs() << "Error: Release needs 5 arguments, " << CI->getNumArgOperands()<< " found.\n"; 
+	}
 	//errs() << "here1.5\n";
 	//errs() << "ACI 0: " << *(ACI->getArgOperand(0)) << " ACI 1: " << *(ACI->getArgOperand(1)) << "\n";
 	//ArgTypes[Fnumargs+4] = ACI->getCalledFunction()->getReturnType();
@@ -275,38 +280,40 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 	//	Args[Fnumargs+2] = Anc->getPointerOperand();
 	//	//ArgTypes[Fnumargs+3] = ACI->getArgOperand(0)->getType();
 	//} else {
-		ArgTypes[Fnumargs+4] = ACI->getArgOperand(1)->getType();
-		Args[Fnumargs+4] = ACI->getArgOperand(1);
-		ArgTypes[Fnumargs+2] = CI->getArgOperand(2)->getType(); // free
-		Args[Fnumargs+2] = CI->getArgOperand(2); // free
+		ArgTypes[Fnumargs+5] = ACI->getArgOperand(1)->getType();
+		Args[Fnumargs+5] = ACI->getArgOperand(1);
+		ArgTypes[Fnumargs+2] = CI->getArgOperand(2)->getType(); // anc
+		Args[Fnumargs+2] = CI->getArgOperand(2); // anc
+		ArgTypes[Fnumargs+4] = CI->getArgOperand(4)->getType(); // cpy
+		Args[Fnumargs+4] = CI->getArgOperand(4); // cpy
 		//ArgTypes[Fnumargs+3] = CI->getArgOperand(3)->getType(); // free
 	//}
-	ArgTypes[Fnumargs+3] = CI->getArgOperand(3)->getType(); // free
-	ArgTypes[Fnumargs+5] = ACI->getArgOperand(0)->getType();
+	ArgTypes[Fnumargs+3] = CI->getArgOperand(3)->getType(); // #anc
+	ArgTypes[Fnumargs+6] = ACI->getArgOperand(0)->getType();
 	size_t nAlloc;
 	ConstantInt *aciAlloc;
 	//errs() << "here1.75\n";
 	if (nnAlloc != -1) {
 		nAlloc = nnAlloc;
 		aciAlloc = dyn_cast<ConstantInt>(ConstantInt::get(ArgTypes[Fnumargs+1], nAlloc, false)); 
-		Args[Fnumargs+5] = aciAlloc;
+		Args[Fnumargs+6] = aciAlloc;
 	} else {
 		aciAlloc = dyn_cast<ConstantInt>(ACI->getArgOperand(0));
 		if (aciAlloc == NULL) {
 			errs() << "Error: Does not support variable length allocation yet! Try loop-unrolling and constant propagation.\n";
 		} else {
 			nAlloc = aciAlloc->getZExtValue(); // number of out bits allocated
-			Args[Fnumargs+5] = aciAlloc;
+			Args[Fnumargs+6] = aciAlloc;
 		}
 	}
 	//errs() << "here2\n";
 	// Now release
-	if (CI->getNumArgOperands() != 4) {
-		errs() << "Error: Release needs 4 arguments, " << CI->getNumArgOperands()<< " found.\n"; 
+	if (CI->getNumArgOperands() != 5) {
+		errs() << "Error: Release needs 5 arguments, " << CI->getNumArgOperands()<< " found.\n"; 
 	}
-	ArgTypes[Fnumargs+0] = CI->getArgOperand(0)->getType(); // copy
-	ArgTypes[Fnumargs+1] = CI->getArgOperand(1)->getType(); // copy
-	Args[Fnumargs+0] = CI->getArgOperand(0); // copy
+	ArgTypes[Fnumargs+0] = CI->getArgOperand(0)->getType(); // out
+	ArgTypes[Fnumargs+1] = CI->getArgOperand(1)->getType(); // out
+	Args[Fnumargs+0] = CI->getArgOperand(0); // out
 	size_t nOut;
 	ConstantInt *ciOut;
 	if (nnOut != -1) {
@@ -389,7 +396,17 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 		}
 
 		//errs() << "check2\n";
-		// Initialize new qubits with alloca -- CHANGED NOW! 
+		// If cpy bits are NULL, then:
+		// Initialize new qubits with alloca and acquire 
+		// else: use cpy
+
+		vector<Value*> cpy_bits;
+		// create predicate
+		//Value *in_cpy = new LoadInst(newArgAddr[Fnumargs+4], "", BB);
+		//Value *pred = new ICmpInst(*BB, CmpInst::ICMP_EQ, in_cpy, Constant::getNullValue(Type::getInt16Ty(getGlobalContext())->getPointerTo()), "");
+		Value *pred = new ICmpInst(*BB, CmpInst::ICMP_EQ, newArgAddr[Fnumargs+4], Constant::getNullValue(Type::getInt16Ty(getGlobalContext())->getPointerTo()->getPointerTo()), "");
+
+
 		std::string new_name = "new";
 		Type *qbit_type = Type::getInt16Ty(getGlobalContext())->getPointerTo();// ArgTypes[Fnumargs]; 
 		ArrayType *arrayType = ArrayType::get(qbit_type, nOut);
@@ -402,6 +419,8 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 	
 		Value *qqArrPtr = GetElementPtrInst::CreateInBounds(new_copy, Idx, "", BB);
 
+		// if true
+		BasicBlock *nullBB = BasicBlock::Create(getGlobalContext(), "", releaseImpl, 0);
 		Function *new_acquire = M->getFunction("acquire");
 		if (new_acquire == NULL) {
 			errs() << "Does not recognize acquire!\n";
@@ -414,29 +433,76 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 		na_val.push_back(qqArrPtr);
 
 		//errs() << "check3\n";
-		CallInst::Create(new_acquire, ArrayRef<Value*>(na_val), "", BB)->setTailCall();
+		CallInst::Create(new_acquire, ArrayRef<Value*>(na_val), "", nullBB)->setTailCall();
 		//errs() << "check4\n";
 
-		// Setup qubits for Copying
-		vector<Value*> out_bits;
-		vector<Value*> cpy_bits;
+
+		// if false
+
+		BasicBlock *nonnullBB = BasicBlock::Create(getGlobalContext(), "", releaseImpl, 0);
+		for (size_t i = 0; i < nOut; i++) {
+			//Value *Idx[2];
+			//Idx[0] = Constant::getNullValue(Type::getInt32Ty(getGlobalContext()));  
+			//Idx[1] = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),i);
+			//Value *intArrPtr = GetElementPtrInst::CreateInBounds(new_copy, Idx, "", BB);
+			//Value *new_q = new LoadInst(intArrPtr, "", BB);
+			//cpy_bits.push_back(new_q);	
+
+			stringstream ss;
+			ss << "arrayIdxC" << i;
+			Value *newIdx[1];
+			newIdx[0] = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),i);
+			Value *intArrPtr2 = GetElementPtrInst::CreateInBounds(newArgAddr[Fnumargs+4], newIdx, ss.str(), nonnullBB);
+			Value *old_q = new LoadInst(intArrPtr2, "", nonnullBB);
+			Value *newIdx2[2];
+			newIdx2[0] = Constant::getNullValue(Type::getInt32Ty(getGlobalContext()));  
+			newIdx2[1] = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),i);
+			Value *targArrPtr = GetElementPtrInst::CreateInBounds(new_copy, newIdx2, "", nonnullBB);
+			
+			new StoreInst(old_q, targArrPtr, false, nonnullBB);
+			//cpy_bits.push_back(old_q);	
+		}
+
+		errs() << "check end\n";
+		// end if block
+		BasicBlock *endBB = BasicBlock::Create(getGlobalContext(), "", releaseImpl, 0);
+		// both if and else br to endBB
+		BranchInst *forIf = BranchInst::Create(endBB, nullBB);
+		BranchInst *forElse = BranchInst::Create(endBB, nonnullBB);
+		//
+		// insert the conditional branch into BB
+		TerminatorInst *oldTerm = BB->getTerminator();
+		BranchInst *brTerm;
+		errs() << "check end end" << oldTerm << "\n";
+		if (oldTerm == NULL) {
+			brTerm = BranchInst::Create(nullBB, nonnullBB, pred, BB);
+		} else {
+			brTerm = BranchInst::Create(nullBB, nonnullBB, pred);
+			ReplaceInstWithInst(oldTerm, brTerm);
+		}
+		errs() << "check end end\n";
+
 		for (size_t i = 0; i < nOut; i++) {
 			Value *Idx[2];
 			Idx[0] = Constant::getNullValue(Type::getInt32Ty(getGlobalContext()));  
 			Idx[1] = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),i);
-			Value *intArrPtr = GetElementPtrInst::CreateInBounds(new_copy, Idx, "", BB);
-			Value *new_q = new LoadInst(intArrPtr, "", BB);
+			Value *intArrPtr = GetElementPtrInst::CreateInBounds(new_copy, Idx, "", endBB);
+			Value *new_q = new LoadInst(intArrPtr, "", endBB);
 			cpy_bits.push_back(new_q);	
-
+		}
+		// Setup qubits for Copying
+		vector<Value*> out_bits;
+		for (size_t i = 0; i < nOut; i++) {
 			stringstream ss;
 			ss << "arrayIdx" << i;
 			Value *newIdx[1];
 			newIdx[0] = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),i);
-			Value *intArrPtr2 = GetElementPtrInst::CreateInBounds(newArgAddr[Fnumargs], newIdx, ss.str(), BB);
-			Value *old_q = new LoadInst(intArrPtr2, "", BB);
+			Value *intArrPtr2 = GetElementPtrInst::CreateInBounds(newArgAddr[Fnumargs], newIdx, ss.str(), endBB);
+			Value *old_q = new LoadInst(intArrPtr2, "", endBB);
 			out_bits.push_back(old_q);	
 		}
 		//errs() << "check5\n";
+
 
 		// Copy output
 		for (size_t i = 0; i < nOut; i++) {
@@ -451,7 +517,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 			src_trg.push_back(out_bit);
 			src_trg.push_back(cpy_bit);
 			Function *cnot_copy = Intrinsic::getDeclaration(M, Intrinsic::CNOT, ArrayRef<Type*>(two_qbit_ty));
-			CallInst::Create(cnot_copy, ArrayRef<Value*>(src_trg), "", BB)->setTailCall();
+			CallInst::Create(cnot_copy, ArrayRef<Value*>(src_trg), "", endBB)->setTailCall();
 			
 		}
 		//errs() << "check6\n";
@@ -498,7 +564,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 			//BasicBlock *BBforward = BasicBlock::Create(getGlobalContext(), "", forwardImpl, 0);
       ValueMap<const Value*, WeakVH> VMap;
 			for (size_t i = 0; i < Args.size(); i++) {
-				if (i == Fnumargs+1 || i == Fnumargs+3 || i == Fnumargs+5) {
+				if (i == Fnumargs+1 || i == Fnumargs+3 || i == Fnumargs+4 || i == Fnumargs+6) {
 					continue;
 				}
 				WeakVH wval(newForwardArgs[i]);
@@ -755,10 +821,10 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 
 		// Now back to releaseImpl
 		// First insert the _reverse_ function.
-		CallInst::Create(revImpl, ArrayRef<Value*>(newArgs), "", BB)->setTailCall();
+		CallInst::Create(revImpl, ArrayRef<Value*>(newArgs), "", endBB)->setTailCall();
 
 		ConstantInt *gateCountV = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),gateCount);
-		ReturnInst::Create(getGlobalContext(), gateCountV, BB);
+		ReturnInst::Create(getGlobalContext(), gateCountV, endBB);
 
 	} //end releaseImpl
 	// Replace call instruction

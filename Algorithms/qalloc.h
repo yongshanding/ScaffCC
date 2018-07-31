@@ -8,7 +8,7 @@ void acquire(int n, qbit **addr) {
 	*addr = new;
 }
 
-void release(qbit **out, int n1, qbit **anc, int n2);
+void release(qbit **out, int n1, qbit **anc, int n2, qbit **cpy);
 
 #endif
 

@@ -7,7 +7,7 @@
 //	*addr = new;
 //}
 //
-//void release(qbit **out, int n1, qbit **anc, int n2);
+//void release(qbit **out, int n1, qbit **anc, int n2, qbit **cpy);
 
 void level1(qbit **in, int n) {
 	qbit *anc[4];
@@ -17,7 +17,7 @@ void level1(qbit **in, int n) {
 		CNOT(in[i], anc[i]);
 	}
 	X(in[4]);
-	release(in, 1, anc, 4);	
+	release(in, 1, anc, 4, NULL);	
 	return;
 }
 
