@@ -105,7 +105,59 @@ namespace {
 				return found_pos_end; // start of callerName
 		}
 		
+		std::string mangleType(vector<Type*> arg_types) {
+			stringstream ss;
+			for (vector<Type*>::iterator it = arg_types.begin(); it != arg_types.end(); ++it) {
+				if ((*it)->isPointerTy()) {
+					vector<Type*> new_t;
+					new_t.push_back((*it)->getPointerElementType());
+					ss << 'P' << mangleType(new_t);
+				} else {
+					//switch ((*it)->getKind()) {
+  				//	case BuiltinType::Void: ss << 'v'; break;
+  				//	case BuiltinType::Bool: ss << 'b'; break;
+  				//	case BuiltinType::Char_U: case BuiltinType::Char_S: ss << 'c'; break;
+  				//	case BuiltinType::UChar: ss << 'h'; break;
+  				//	case BuiltinType::UShort: ss << 't'; break;
+  				//	case BuiltinType::UInt: ss << 'j'; break;
+  				//	case BuiltinType::ULong: ss << 'm'; break;
+  				//	case BuiltinType::ULongLong: ss << 'y'; break;
+  				//	case BuiltinType::UInt128: ss << 'o'; break;
+  				//	case BuiltinType::SChar: ss << 'a'; break;
+  				//	case BuiltinType::WChar_S:
+  				//	case BuiltinType::WChar_U: ss << 'w'; break;
+  				//	case BuiltinType::Char16: ss << "Ds"; break;
+  				//	case BuiltinType::Char32: ss << "Di"; break;
+  				//	case BuiltinType::Short: ss << 's'; break;
+  				//	case BuiltinType::Int: ss << 'i'; break;
+  				//	case BuiltinType::Long: ss << 'l'; break;
+  				//	case BuiltinType::LongLong: ss << 'x'; break;
+  				//	case BuiltinType::Int128: ss << 'n'; break;
+  				//	case BuiltinType::Half: ss << "Dh"; break;
+  				//	case BuiltinType::Float: ss << 'f'; break;
+  				//	case BuiltinType::Double: ss << 'd'; break;
+  				//	case BuiltinType::LongDouble: ss << 'e'; break;
+  				//	case BuiltinType::NullPtr: ss << "Dn"; break;
+  				//	case BuiltinType::Abit: ss << 'a'; break; // Scaffold
+  				//	case BuiltinType::Cbit: ss << "Cb"; break;  // Scaffold
+  				//	case BuiltinType::Qbit: ss << 'q'; break;  // Scaffold
+  				//	case BuiltinType::Qint: ss << 'y'; break;  // Scaffold
+					//}
+					if ((*it)->isVoidTy()) ss << 'v'; 
+					if ((*it)->isIntegerTy(16)) ss << 's'; 
+					if ((*it)->isIntegerTy(32)) ss << 'i'; 
+				}
+			}
+			return ss.str();
+		}
 
+		std::string getMangleName(std::string orig, vector<Type*> arg_types) {
+			
+			stringstream ss;
+			ss << "_Z" << orig.length() << orig;
+			ss << mangleType(arg_types);
+			return ss.str();
+		}
 
 		TerminatorInst *addIfThen(Value *Cond, Instruction *SplitBefore,
 									 BasicBlock *nextB,
@@ -563,17 +615,21 @@ namespace {
       //rep_val = 1;  
       rep_val = ConstantInt::get(Type::getInt32Ty(getGlobalContext()), 1, false);
 
-      // void exit_scope ()      
-      exit_scope = cast<Function>(M.getOrInsertFunction("exit_scope", Type::getVoidTy(M.getContext()), (Type*)0));
+      // void exit_scope ()
+      vector<Type*> esArgTypes;
+			esArgTypes.push_back(Type::getVoidTy(M.getContext()));
+      std::string exit_scope_str = getMangleName("exit_scope", esArgTypes);
+			//errs() << exit_scope_str << "\n";
+      exit_scope = cast<Function>(M.getOrInsertFunction(exit_scope_str, Type::getVoidTy(M.getContext()), (Type*)0));
 
       //void initialize ()
-      qasmInitialize = cast<Function>(M.getOrInsertFunction("qasm_initialize", Type::getVoidTy(M.getContext()), (Type*)0));
+      qasmInitialize = cast<Function>(M.getOrInsertFunction(getMangleName("qasm_initialize",esArgTypes), Type::getVoidTy(M.getContext()), (Type*)0));
       
       //void qasm_resource_summary ()
-      qasmResSum = cast<Function>(M.getOrInsertFunction("qasm_resource_summary", Type::getVoidTy(M.getContext()), (Type*)0));
+      qasmResSum = cast<Function>(M.getOrInsertFunction(getMangleName("qasm_resource_summary",esArgTypes), Type::getVoidTy(M.getContext()), (Type*)0));
 
       // void qasmGate ()      
-      qasmGate = cast<Function>(M.getOrInsertFunction("qasm_gate", Type::getVoidTy(M.getContext()), (Type*)0));      
+      qasmGate = cast<Function>(M.getOrInsertFunction(getMangleName("qasm_gate",esArgTypes), Type::getVoidTy(M.getContext()), (Type*)0));      
 
 			// void recordGate(unsigned)
 			vector <Type*> rgArgTypes;
@@ -581,7 +637,7 @@ namespace {
       rgArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());// operands
       rgArgTypes.push_back(Type::getInt32Ty(M.getContext())); //numArgs
       Type* rgResType = Type::getVoidTy(M.getContext());
-			recordGate = cast<Function>(M.getOrInsertFunction("recordGate", FunctionType::get(rgResType, ArrayRef<Type*>(rgArgTypes), false)));
+			recordGate = cast<Function>(M.getOrInsertFunction(getMangleName("recordGate", rgArgTypes), FunctionType::get(rgResType, ArrayRef<Type*>(rgArgTypes), false)));
 
 			// unsigned memHeapAlloc(unsigned, unsigned, qbit **)
 			vector <Type*> allocArgTypes;
@@ -589,11 +645,11 @@ namespace {
       allocArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       allocArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
       Type* allocResType = Type::getInt32Ty(M.getContext());
-			memHeapAlloc = cast<Function>(M.getOrInsertFunction("memHeapAlloc", FunctionType::get(allocResType, ArrayRef<Type*>(allocArgTypes), false)));
+			memHeapAlloc = cast<Function>(M.getOrInsertFunction(getMangleName("memHeapAlloc", allocArgTypes), FunctionType::get(allocResType, ArrayRef<Type*>(allocArgTypes), false)));
 			
 			// unsigned getHeapIdx()
 			Type* hidxType = Type::getInt32Ty(M.getContext());
-      getHeapIdx = cast<Function>(M.getOrInsertFunction("getHeapIdx", hidxType, (Type*)0));      
+      getHeapIdx = cast<Function>(M.getOrInsertFunction(getMangleName("getHeapIdx", esArgTypes), hidxType, (Type*)0));      
 
 			// unsigned memHeapFree(unsigned, unsigned, qbit **)
 			vector <Type*> freeArgTypes;
@@ -601,7 +657,7 @@ namespace {
       freeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       freeArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
       Type* freeResType = Type::getInt32Ty(M.getContext());
-			memHeapFree = cast<Function>(M.getOrInsertFunction("memHeapFree", FunctionType::get(freeResType, ArrayRef<Type*>(freeArgTypes), false)));
+			memHeapFree = cast<Function>(M.getOrInsertFunction(getMangleName("memHeapFree", freeArgTypes), FunctionType::get(freeResType, ArrayRef<Type*>(freeArgTypes), false)));
 	
 			// unsigned freeOnOff(unsigned, unsigned, qbit **)
 			vector <Type*> onoffArgTypes;
@@ -610,7 +666,7 @@ namespace {
       onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       Type* onoffResType = Type::getInt32Ty(M.getContext());
-			freeOnOff = cast<Function>(M.getOrInsertFunction("freeOnOff", FunctionType::get(onoffResType, ArrayRef<Type*>(onoffArgTypes), false)));
+			freeOnOff = cast<Function>(M.getOrInsertFunction(getMangleName("freeOnOff", onoffArgTypes), FunctionType::get(onoffResType, ArrayRef<Type*>(onoffArgTypes), false)));
 	
       // int memoize (char*, int*, unsigned, double*, unsigned, unsigned)
       //vector <Type*> vectParamTypes2;

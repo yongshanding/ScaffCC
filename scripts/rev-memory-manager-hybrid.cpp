@@ -50,7 +50,7 @@ int freePolicy = _NOFREE;
 
 // DEBUG switch
 bool trackGates = true;
-bool debugRevMemHybrid = true;
+bool debugRevMemHybrid = false;
 
 typedef int16_t qbit_t;
 
@@ -730,7 +730,7 @@ void exit_scope ()
   if (debugRevMemHybrid)
     printf("exiting scope...\n");
   
-  stackPop();
+  //stackPop();
 }
 
 //void qasm_gate () {
@@ -781,10 +781,10 @@ void qasm_resource_summary ()
   //   
   //}
 
-	//printf("==================================\n");
-	//printf("Total number of qubits used: %u. \n", AllQubits->N);
+	printf("==================================\n");
+	printf("Total number of qubits used: %u. \n", AllQubits->N);
 
-	//printGateCounts();
+	printGateCounts();
 	std::cout << "Test\n";
 	std::cout << "Test again\n";
 	memHeapDelete(memoryHeap);
