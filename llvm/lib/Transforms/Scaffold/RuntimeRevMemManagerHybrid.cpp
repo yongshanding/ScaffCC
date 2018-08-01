@@ -27,7 +27,7 @@ using namespace std;
 #define _MAX_INT_PARAMS 4
 #define _MAX_DOUBLE_PARAMS 4
 #define _GLOBAL 0
-#define _GLOBAL_MAX_SIZE 1000
+#define _GLOBAL_MAX_SIZE 100000
 #define _HIERAR 1
 #define _EAGER 0
 #define _LAZY 1
@@ -77,7 +77,7 @@ namespace {
     Function* getHeapIdx; 
     Function* memHeapFree; 
 		Function* freeOnOff;
-    Function* memoize; 
+    //Function* memoize; 
     Function* qasmInitialize; 
     Function* exit_scope;
 
@@ -455,17 +455,17 @@ namespace {
 
     	    //Constant *RepeatConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , rep_val, false);
 
-    	    vectCallArgs.push_back(cast<Value>(strPtr));
-    	    vectCallArgs.push_back(cast<Value>(intArrPtr));
-    	    vectCallArgs.push_back(IntNumConstant);          
-    	    vectCallArgs.push_back(cast<Value>(doubleArrPtr));
-    	    vectCallArgs.push_back(DoubleNumConstant);          
-    	    //vectCallArgs.push_back(RepeatConstant);       
-    	    vectCallArgs.push_back(rep_val);       
+    	    //vectCallArgs.push_back(cast<Value>(strPtr));
+    	    //vectCallArgs.push_back(cast<Value>(intArrPtr));
+    	    //vectCallArgs.push_back(IntNumConstant);          
+    	    //vectCallArgs.push_back(cast<Value>(doubleArrPtr));
+    	    //vectCallArgs.push_back(DoubleNumConstant);          
+    	    ////vectCallArgs.push_back(RepeatConstant);       
+    	    //vectCallArgs.push_back(rep_val);       
 
-    	    ArrayRef<Value*> call_args(vectCallArgs);  
+    	    //ArrayRef<Value*> call_args(vectCallArgs);  
     	    
-    	    CallInst::Create(memoize, call_args, "", (Instruction*)CI);      
+    	    //CallInst::Create(memoize, call_args, "", (Instruction*)CI);      
 
     	    //CallInst::Create(memoize, getMemoizeArgs(CI, strAlloc, intArrAlloc, doubleArrAlloc), "", (Instruction*)CI);
     	    
@@ -613,25 +613,25 @@ namespace {
 			freeOnOff = cast<Function>(M.getOrInsertFunction("freeOnOff", FunctionType::get(onoffResType, ArrayRef<Type*>(onoffArgTypes), false)));
 	
       // int memoize (char*, int*, unsigned, double*, unsigned, unsigned)
-      vector <Type*> vectParamTypes2;
-      vectParamTypes2.push_back(Type::getInt8Ty(M.getContext())->getPointerTo());      
-      vectParamTypes2.push_back(Type::getInt32Ty(M.getContext())->getPointerTo());
-      vectParamTypes2.push_back(Type::getInt32Ty(M.getContext()));
-      vectParamTypes2.push_back(Type::getDoubleTy(M.getContext())->getPointerTo());
-      vectParamTypes2.push_back(Type::getInt32Ty(M.getContext()));
-      vectParamTypes2.push_back(Type::getInt32Ty(M.getContext()));
-      ArrayRef<Type*> Param_Types2(vectParamTypes2);
-      Type* Result_Type2 = Type::getInt32Ty(M.getContext());
-      memoize = cast<Function> (  
-          M.getOrInsertFunction(
-            "memoize",                          /* Name of Function */
-            FunctionType::get(                  /* Type of Function */
-              Result_Type2,                     /* Result */
-              Param_Types2,                     /* Params */
-              false                             /* isVarArg */
-              )
-            )
-          );
+      //vector <Type*> vectParamTypes2;
+      //vectParamTypes2.push_back(Type::getInt8Ty(M.getContext())->getPointerTo());      
+      //vectParamTypes2.push_back(Type::getInt32Ty(M.getContext())->getPointerTo());
+      //vectParamTypes2.push_back(Type::getInt32Ty(M.getContext()));
+      //vectParamTypes2.push_back(Type::getDoubleTy(M.getContext())->getPointerTo());
+      //vectParamTypes2.push_back(Type::getInt32Ty(M.getContext()));
+      //vectParamTypes2.push_back(Type::getInt32Ty(M.getContext()));
+      //ArrayRef<Type*> Param_Types2(vectParamTypes2);
+      //Type* Result_Type2 = Type::getInt32Ty(M.getContext());
+      //memoize = cast<Function> (  
+      //    M.getOrInsertFunction(
+      //      "memoize",                          /* Name of Function */
+      //      FunctionType::get(                  /* Type of Function */
+      //        Result_Type2,                     /* Result */
+      //        Param_Types2,                     /* Params */
+      //        false                             /* isVarArg */
+      //        )
+      //      )
+      //    );
 
       // iterate over instructions to instrument the initialize and exit scope calls
       // insert alloca instructions at the beginning for subsequent memoize calls         
