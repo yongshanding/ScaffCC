@@ -1,11 +1,12 @@
 #include <cstdlib>    /* malloc    */
 #include <cstdio>     /* printf    */
-#include <stddef.h>    /* offsetof  */
-#include <string.h>    /* strcpy    */
-#include <stdbool.h>   /* bool      */
-#include <stdint.h>    /* int64_t   */
+#include <iostream>
+//#include <stddef.h>    /* offsetof  */
+//#include <string.h>    /* strcpy    */
+//#include <stdbool.h>   /* bool      */
+//#include <stdint.h>    /* int64_t   */
 //#include "uthash.h"    /* HASH_ADD  */
-#include <math.h>      /* floorf    */
+//#include <math.h>      /* floorf    */
 #include <map>
 
 #define _MAX_FUNCTION_NAME 90
@@ -49,30 +50,30 @@ int freePolicy = _NOFREE;
 
 // DEBUG switch
 bool trackGates = true;
-bool debugRevMemHybrid = false;
+bool debugRevMemHybrid = true;
 
 typedef int16_t qbit_t;
 
 // qubit struct:
 typedef struct qbit_struct {
 	qbit_t *addr;
-	unsigned int idx;
+	int idx;
 } qbitElement_t;
 
 typedef struct all_qbits_struct {
-	unsigned int N;
+	int N;
 	qbitElement_t Qubits[_MAX_NUM_QUBITS];
 }	all_qbits_t;
 
 //typedef struct {
 //	qbit_t *addr;
-//	unsigned idx;
+//	int idx;
 //	UT_hash_handle hh;
 //} q_entry_t;
 
 all_qbits_t *AllQubits = NULL;
 //q_entry_t *AllQubitsHash = NULL;
-std::map<qbit_t *, unsigned int> AllQubitsHash;
+std::map<qbit_t *, int> AllQubitsHash;
 
 void qubitsInit() {
 	AllQubits = (all_qbits_t *)malloc(sizeof(all_qbits_t));
@@ -80,10 +81,10 @@ void qubitsInit() {
 }
 
 /* return the index of addr, or AllQubits->N if not found */
-unsigned qubitsFind(qbit_t *newAddr) {
+int qubitsFind(qbit_t *newAddr) {
 	//HASH_FIND(AllQubitsHash, &newAddr, s);
 	//HASH_FIND_PTR(AllQubitsHash, &newAddr, s);
-	std::map<qbit_t *, unsigned>::iterator it = AllQubitsHash.find(newAddr);
+	std::map<qbit_t *, int>::iterator it = AllQubitsHash.find(newAddr);
 	if (it == AllQubitsHash.end()) {
 		//Not found
 		printf("(Warning: qubit ");
@@ -97,7 +98,7 @@ unsigned qubitsFind(qbit_t *newAddr) {
 
 void qubitsAdd(qbit_t *newAddr) {
 	//if (qubitsFind(newAddr) == AllQubits->N) {
-		unsigned newIdx = AllQubits->N;
+		int newIdx = AllQubits->N;
 		(AllQubits->Qubits[AllQubits->N]).addr = newAddr;
 		(AllQubits->Qubits[AllQubits->N]).idx = AllQubits->N;
 		AllQubits->N++;
@@ -140,7 +141,7 @@ size_t *AllGates = NULL;
 char *gate_str[_TOTAL_GATES] = {"X", "Y", "Z", "H", "T", "Tdag", "S", "Sdag", "CNOT", "PrepZ", "MeasZ", "PrepX", "MeasX", "Fredkin", "Toffoli", "Rx", "Ry", "Rz"};
 
 void gatesInit() {
-	AllGates = (unsigned long *)malloc(_TOTAL_GATES * sizeof(size_t));
+	AllGates = (size_t *)malloc(_TOTAL_GATES * sizeof(size_t));
 	for (size_t i = 0; i < _TOTAL_GATES; i++) {
 		AllGates[i] = 0;
 	}
@@ -173,7 +174,7 @@ void printGateCounts() {
 // so that a childs frequency would be multiplied by that of all before it
 
 // elements on the stack are of type:
-typedef unsigned stackElement_t;
+typedef int stackElement_t;
 
 // defining a structure to act as stack for pointer values to resources that must be updated                    
 typedef struct {
@@ -245,7 +246,7 @@ void stackPop () {
 //  // resources[0] ---> Invocation count (frequency) of module 
 //  // resources[1] ---> Number of integer arguments
 //  // resources[2] ---> Number of double arguments
-//  unsigned long long resources[3];                    /* hash table value field */
+//  int long long resources[3];                    /* hash table value field */
 //
 //  UT_hash_handle hh;                                  /* make this structure hashable  */
 //
@@ -288,9 +289,9 @@ void stackPop () {
 //
 ///* add_memo: add entry in hash table */
 //void add_memo ( char *function_name,                          /* function name string */
-//                int *int_params, unsigned num_ints,           /* integer parameters */
-//                double *double_params, unsigned num_doubles,  /* double parameters */
-//                unsigned long long *resources                 /* resources for that function version */
+//                int *int_params, int num_ints,           /* integer parameters */
+//                double *double_params, int num_doubles,  /* double parameters */
+//                int long long *resources                 /* resources for that function version */
 //                ) {             
 //
 //  // allocate space for "memo" entry and
@@ -305,7 +306,7 @@ void stackPop () {
 //  strcpy (memo->function_name, function_name);
 //  memcpy (memo->int_params, int_params, num_ints * sizeof(int));
 //  memcpy (memo->double_params, double_params, num_doubles * sizeof(double));
-//  memcpy (memo->resources, resources, 3 * sizeof(unsigned long long));
+//  memcpy (memo->resources, resources, 3 * sizeof(int long long));
 // 
 //  // HASH_ADD (hh_name, head, keyfield_name, key_len, item_ptr)
 //  HASH_ADD(hh, memos, function_name, keylen, memo);
@@ -313,8 +314,8 @@ void stackPop () {
 //
 ///* find_memo: find an entry in hash table */
 //hash_entry_t *find_memo ( char *function_name, 
-//                          int *int_params, unsigned num_ints,
-//                          double *double_params, unsigned num_doubles
+//                          int *int_params, int num_ints,
+//                          double *double_params, int num_doubles
 //                              ) {
 //
 //  // returned entry -- NULL if not found
@@ -494,7 +495,7 @@ qbitElement_t *memHeapPop (memHeap_t *M) {
 	return M->contents[M->numQubits];
 }
 
-unsigned memHeapGetQubits(unsigned num_qbits, memHeap_t *M, qbitElement_t *res) {
+int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res) {
 	if (M == NULL) {
 		fprintf(stderr, "Requesting qubits from invalid memory heap.\n");
 		exit(1);
@@ -525,7 +526,7 @@ unsigned memHeapGetQubits(unsigned num_qbits, memHeap_t *M, qbitElement_t *res) 
 	}
 }
 
-unsigned memHeapNewQubits(unsigned num_qbits, qbitElement_t *res) {
+int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	if (res == NULL) {
 		fprintf(stderr, "Result array not properly initialized.\n.");
 		exit(1);
@@ -558,7 +559,7 @@ unsigned memHeapNewQubits(unsigned num_qbits, qbitElement_t *res) {
 // 1. memory heap with mirroring shape: node contains heap pointer
 // 2. optimize for uncompute choices
 
-void recordGate(unsigned gateID, qbit_t **operands, unsigned numOp) {
+void recordGate(int gateID, qbit_t **operands, int numOp) {
 	AllGates[gateID]++;
 	if (trackGates) {
 		printf("%s ", gate_str[gateID]);
@@ -573,14 +574,14 @@ void recordGate(unsigned gateID, qbit_t **operands, unsigned numOp) {
 
 /* memHeapAlloc: memory allocation when qubits are requested */
 /* every function should have a heap index? for now always a global root heap*/
-unsigned  memHeapAlloc(unsigned num_qbits, unsigned heap_idx, qbit_t **result) {
+int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result) {
 	if (heap_idx == 0) {
 		// find num_qbits of qubits in the global memoryheap
 		qbitElement_t res[num_qbits];
 		// check if there are available in the heap
-		unsigned num = memHeapGetQubits(num_qbits, memoryHeap, &res[0]);
+		int num = memHeapGetQubits(num_qbits, memoryHeap, &res[0]);
 		// malloc any extra qubits needed
-		unsigned num_new = 0;
+		int num_new = 0;
 		if (num < num_qbits) {
 			num_new = memHeapNewQubits(num_qbits-num, &res[num]);
 		}
@@ -602,19 +603,19 @@ unsigned  memHeapAlloc(unsigned num_qbits, unsigned heap_idx, qbit_t **result) {
 }
 
 /* getHeapIdx: return the index of current heap we should be looking at during runtime*/
-unsigned getHeapIdx() {
+int getHeapIdx() {
 	//TODO: use the call stack to see what function are we in
 	return 0;
 }
 
-unsigned memHeapFree(unsigned num_qbits, unsigned heap_idx, qbit_t **ancilla) {
+int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	// Find the qubit element corresponding to ancilla, and push them to heap
 	if (ancilla == NULL) {
 		fprintf(stderr, "Cannot free up NULL set of ancilla.\n");
 		exit(1);
 	}
 	for (size_t i = 0; i < num_qbits; i++) {
-		unsigned qIdx = qubitsFind(ancilla[i]);
+		int qIdx = qubitsFind(ancilla[i]);
 		if (qIdx == AllQubits->N) {
 			fprintf(stderr, "Cannot free qubit %p that has not been recorded.\n", ancilla[i]);
 			exit(1);
@@ -638,9 +639,9 @@ unsigned memHeapFree(unsigned num_qbits, unsigned heap_idx, qbit_t **ancilla) {
 }
 
 /* freeOnOff: return 1 if uncompute, 0 otherwise*/
-int freeOnOff(unsigned nOut, unsigned nAnc, unsigned nGate, int flag) {
-	unsigned weight_q = 1;
-	unsigned weight_g = 1;
+int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
+	int weight_q = 1;
+	int weight_g = 1;
 	if (nOut > nAnc) {
 		return 0;
 	} else if (weight_q * (nAnc-nOut) < weight_g * nGate) {
@@ -653,13 +654,13 @@ int freeOnOff(unsigned nOut, unsigned nAnc, unsigned nGate, int flag) {
 /* A call to this function ensures that the relevant entry */
 /* in the hash table has been created 
 int memoize ( char *function_name, 
-               int *int_params, unsigned num_ints,
-               double *double_params, unsigned num_doubles,
-               unsigned repeat
+               int *int_params, int num_ints,
+               double *double_params, int num_doubles,
+               int repeat
                               ) {
 	// TODO: in here we add entry to function hashtable: func_idx -> {}
 
-  static unsigned long long total_call_count = 0;
+  static int long long total_call_count = 0;
   total_call_count++;
   //printf("Total Call Count = %d", total_call_count);
 
@@ -677,14 +678,14 @@ int memoize ( char *function_name,
       printf("NOT memoized before :(\n");
     // create entry with zero resources
     // the function call in LLVM IR will be called and will populate
-    unsigned long long *resources = calloc (3, sizeof(unsigned long long));
+    int long long *resources = calloc (3, sizeof(int long long));
     resources[0] = repeat;  // invocation count
     resources[1] = num_ints; // number of int args
     resources[2] = num_doubles; // number of double args
 
     // multiply by the frequency of all parents before this module, then add to memos table
     int it;
-    unsigned long long accumulative_mult = 1;
+    int long long accumulative_mult = 1;
     for (it = resourcesStack->top; it > 0; it--)
       accumulative_mult *= resourcesStack->contents[it];
 
@@ -703,7 +704,7 @@ int memoize ( char *function_name,
       printf("Memoized already! :)\n");
     // add to the frequency of execution (repeat times)
     int it;
-    unsigned long long accumulative_mult = 1;
+    int long long accumulative_mult = 1;
     for (it = resourcesStack->top; it > 0; it--)
       accumulative_mult *= resourcesStack->contents[it];
 
@@ -752,8 +753,8 @@ void qasm_initialize ()
   //int *main_int_params = (int*)calloc (_MAX_INT_PARAMS, sizeof(int));
   //double main_double_params[_MAX_DOUBLE_PARAMS] = {0.0};
   //double *main_double_params = calloc (_MAX_DOUBLE_PARAMS, sizeof(double));
-  //unsigned long long main_resources[3] = {0};
-  //unsigned long long *main_resources = calloc (3, sizeof(unsigned long long));
+  //int long long main_resources[3] = {0};
+  //int long long *main_resources = calloc (3, sizeof(int long long));
   // main is executed once
   //main_resources[0] = 1;
 
@@ -780,18 +781,19 @@ void qasm_resource_summary ()
   //   
   //}
 
-	printf("==================================\n");
-	printf("Total number of qubits used: %u. \n", AllQubits->N);
+	//printf("==================================\n");
+	//printf("Total number of qubits used: %u. \n", AllQubits->N);
 
-	printGateCounts();
-
+	//printGateCounts();
+	std::cout << "Test\n";
+	std::cout << "Test again\n";
 	memHeapDelete(memoryHeap);
 	// TODO clean AllQubits
 	free(AllGates);
 	//print_qubit_table();
 
   // free allocated memory for the "stack"
-  stackDestroy();
+  	stackDestroy();
 
   // free allocated memory for the "memos" table
   //delete_all_memos();
@@ -808,7 +810,7 @@ int main () {
   char *function_name = "random_func                    ";
   int int_params [3] = {1, 6, -2};
   double double_params [1] = {-3.14};
-  unsigned long long resources [3] = {1,3,1};
+  int long long resources [3] = {1,3,1};
 
 
   printf("*** main *** : memos->function_name = %s \n", memos->function_name);
