@@ -1,8 +1,10 @@
 #include <cstdlib>    /* malloc    */
 #include <cstdio>     /* printf    */
 #include <iostream>
+#include <iomanip>
 //#include <stddef.h>    /* offsetof  */
 //#include <string.h>    /* strcpy    */
+#include <string>
 //#include <stdbool.h>   /* bool      */
 //#include <stdint.h>    /* int64_t   */
 //#include "uthash.h"    /* HASH_ADD  */
@@ -42,7 +44,7 @@
 #define _Rz 17
 #define _TOTAL_GATES 18
 
-//using namespace std;
+using namespace std;
 
 // Policy switch
 int allocPolicy = _GLOBAL;
@@ -87,9 +89,10 @@ int qubitsFind(qbit_t *newAddr) {
 	std::map<qbit_t *, int>::iterator it = AllQubitsHash.find(newAddr);
 	if (it == AllQubitsHash.end()) {
 		//Not found
-		printf("(Warning: qubit ");
-		printf("(%p)", newAddr);
-		printf(" not found)");
+		//printf("(Warning: qubit ");
+		//printf("(%p)", newAddr);
+		//printf(" not found)");
+		std::cout << " (Warning: qubit [" << newAddr << "] not found) ";
 		return AllQubits->N;
 	} else {
 		return it->second;
@@ -138,7 +141,7 @@ void print_qubit_table() {
 
 size_t *AllGates = NULL;
 
-char *gate_str[_TOTAL_GATES] = {"X", "Y", "Z", "H", "T", "Tdag", "S", "Sdag", "CNOT", "PrepZ", "MeasZ", "PrepX", "MeasX", "Fredkin", "Toffoli", "Rx", "Ry", "Rz"};
+std::string gate_str[_TOTAL_GATES] = {"X", "Y", "Z", "H", "T", "Tdag", "S", "Sdag", "CNOT", "PrepZ", "MeasZ", "PrepX", "MeasX", "Fredkin", "Toffoli", "Rx", "Ry", "Rz"};
 
 void gatesInit() {
 	AllGates = (size_t *)malloc(_TOTAL_GATES * sizeof(size_t));
@@ -148,23 +151,23 @@ void gatesInit() {
 }
 
 void printGateCounts() {
-	printf("Total number of gates by type: \n");
+	std::cout << "Total number of gates by type: \n";
 	for (size_t i = 0; i < _TOTAL_GATES / 2; i++) {
-		printf("%-7s\t", gate_str[i]);
+		std::cout << std::left << setw(7) << gate_str[i];
 	}
-	printf("\n");
+	std::cout << "\n";
 	for (size_t i = 0; i < _TOTAL_GATES / 2; i++) {
-		printf("%-7zu\t", AllGates[i]);
+		std::cout << std::left << setw(7) <<AllGates[i];
 	}
-	printf("\n");
+	std::cout << "\n";
 	for (size_t i = _TOTAL_GATES / 2; i < _TOTAL_GATES; i++) {
-		printf("%-7s\t", gate_str[i]);
+		std::cout << std::left << setw(7) <<gate_str[i];
 	}
-	printf("\n");
+	std::cout << "\n";
 	for (size_t i = _TOTAL_GATES / 2; i < _TOTAL_GATES; i++) {
-		printf("%-7zu\t", AllGates[i]);
+		std::cout << std::left << setw(7) <<AllGates[i];
 	}
-	printf("\n");
+	std::cout << "\n";
 }
 
 /*****************
@@ -562,12 +565,12 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 void recordGate(int gateID, qbit_t **operands, int numOp) {
 	AllGates[gateID]++;
 	if (trackGates) {
-		printf("%s ", gate_str[gateID]);
+		std::cout << gate_str[gateID] << " ";
 		for (size_t i = 0; i < numOp; i++) {
 			//printf("q%u (%p)", qubitsFind(operands[i]), operands[i]);
-			printf("q%u ", qubitsFind(operands[i]));
+			std::cout << "q" << qubitsFind(operands[i]) << " ";
 		}
-		printf("\n");
+		std::cout << "\n";
 		//printf("heap size: %zu\n", memoryHeap->numQubits);
 	}
 }
