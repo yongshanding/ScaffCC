@@ -10,6 +10,7 @@
 //#include "uthash.h"    /* HASH_ADD  */
 //#include <math.h>      /* floorf    */
 #include <map>
+#include <stack>
 
 #define _MAX_FUNCTION_NAME 90
 #define _MAX_INT_PARAMS 4
@@ -73,13 +74,30 @@ typedef struct all_qbits_struct {
 //	UT_hash_handle hh;
 //} q_entry_t;
 
-all_qbits_t *AllQubits = NULL;
+all_qbits_t *AllQubits = NULL; //permanent
 //q_entry_t *AllQubitsHash = NULL;
-std::map<qbit_t *, int> AllQubitsHash;
+std::map<qbit_t *, int> AllQubitsHash; // permanent
+all_qbits_t *TempQubits = NULL; //temporary
+std::map<qbit_t *, int> TempQubitsHash; // temporary
+
+std::map<qbit_t*, int> qubitUsage; // latest usage of qubits
+std::map<qbit_t*, int> tempQubitUsage; // latest usage of temporary qubits
+
+
+bool isWaiting(qbit_t **operands, int numOp) {
+	return false;
+}
+
+bool doStall(int num_qbits, int heap_idx) {
+	return false;
+}
+
 
 void qubitsInit() {
 	AllQubits = (all_qbits_t *)malloc(sizeof(all_qbits_t));
 	AllQubits->N = 0; 
+	TempQubits = (all_qbits_t *)malloc(sizeof(all_qbits_t));
+	TempQubits->N = 0; 
 }
 
 /* return the index of addr, or AllQubits->N if not found */
@@ -112,8 +130,39 @@ void qubitsAdd(qbit_t *newAddr) {
 		//HASH_ADD(hh, AllQubitsHash, addr, sizeof(qbit_t *), s);
 		//HASH_ADD_PTR(AllQubitsHash, addr, s);
 		AllQubitsHash[newAddr] = newIdx;
+		qubitUsage.insert(std::make_pair(newAddr, 0)); // fresh qubit
 	//}
 }
+
+/* return the index of addr, or AllQubits->N if not found */
+int tempQubitsFind(qbit_t *newAddr) {
+	//HASH_FIND(AllQubitsHash, &newAddr, s);
+	//HASH_FIND_PTR(AllQubitsHash, &newAddr, s);
+	std::map<qbit_t *, int>::iterator it = TempQubitsHash.find(newAddr);
+	if (it == TempQubitsHash.end()) {
+		//Not found
+		//printf("(Warning: qubit ");
+		//printf("(%p)", newAddr);
+		//printf(" not found)");
+		std::cout << " (Warning: qubit [" << newAddr << "] not found) ";
+		return TempQubits->N;
+	} else {
+		return it->second;
+	}
+}
+
+void tempQubitsAdd(qbit_t *newAddr) {
+	//if (qubitsFind(newAddr) == TempQubits->N) {
+		int newIdx = TempQubits->N;
+		(TempQubits->Qubits[TempQubits->N]).addr = newAddr;
+		(TempQubits->Qubits[TempQubits->N]).idx = TempQubits->N;
+		TempQubits->N++;
+
+		TempQubitsHash[newAddr] = newIdx;
+		tempQubitUsage.insert(std::make_pair(newAddr, 0)); // fresh temp qubit
+	//}
+}
+
 
 
 /* infinite looping!
@@ -170,70 +219,79 @@ void printGateCounts() {
 	std::cout << "\n";
 }
 
+
 /*****************
 * Stack Definition  
 ******************/
 // The stack is in fact a call stack, but keeps frequencies of all previous parents
 // so that a childs frequency would be multiplied by that of all before it
 
-// elements on the stack are of type:
-typedef int stackElement_t;
+//// elements on the stack are of type:
+//struct {
+//	std::string func_name;
+//	int nInput;
+//	std::map<int, int> itrack; // idx -> time last used in function
+//	int nAncilla;
+//	std::map<int, int> atrack; // idx -> time last used in function
+//} stackElement_t;
+//
+//std::stack<stackElement_t*> fullStack;
 
 // defining a structure to act as stack for pointer values to resources that must be updated                    
-typedef struct {
-  stackElement_t *contents;
-  int top;
-  int maxSize;
-} resourcesStack_t;
-
-// declare global "resources" array address stack
-resourcesStack_t *resourcesStack = NULL;
-
-void stackInit (int maxSize) {
-  resourcesStack = (resourcesStack_t*)malloc(sizeof(resourcesStack_t));
-  if (resourcesStack == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize stack.\n");
-    exit(1);
-  }
-  stackElement_t *newContents;
-  newContents = (stackElement_t*)malloc( sizeof(stackElement_t)*maxSize );
-  if (newContents == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize stack.\n");
-    exit(1);
-  }
-  resourcesStack->contents = newContents;
-  resourcesStack->maxSize = maxSize;
-  resourcesStack->top = -1; /* i.e. empty */ 
-}
-
-void stackDestroy() {
-  free(resourcesStack->contents);
-  resourcesStack->contents = NULL;
-  resourcesStack->maxSize = 0;
-  resourcesStack->top = -1;
-}
-
-void stackPush (stackElement_t stackElement) {
-  if (resourcesStack->top >= resourcesStack->maxSize - 1) {
-    fprintf (stderr, "Can't push element on stack: Stack is full.\n");
-    exit(1);
-  }
-  // insert element and update "top"
-  resourcesStack->contents[++resourcesStack->top] = stackElement;
-}
-
-void stackPop () {
-  if (debugRevMemHybrid)
-    printf("Popping from stack\n");  
-  if (resourcesStack->top < 0) {
-    fprintf (stderr, "Can't pop element from stack: Stack is empty.\n");
-    exit(1);    
-  }
-
-  //update "top"
-  resourcesStack->top--;
-
-}
+//typedef struct {
+//  stackElement_t *contents;
+//  int top;
+//  int maxSize;
+//} resourcesStack_t;
+//
+//// declare global "resources" array address stack
+//resourcesStack_t *resourcesStack = NULL;
+//
+//void stackInit (int maxSize) {
+//  resourcesStack = (resourcesStack_t*)malloc(sizeof(resourcesStack_t));
+//  if (resourcesStack == NULL) {
+//    fprintf(stderr, "Insufficient memory to initialize stack.\n");
+//    exit(1);
+//  }
+//  stackElement_t *newContents;
+//  newContents = (stackElement_t*)malloc( sizeof(stackElement_t)*maxSize );
+//  if (newContents == NULL) {
+//    fprintf(stderr, "Insufficient memory to initialize stack.\n");
+//    exit(1);
+//  }
+//  resourcesStack->contents = newContents;
+//  resourcesStack->maxSize = maxSize;
+//  resourcesStack->top = -1; /* i.e. empty */ 
+//}
+//
+//void stackDestroy() {
+//  free(resourcesStack->contents);
+//  resourcesStack->contents = NULL;
+//  resourcesStack->maxSize = 0;
+//  resourcesStack->top = -1;
+//}
+//
+//void stackPush (stackElement_t stackElement) {
+//  if (resourcesStack->top >= resourcesStack->maxSize - 1) {
+//    fprintf (stderr, "Can't push element on stack: Stack is full.\n");
+//    exit(1);
+//  }
+//  // insert element and update "top"
+//  resourcesStack->contents[++resourcesStack->top] = stackElement;
+//}
+//
+//void stackPop () {
+//  if (debugRevMemHybrid)
+//    printf("Popping from stack\n");  
+//  if (resourcesStack->top < 0) {
+//    fprintf (stderr, "Can't pop element from stack: Stack is empty.\n");
+//    exit(1);    
+//  }
+//
+//  //update "top"
+//  resourcesStack->top--;
+//
+//}
 
 /**********************
 * Hash Table Definition
@@ -555,6 +613,33 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	return num_qbits;
 }
 
+int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
+	if (res == NULL) {
+		fprintf(stderr, "Result array not properly initialized.\n.");
+		exit(1);
+	}
+	if (TempQubits->N + num_qbits > _MAX_NUM_QUBITS) {
+		fprintf(stderr, "Cannot allocate more than %d total qubits.\n", _MAX_NUM_QUBITS);
+		exit(1);
+	}
+  if (debugRevMemHybrid)
+  	printf("Obtaining %u new qubits.\n", num_qbits);  
+	// malloc new qubits!
+	qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
+	if (newt == NULL) {
+    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+    exit(1);
+  }
+	// Track the new qubits in AllQubits
+	for (size_t i = 0; i < num_qbits; i++) {
+		res[i].addr = &newt[i];
+		res[i].idx = TempQubits->N;
+		tempQubitsAdd(&newt[i]);
+	}
+	return num_qbits;
+}
+
+
 /*****************************
 * Functions to be instrumented
 ******************************/
@@ -562,10 +647,10 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 // 1. memory heap with mirroring shape: node contains heap pointer
 // 2. optimize for uncompute choices
 
-void recordGate(int gateID, qbit_t **operands, int numOp) {
+void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 	AllGates[gateID]++;
 	if (trackGates) {
-		std::cout << gate_str[gateID] << " ";
+		std::cout << t << ": " << gate_str[gateID] << " ";
 		for (size_t i = 0; i < numOp; i++) {
 			//printf("q%u (%p)", qubitsFind(operands[i]), operands[i]);
 			std::cout << "q" << qubitsFind(operands[i]) << " ";
@@ -577,31 +662,41 @@ void recordGate(int gateID, qbit_t **operands, int numOp) {
 
 /* memHeapAlloc: memory allocation when qubits are requested */
 /* every function should have a heap index? for now always a global root heap*/
-int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result) {
-	if (heap_idx == 0) {
-		// find num_qbits of qubits in the global memoryheap
-		qbitElement_t res[num_qbits];
-		// check if there are available in the heap
-		int num = memHeapGetQubits(num_qbits, memoryHeap, &res[0]);
-		// malloc any extra qubits needed
-		int num_new = 0;
-		if (num < num_qbits) {
-			num_new = memHeapNewQubits(num_qbits-num, &res[num]);
-		}
-		if (num + num_new != num_qbits) {
-			fprintf(stderr, "Unable to initialize %u qubits.\n", num_qbits);
+int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, int ninter) {
+	// decide if we want to stall the allocation to control parallelism/memory sharing
+	if (inter == NULL) {
+		std::cerr << "interaction bits are null.\n";
+	} else {
+		std::cerr << inter[0] << "\n";
+	}
+	if (doStall(num_qbits, heap_idx)) {
+		return 0;
+	} else {
+		if (heap_idx == 0) {
+			// find num_qbits of qubits in the global memoryheap
+			qbitElement_t res[num_qbits];
+			// check if there are available in the heap
+			int num = memHeapGetQubits(num_qbits, memoryHeap, &res[0]);
+			// malloc any extra qubits needed
+			int num_new = 0;
+			if (num < num_qbits) {
+				num_new = memHeapNewQubits(num_qbits-num, &res[num]);
+			}
+			if (num + num_new != num_qbits) {
+				fprintf(stderr, "Unable to initialize %u qubits.\n", num_qbits);
+				exit(1);
+			}
+			// Store the addresses into result
+			for (size_t i = 0; i < num_qbits; i++) {
+				result[i] = res[i].addr;
+			}
+			return num_qbits;
+
+		} else {
+			// hierarchical heap
+			fprintf(stderr, "Not implemented yet!\n");
 			exit(1);
 		}
-		// Store the addresses into result
-		for (size_t i = 0; i < num_qbits; i++) {
-			result[i] = res[i].addr;
-		}
-		return num_qbits;
-
-	} else {
-		// hierarchical heap
-		fprintf(stderr, "Not implemented yet!\n");
-		exit(1);
 	}
 }
 
@@ -652,6 +747,30 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 	}
 	return 1;
 }
+
+/* check and schedule a gate instruction*/
+void checkAndSched(int gateID, qbit_t **operands, int numOp) {
+	// tryWaitQueue()
+	// check if operand in waiting qubit list
+	if (isWaiting(operands, numOp)) {
+		// push gate to wait queue
+	} else {
+		// schedule the gate at the earliesst
+		int Tmax = 0;
+		for (int i = 0; i < numOp; i++) {
+			int T = qubitUsage[operands[i]];
+			if (T > Tmax) {
+				Tmax = T;
+			}
+		}
+		for (int i = 0; i < numOp; i++) {
+			qubitUsage[operands[i]] = Tmax+1; //modify usage in place
+		}
+		recordGate(gateID, operands, numOp, Tmax+1);
+			
+	}
+}
+
 
 /* memoize: memoization function */
 /* A call to this function ensures that the relevant entry */
@@ -730,10 +849,14 @@ int memoize ( char *function_name,
 /* It will pop the last frequency off of the stack so it won't multiply anymore */
 void exit_scope () 
 {
+	//if (fullStack.empty()) {
+	//	std::cerr << "Error: stack is empty. Cannot pop from empty stack.\n";
+	//}
   if (debugRevMemHybrid)
-    printf("exiting scope...\n");
+    std::cout << "exiting scope... " << "\n";//<< fullStack.top()->func_name << "\n";
   
   //stackPop();
+  //fullStack.pop();
 }
 
 //void qasm_gate () {
@@ -745,12 +868,13 @@ void qasm_initialize ()
     printf("initializing stack....\n");
 
   // initialize with maximum possible levels of calling depth
-  stackInit(_MAX_CALL_DEPTH);
+  //stackInit(_MAX_CALL_DEPTH);
 
   memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
 	qubitsInit();
 	gatesInit();
-
+	
+	//qubitUsage = new map<qbit_t*, int>();
   // put "main" in the first row of both the hash table and the stack
   //int main_int_params[_MAX_INT_PARAMS] = {0};
   //int *main_int_params = (int*)calloc (_MAX_INT_PARAMS, sizeof(int));
@@ -763,7 +887,12 @@ void qasm_initialize ()
 
 	//add_memo("main                           ", main_int_params, 0, main_double_params, 0, main_resources);
 
-  stackPush(1); 
+  //stackPush(1); 
+  //stackElement_t *se = new stackElement_t();
+	//se->func_name = "main";
+	//se->nInput = 0;
+	//se->nAncilla = 0;
+  //fullStack.push(se); //push main on to stack: other fields populated in module pass
 }
 
 void qasm_resource_summary ()
@@ -796,7 +925,7 @@ void qasm_resource_summary ()
 	//print_qubit_table();
 
   // free allocated memory for the "stack"
-  	stackDestroy();
+  //stackDestroy();
 
   // free allocated memory for the "memos" table
   //delete_all_memos();

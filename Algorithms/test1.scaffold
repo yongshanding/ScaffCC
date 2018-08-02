@@ -11,7 +11,7 @@
 
 void level1(qbit **in, int n) {
 	qbit *anc[4];
-	acquire(4, anc);
+	acquire(4, anc, n, in);
 	X(in[0]);
 	for (int i = 0; i < 4; i++) {
 		CNOT(in[i], anc[i]);
@@ -23,7 +23,7 @@ void level1(qbit **in, int n) {
 
 int main() {
 	qbit *top[5];
-	acquire(5, top);
+	acquire(5, top, 0, NULL);
 	X(top[1]);
 	for (int i = 0; i < 2; i++) {
 		level1(top, 5);

@@ -77,6 +77,7 @@ namespace {
     Function* getHeapIdx; 
     Function* memHeapFree; 
 		Function* freeOnOff;
+    Function* checkAndSched; 
     //Function* memoize; 
     Function* qasmInitialize; 
     Function* exit_scope;
@@ -105,13 +106,19 @@ namespace {
 				return found_pos_end; // start of callerName
 		}
 		
-		std::string mangleType(vector<Type*> arg_types) {
+		std::string mangleType(vector<Type*> arg_types, std::string orig) {
 			stringstream ss;
+			int i = 0;
 			for (vector<Type*>::iterator it = arg_types.begin(); it != arg_types.end(); ++it) {
+				if (orig == "memHeapAlloc" && i == 3) {
+					ss << "S0_";
+					i++;
+					continue;
+				}
 				if ((*it)->isPointerTy()) {
 					vector<Type*> new_t;
 					new_t.push_back((*it)->getPointerElementType());
-					ss << 'P' << mangleType(new_t);
+					ss << 'P' << mangleType(new_t, orig);
 				} else {
 					//switch ((*it)->getKind()) {
   				//	case BuiltinType::Void: ss << 'v'; break;
@@ -147,6 +154,7 @@ namespace {
 					if ((*it)->isIntegerTy(16)) ss << 's'; 
 					if ((*it)->isIntegerTy(32)) ss << 'i'; 
 				}
+			i++;
 			}
 			return ss.str();
 		}
@@ -155,7 +163,7 @@ namespace {
 			
 			stringstream ss;
 			ss << "_Z" << orig.length() << orig;
-			ss << mangleType(arg_types);
+			ss << mangleType(arg_types, orig);
 			return ss.str();
 		}
 
@@ -234,7 +242,7 @@ namespace {
 			//CallInst *hidx = CallInst::Create(getHeapIdx, "", (Instruction *)CI);
 			// Get the stack array for results
 			Value *res = CI->getArgOperand(nAnc_idx-1);
-			// Create the memHeapAlloc call
+			// Create the memHeapFree call
 			vector<Value*> freeArgs;
 			freeArgs.push_back(nQ);
 			freeArgs.push_back(hidx);
@@ -305,13 +313,23 @@ namespace {
       // is this a call to a quantum module? Only those should be instrumented
       // quantum modules arguments are either qbit or qbit* type
       for(unsigned iop=0;iop < CI->getNumArgOperands(); iop++) {
-        if (CI->getArgOperand(iop)->getType()->isPointerTy())
-          if(CI->getArgOperand(iop)->getType()->getPointerElementType()->isIntegerTy(16))
-            isQuantumModuleCall = true;
-        if (CI->getArgOperand(iop)->getType()->isIntegerTy(16))
-          isQuantumModuleCall = true;
+        //errs() << "\t iop" << iop << "/" << CI->getNumArgOperands()<< "\n";
+        if (CI->getArgOperand(iop)->getType()->isPointerTy()) {
+          if (CI->getArgOperand(iop)->getType()->getPointerElementType()->isIntegerTy(16)) {
+            isQuantumModuleCall = true; // take a qubit (i16*)
+					} else if (CI->getArgOperand(iop)->getType()->getPointerElementType()->isPointerTy()) {
+						if (CI->getArgOperand(iop)->getType()->getPointerElementType()->getPointerElementType()->isIntegerTy(16)) {
+            	isQuantumModuleCall = true; // take an array of qubits (i16**)
+						}
+					}
+        } else if (CI->getArgOperand(iop)->getType()->isIntegerTy(16)) {
+          isQuantumModuleCall = true; // old definition
+				}
       }
-      
+     	 
+      if(debugRTRevMemHyb)
+        errs() << "\t takes qubits? " << isQuantumModuleCall << "\n";
+
       if(CF->getName().find("store_cbit") != std::string::npos)
         vInstRemove.push_back((Instruction*)CI);
       //errs() << "Is intrinsic? " << CF->isIntrinsic() << "\n";
@@ -365,7 +383,7 @@ namespace {
 					
 					gateIDArg.push_back(nArgV);
 					//errs() << "now in!\n";
-					CallInst::Create(recordGate, ArrayRef<Value*>(gateIDArg), "", (Instruction *)CI);
+					CallInst::Create(checkAndSched, ArrayRef<Value*>(gateIDArg), "", (Instruction *)CI);
           //vectCallArgs.push_back(gateID);
           //vectCallArgs.push_back(RepeatConstant);
           //vectCallArgs.push_back(rep_val);       
@@ -380,7 +398,7 @@ namespace {
 
         }
       }
-			else {
+			else { // not intrinsic
 
 				//errs() << "calling: << " << CF->getName() << "\n";
 
@@ -394,14 +412,19 @@ namespace {
     	      errs() << "\tRequesting for: " << num_qbits << " qubits.\n";
 					// Get the heap idx
 					CallInst *hidx = CallInst::Create(getHeapIdx, "", (Instruction *)CI);
-					// Get the stack array for results: acquire(num_qbits, array)
+					// Get the stack array for results: acquire(num_qbits, array, ninter, inter_array)
 					Value *res = CI->getArgOperand(1);
 					// Create the memHeapAlloc call
 					vector<Value*> allocArgs;
 					allocArgs.push_back(nQ);
 					allocArgs.push_back(hidx);
 					allocArgs.push_back(res);
+					Value *inter = CI->getArgOperand(3); // qbit_t **interaction
+					allocArgs.push_back(inter);
+					Value *ninter = CI->getArgOperand(2); // int num_interaction
+					allocArgs.push_back(ninter);
 					CallInst::Create(memHeapAlloc, ArrayRef<Value*>(allocArgs), "", (Instruction *)CI);
+					errs() << "pass\n";
 
     	    if(delAfterInst)
     	      vInstRemove.push_back((Instruction*)CI);
@@ -436,96 +459,98 @@ namespace {
 					
 				}      
     	  else if (!CF->isDeclaration() && isQuantumModuleCall){
+					errs() << "no declare  visit\n";
+					//visitFunction(*CF);
     	    // insert memoize call before this function call
     	    // int memoize ( char *function_name, int *int_params, unsigned num_ints, double *double_params, unsigned num_doubles, unsigned repeat)          
     	    
-    	    vector <Value*> vectCallArgs;
-    	    
-    	    std::stringstream ss;
-    	    ss << std::left << std::setw (_MAX_FUNCTION_NAME-1) << std::setfill(' ') << CF->getName().str();
-    	    Constant *StrConstant = ConstantDataArray::getString(CI->getContext(), ss.str());                   
-    	    
-    	    new StoreInst(StrConstant,strAlloc,"",(Instruction*)CI);	  	  
-    	    Value* Idx[2];	  
-    	    Idx[0] = Constant::getNullValue(Type::getInt32Ty(CI->getContext()));  
-    	    Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),0);
-    	    GetElementPtrInst* strPtr = GetElementPtrInst::Create(strAlloc, Idx, "", (Instruction*)CI);
-    	    
-    	    Value *intArgPtr;
-    	    vector<Value*> vIntArgs;
-    	    unsigned num_ints = 0;
-    	    Value *doubleArgPtr;
-    	    vector<Value*> vDoubleArgs;
-    	    unsigned num_doubles = 0;
+    	    //vector <Value*> vectCallArgs;
+    	    //
+    	    //std::stringstream ss;
+    	    //ss << std::left << std::setw (_MAX_FUNCTION_NAME-1) << std::setfill(' ') << CF->getName().str();
+    	    //Constant *StrConstant = ConstantDataArray::getString(CI->getContext(), ss.str());                   
+    	    //
+    	    //new StoreInst(StrConstant,strAlloc,"",(Instruction*)CI);	  	  
+    	    //Value* Idx[2];	  
+    	    //Idx[0] = Constant::getNullValue(Type::getInt32Ty(CI->getContext()));  
+    	    //Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),0);
+    	    //GetElementPtrInst* strPtr = GetElementPtrInst::Create(strAlloc, Idx, "", (Instruction*)CI);
+    	    //
+    	    //Value *intArgPtr;
+    	    //vector<Value*> vIntArgs;
+    	    //unsigned num_ints = 0;
+    	    //Value *doubleArgPtr;
+    	    //vector<Value*> vDoubleArgs;
+    	    //unsigned num_doubles = 0;
 
-    	    for(unsigned iop=0; iop < CI->getNumArgOperands(); iop++) {
-    	      Value *callArg = CI->getArgOperand(iop);
-    	      // Integer Arguments
-    	      if(ConstantInt *CInt = dyn_cast<ConstantInt>(callArg)){
-    	        intArgPtr = CInt;
-    	        num_ints++;
-    	        vIntArgs.push_back(intArgPtr);          
-    	      }
-    	      else if (callArg->getType() == Type::getInt32Ty(CI->getContext())){ //FIXME: make sure it's an integer
-    	        intArgPtr = CastInst::CreateIntegerCast(callArg, Type::getInt32Ty(CI->getContext()), false, "", (Instruction*)CI);
-    	        num_ints++;
-    	        vIntArgs.push_back(intArgPtr);          
-    	      }
+    	    //for(unsigned iop=0; iop < CI->getNumArgOperands(); iop++) {
+    	    //  Value *callArg = CI->getArgOperand(iop);
+    	    //  // Integer Arguments
+    	    //  if(ConstantInt *CInt = dyn_cast<ConstantInt>(callArg)){
+    	    //    intArgPtr = CInt;
+    	    //    num_ints++;
+    	    //    vIntArgs.push_back(intArgPtr);          
+    	    //  }
+    	    //  else if (callArg->getType() == Type::getInt32Ty(CI->getContext())){ //FIXME: make sure it's an integer
+    	    //    intArgPtr = CastInst::CreateIntegerCast(callArg, Type::getInt32Ty(CI->getContext()), false, "", (Instruction*)CI);
+    	    //    num_ints++;
+    	    //    vIntArgs.push_back(intArgPtr);          
+    	    //  }
 
-    	      // Double Arguments
-    	      if(ConstantFP *CDouble = dyn_cast<ConstantFP>(CI->getArgOperand(iop))){ 
-    	        doubleArgPtr = CDouble;
-    	        vDoubleArgs.push_back(doubleArgPtr);          
-    	        num_doubles++;
-    	      }
-    	      else if (callArg->getType() == Type::getDoubleTy(CI->getContext())){ //FIXME: make sure it's an integer
-    	        doubleArgPtr = CastInst::CreateFPCast(callArg, Type::getDoubleTy(CI->getContext()), "", (Instruction*)CI);          
-    	        num_doubles++;
-    	        vDoubleArgs.push_back(doubleArgPtr);          
-    	      }
-    	    }
-    	    
-    	    for (unsigned i=0; i<num_ints; i++) {
-    	      Value *Int = vIntArgs[i];        
-    	      Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),i);        
-    	      Value *intPtr = GetElementPtrInst::CreateInBounds(intArrAlloc, Idx, "", (Instruction*)CI);        
-    	      new StoreInst(Int, intPtr, "", (Instruction*)CI);
-    	    }
-    	    Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),0);        
-    	    GetElementPtrInst* intArrPtr = GetElementPtrInst::CreateInBounds(intArrAlloc, Idx, "", (Instruction*)CI);
+    	    //  // Double Arguments
+    	    //  if(ConstantFP *CDouble = dyn_cast<ConstantFP>(CI->getArgOperand(iop))){ 
+    	    //    doubleArgPtr = CDouble;
+    	    //    vDoubleArgs.push_back(doubleArgPtr);          
+    	    //    num_doubles++;
+    	    //  }
+    	    //  else if (callArg->getType() == Type::getDoubleTy(CI->getContext())){ //FIXME: make sure it's an integer
+    	    //    doubleArgPtr = CastInst::CreateFPCast(callArg, Type::getDoubleTy(CI->getContext()), "", (Instruction*)CI);          
+    	    //    num_doubles++;
+    	    //    vDoubleArgs.push_back(doubleArgPtr);          
+    	    //  }
+    	    //}
+    	    //
+    	    //for (unsigned i=0; i<num_ints; i++) {
+    	    //  Value *Int = vIntArgs[i];        
+    	    //  Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),i);        
+    	    //  Value *intPtr = GetElementPtrInst::CreateInBounds(intArrAlloc, Idx, "", (Instruction*)CI);        
+    	    //  new StoreInst(Int, intPtr, "", (Instruction*)CI);
+    	    //}
+    	    //Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),0);        
+    	    //GetElementPtrInst* intArrPtr = GetElementPtrInst::CreateInBounds(intArrAlloc, Idx, "", (Instruction*)CI);
 
-    	    for (unsigned i=0; i<num_doubles; i++) {
-    	      Value *Double = vDoubleArgs[i];     
-    	      Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),i);        
-    	      Value *doublePtr = GetElementPtrInst::CreateInBounds(doubleArrAlloc, Idx, "", (Instruction*)CI);        
-    	      new StoreInst(Double, doublePtr, "", (Instruction*)CI);          
-    	    }
-    	    GetElementPtrInst* doubleArrPtr = GetElementPtrInst::CreateInBounds(doubleArrAlloc, Idx, "", (Instruction*)CI);
+    	    //for (unsigned i=0; i<num_doubles; i++) {
+    	    //  Value *Double = vDoubleArgs[i];     
+    	    //  Idx[1] = ConstantInt::get(Type::getInt32Ty(CI->getContext()),i);        
+    	    //  Value *doublePtr = GetElementPtrInst::CreateInBounds(doubleArrAlloc, Idx, "", (Instruction*)CI);        
+    	    //  new StoreInst(Double, doublePtr, "", (Instruction*)CI);          
+    	    //}
+    	    //GetElementPtrInst* doubleArrPtr = GetElementPtrInst::CreateInBounds(doubleArrAlloc, Idx, "", (Instruction*)CI);
 
-    	    Constant *IntNumConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , num_ints, false);       
-    	    Constant *DoubleNumConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , num_doubles, false);          
+    	    //Constant *IntNumConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , num_ints, false);       
+    	    //Constant *DoubleNumConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , num_doubles, false);          
 
-    	    //Constant *RepeatConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , rep_val, false);
+    	    ////Constant *RepeatConstant = ConstantInt::get(Type::getInt32Ty(getGlobalContext()) , rep_val, false);
 
-    	    //vectCallArgs.push_back(cast<Value>(strPtr));
-    	    //vectCallArgs.push_back(cast<Value>(intArrPtr));
-    	    //vectCallArgs.push_back(IntNumConstant);          
-    	    //vectCallArgs.push_back(cast<Value>(doubleArrPtr));
-    	    //vectCallArgs.push_back(DoubleNumConstant);          
-    	    ////vectCallArgs.push_back(RepeatConstant);       
-    	    //vectCallArgs.push_back(rep_val);       
+    	    ////vectCallArgs.push_back(cast<Value>(strPtr));
+    	    ////vectCallArgs.push_back(cast<Value>(intArrPtr));
+    	    ////vectCallArgs.push_back(IntNumConstant);          
+    	    ////vectCallArgs.push_back(cast<Value>(doubleArrPtr));
+    	    ////vectCallArgs.push_back(DoubleNumConstant);          
+    	    //////vectCallArgs.push_back(RepeatConstant);       
+    	    ////vectCallArgs.push_back(rep_val);       
 
-    	    //ArrayRef<Value*> call_args(vectCallArgs);  
-    	    
-    	    //CallInst::Create(memoize, call_args, "", (Instruction*)CI);      
+    	    ////ArrayRef<Value*> call_args(vectCallArgs);  
+    	    //
+    	    ////CallInst::Create(memoize, call_args, "", (Instruction*)CI);      
 
-    	    //CallInst::Create(memoize, getMemoizeArgs(CI, strAlloc, intArrAlloc, doubleArrAlloc), "", (Instruction*)CI);
-    	    
-    	    //vector <Value*> vectCallArgs2;              
-    	    //vectCallArgs2.push_back(rep_val);       
-    	    //ArrayRef<Value*> call_args2(vectCallArgs2);   
+    	    ////CallInst::Create(memoize, getMemoizeArgs(CI, strAlloc, intArrAlloc, doubleArrAlloc), "", (Instruction*)CI);
+    	    //
+    	    ////vector <Value*> vectCallArgs2;              
+    	    ////vectCallArgs2.push_back(rep_val);       
+    	    ////ArrayRef<Value*> call_args2(vectCallArgs2);   
 
-    	    CallInst::Create(exit_scope, "", (&*++I));
+    	    //CallInst::Create(exit_scope, "", (&*++I));
     	    
     	    isIntrinsicQuantum = false;
     	    delAfterInst = false;
@@ -540,6 +565,7 @@ namespace {
     	    rep_val = ConstantInt::get(Type::getInt32Ty(getGlobalContext()), 1, false);
     	    vInstRemove.push_back((Instruction*)CI);        
     	  }           
+
 			}
       
     }
@@ -636,6 +662,7 @@ namespace {
       rgArgTypes.push_back(Type::getInt32Ty(M.getContext())); //gateID
       rgArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());// operands
       rgArgTypes.push_back(Type::getInt32Ty(M.getContext())); //numArgs
+      rgArgTypes.push_back(Type::getInt32Ty(M.getContext())); //timestep
       Type* rgResType = Type::getVoidTy(M.getContext());
 			recordGate = cast<Function>(M.getOrInsertFunction(getMangleName("recordGate", rgArgTypes), FunctionType::get(rgResType, ArrayRef<Type*>(rgArgTypes), false)));
 
@@ -644,6 +671,8 @@ namespace {
       allocArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       allocArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       allocArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
+      allocArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
+      allocArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       Type* allocResType = Type::getInt32Ty(M.getContext());
 			memHeapAlloc = cast<Function>(M.getOrInsertFunction(getMangleName("memHeapAlloc", allocArgTypes), FunctionType::get(allocResType, ArrayRef<Type*>(allocArgTypes), false)));
 			
@@ -668,6 +697,16 @@ namespace {
       Type* onoffResType = Type::getInt32Ty(M.getContext());
 			freeOnOff = cast<Function>(M.getOrInsertFunction(getMangleName("freeOnOff", onoffArgTypes), FunctionType::get(onoffResType, ArrayRef<Type*>(onoffArgTypes), false)));
 	
+
+			// void checkAndSched(unsigned)
+			vector <Type*> csArgTypes;
+      csArgTypes.push_back(Type::getInt32Ty(M.getContext())); //gateID
+      csArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());// operands
+      csArgTypes.push_back(Type::getInt32Ty(M.getContext())); //numArgs
+      Type* csResType = Type::getVoidTy(M.getContext());
+			checkAndSched = cast<Function>(M.getOrInsertFunction(getMangleName("checkAndSched", csArgTypes), FunctionType::get(csResType, ArrayRef<Type*>(csArgTypes), false)));
+
+
       // int memoize (char*, int*, unsigned, double*, unsigned, unsigned)
       //vector <Type*> vectParamTypes2;
       //vectParamTypes2.push_back(Type::getInt8Ty(M.getContext())->getPointerTo());      
@@ -692,7 +731,7 @@ namespace {
       // iterate over instructions to instrument the initialize and exit scope calls
       // insert alloca instructions at the beginning for subsequent memoize calls         
       for (Module::iterator F = M.begin(); F != M.end(); ++F) {
-        visitFunction(*F);
+        visitFunction(*F); // instrumenting each function
       }      
 
       // insert initialization and termination functions in "main"
@@ -708,6 +747,7 @@ namespace {
           ++BBiter;
         CallInst::Create(qasmInitialize, "", (Instruction*)&(*BBiter));
       }
+
 
       // removing instructions that were marked for deletion
       for(vector<Instruction*>::iterator iterInst = vInstRemove.begin(); iterInst != vInstRemove.end(); ++iterInst) {      
