@@ -248,7 +248,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 	// Build function arguments
 	size_t Fnumargs = F->arg_size();
 	// 0~Fnumargs-1: caller arguments; 
-	// +0: out; +1: #out; +2: anc; +3: #anc, +4: cpy; +5: acq; +6: #acq
+	// +0: out; +1: #out; +2: anc; +3: #anc, +4: cpy; +5: inter; +6: #inter
 	std::vector<Type*> ArgTypes(Fnumargs+4+1+2);
 	std::vector<Value*>  Args(Fnumargs+4+1+2);
 	std::vector<Value*>  newArgs(Fnumargs+4+1+2);
@@ -264,8 +264,8 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 	}
 	//errs() << "here1: " << *ACI << "\n";
 	// Then acquire
-	if (ACI->getNumArgOperands() != 2) {
-		errs() << "Error: Acquire needs 2 arguments, " << ACI->getNumArgOperands()<< " found.\n"; 
+	if (ACI->getNumArgOperands() != 4) {
+		errs() << "Error: Acquire needs 4 arguments, " << ACI->getNumArgOperands()<< " found.\n"; 
 	}
 	if (CI->getNumArgOperands() != 5) {
 		errs() << "Error: Release needs 5 arguments, " << CI->getNumArgOperands()<< " found.\n"; 
@@ -280,8 +280,8 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 	//	Args[Fnumargs+2] = Anc->getPointerOperand();
 	//	//ArgTypes[Fnumargs+3] = ACI->getArgOperand(0)->getType();
 	//} else {
-		ArgTypes[Fnumargs+5] = ACI->getArgOperand(1)->getType();
-		Args[Fnumargs+5] = ACI->getArgOperand(1);
+		ArgTypes[Fnumargs+5] = ACI->getArgOperand(3)->getType();
+		Args[Fnumargs+5] = ACI->getArgOperand(3); // interaction bits
 		ArgTypes[Fnumargs+2] = CI->getArgOperand(2)->getType(); // anc
 		Args[Fnumargs+2] = CI->getArgOperand(2); // anc
 		ArgTypes[Fnumargs+4] = CI->getArgOperand(4)->getType(); // cpy
@@ -289,21 +289,23 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 		//ArgTypes[Fnumargs+3] = CI->getArgOperand(3)->getType(); // free
 	//}
 	ArgTypes[Fnumargs+3] = CI->getArgOperand(3)->getType(); // #anc
-	ArgTypes[Fnumargs+6] = ACI->getArgOperand(0)->getType();
+	ArgTypes[Fnumargs+6] = ACI->getArgOperand(2)->getType(); // #inter
 	size_t nAlloc;
 	ConstantInt *aciAlloc;
 	//errs() << "here1.75\n";
 	if (nnAlloc != -1) {
 		nAlloc = nnAlloc;
 		aciAlloc = dyn_cast<ConstantInt>(ConstantInt::get(ArgTypes[Fnumargs+1], nAlloc, false)); 
-		Args[Fnumargs+6] = aciAlloc;
+		//Args[Fnumargs+6] = aciAlloc;
+		Args[Fnumargs+6] = ACI->getArgOperand(2);
 	} else {
 		aciAlloc = dyn_cast<ConstantInt>(ACI->getArgOperand(0));
 		if (aciAlloc == NULL) {
 			errs() << "Error: Does not support variable length allocation yet! Try loop-unrolling and constant propagation.\n";
 		} else {
 			nAlloc = aciAlloc->getZExtValue(); // number of out bits allocated
-			Args[Fnumargs+6] = aciAlloc;
+			//Args[Fnumargs+6] = aciAlloc;
+			Args[Fnumargs+6] = ACI->getArgOperand(2);
 		}
 	}
 	//errs() << "here2\n";
@@ -395,7 +397,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 				
 		}
 
-		//errs() << "check2\n";
+		errs() << "check2\n";
 		// If cpy bits are NULL, then:
 		// Initialize new qubits with alloca and acquire 
 		// else: use cpy
@@ -428,13 +430,20 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 		std::vector<Type*> na_ty;
 		na_ty.push_back(Type::getInt32Ty(getGlobalContext()));
 		na_ty.push_back(qqArrPtr->getType());
+		na_ty.push_back(Type::getInt32Ty(getGlobalContext())); // interaction
+		na_ty.push_back(Type::getInt16Ty(getGlobalContext())->getPointerTo()->getPointerTo()); // interaction bits
+		//na_ty.push_back(Type::getInt16Ty(getGlobalContext())->getPointerTo()->getPointerTo()); // interaction bits
 		std::vector<Value*> na_val;
 		na_val.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),nOut));
 		na_val.push_back(qqArrPtr);
+		//na_val.push_back(ACI->getArgOperand(2));
+		//na_val.push_back(ACI->getArgOperand(3));
+		na_val.push_back(newArgAddr[Fnumargs+6]); // #interaction
+		na_val.push_back(newArgAddr[Fnumargs+5]); // interaction
 
-		//errs() << "check3\n";
+		errs() << "check3\n";
 		CallInst::Create(new_acquire, ArrayRef<Value*>(na_val), "", nullBB)->setTailCall();
-		//errs() << "check4\n";
+		errs() << "check4\n";
 
 
 		// if false
@@ -463,7 +472,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 			//cpy_bits.push_back(old_q);	
 		}
 
-		errs() << "check end\n";
+		//errs() << "check end\n";
 		// end if block
 		BasicBlock *endBB = BasicBlock::Create(getGlobalContext(), "", releaseImpl, 0);
 		// both if and else br to endBB
@@ -473,14 +482,14 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 		// insert the conditional branch into BB
 		TerminatorInst *oldTerm = BB->getTerminator();
 		BranchInst *brTerm;
-		errs() << "check end end" << oldTerm << "\n";
+		//errs() << "check end end" << oldTerm << "\n";
 		if (oldTerm == NULL) {
 			brTerm = BranchInst::Create(nullBB, nonnullBB, pred, BB);
 		} else {
 			brTerm = BranchInst::Create(nullBB, nonnullBB, pred);
 			ReplaceInstWithInst(oldTerm, brTerm);
 		}
-		errs() << "check end end\n";
+		//errs() << "check end end\n";
 
 		for (size_t i = 0; i < nOut; i++) {
 			Value *Idx[2];

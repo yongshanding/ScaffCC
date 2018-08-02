@@ -8,9 +8,15 @@
 //
 //void release(qbit **out, int n1, qbit **anc, int n2);
 
+
 void addMod(qbit **a, qbit **b, int n) {
+	qbit *d[2*32];
+	for (int i = 0; i < 32; i++) {
+		d[i] = a[i];
+		d[32+i] = b[i];
+	}
 	qbit *c[1];
-	acquire(1, c);
+	acquire(1, c, 64, d);
 	
 	CNOT(a[0], b[0]);
 	CNOT(a[0], c[0]);
@@ -35,8 +41,14 @@ void addMod(qbit **a, qbit **b, int n) {
 }
 
 void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
+	qbit *d[3*32];
+	for (int i = 0; i < 32; i++) {
+		d[i] = e[i];
+		d[32+i] = f[i];
+		d[64+i] = g[i];
+	}
 	qbit *anc[2*n];
-	acquire(64, anc);
+	acquire(64, anc, 96, d);
 	qbit **t = &anc[32];
 	for (int i = 0; i < n; i++){
 		Toffoli(e[i], f[i], anc[i]);
@@ -53,8 +65,13 @@ void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
 }
 
 void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
+	qbit *d[4];
+	d[0] = a;
+	d[1] = b;
+	d[2] = c;
+	d[3] = t;
 	qbit *anc[1];
-	acquire(1, anc);
+	acquire(1, anc, 4, d);
 	Toffoli(a,b,anc[0]);
 	Toffoli(a,c,anc[0]);
 	Toffoli(b,c,anc[0]);
@@ -63,8 +80,14 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 }
 
 void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
+	qbit *d[3*32];
+	for (int i = 0; i < 32; i++) {
+		d[i] = a[i];
+		d[32+i] = b[i];
+		d[64+i] = c[i];
+	}
 	qbit *t[33];
-	acquire(33,t);
+	acquire(33,t, 96, d);
 	qbit **ttemp = &t[32];
 	for (int i = 0; i < n; i++){
 		toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
@@ -86,7 +109,7 @@ void rot(qbit **a, qbit **b, int n, int shift){
 
 void s0(qbit **a, qbit **h, int n){
 	qbit *t[32];
-	acquire(32,t);
+	acquire(32,t, 32, a);
 
 	qbit *a2[32];
 	qbit *a13[32];
@@ -105,7 +128,7 @@ void s0(qbit **a, qbit **h, int n){
 }
 void s1(qbit **a, qbit **h, int n){
 	qbit *t[32];
-	acquire(32,t);
+	acquire(32,t, 32, a);
 
 	qbit *a6[32];
 	qbit *a11[32];
@@ -180,7 +203,7 @@ void sha2(qbit **k, qbit **w, qbit **x, int n){
 int main() {
 	int n = 32;
 	qbit *new[2*32+256];
-	acquire(2*32+256, new);
+	acquire(2*32+256, new, 0, NULL);
 	qbit **k = &new[0];
 	qbit **w = &new[32];
 	qbit **x = &new[64];
