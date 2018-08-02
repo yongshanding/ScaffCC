@@ -12,11 +12,14 @@
 //#include "uthash.h"    /* HASH_ADD  */
 //#include <math.h>      /* floorf    */
 #include <map>
+#include <cmath>
 #include <vector>
+#include <queue>
 #include <algorithm>
 #include "../llvm/include/rapidjson/document.h"
 #include <stack>
 
+#define _INT_MAX 1000000
 #define _MAX_FUNCTION_NAME 90
 #define _MAX_INT_PARAMS 4
 #define _MAX_DOUBLE_PARAMS 4
@@ -80,18 +83,18 @@ typedef struct all_qbits_struct {
 	qbitElement_t Qubits[_MAX_NUM_QUBITS];
 }	all_qbits_t;
 
-struct gate_t {
+typedef struct gate_t_str {
 	string gate_name;
 	int gate_id;
 	vector<qbit_t*> operands;
 	int num_operands;
-}
+} gate_t;
 
-struct acquire_str {
+typedef struct {
 	int idx;
 	int nq; // num of qubits
 	vector<qbit_t*> temp_addrs;
-}
+} acquire_str;
 
 //typedef struct {
 //	qbit_t *addr;
@@ -138,6 +141,14 @@ void markAsReady(vector<qbit_t*>operands, int numOp) {
 	return;
 }
 
+bool doStall(int num_qbits, int heap_idx) {
+	if (num_qbits <= 1) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 void updateWaitlist() {
 	for (vector<acquire_str*>::iterator it = pendingAcquires.begin(); it != pendingAcquires.end(); ) {
 		if (!doStall((*it)->nq, 0)) {
@@ -150,13 +161,7 @@ void updateWaitlist() {
 	}
 }
 
-bool doStall(int num_qbits, int heap_idx) {
-	if (num_qbits <= 1) {
-		return false;
-	} else {
-		return true;
-	}
-}
+
 
 
 std::map<qbit_t *, int> logicalPhysicalMap;
@@ -406,7 +411,7 @@ void printConnectivityGraph(){
 }
 
 void generateSquareGrid(int num){
-	gridLength = std::ceil(std::sqrt(num));
+	int gridLength = std::ceil(std::sqrt(num));
 	int length = gridLength;
 	initializeConnections(length*length);
   for (int i = 0; i < length*length; i++){
@@ -423,7 +428,7 @@ void generateSquareGrid(int num){
 
 void readDeviceDescription(std::string deviceName, bool gen){
 	if (gen){
-		generateSquareGrid;
+		generateSquareGrid(1000);
 		return;
 	}
 	string filename = deviceName;
@@ -509,6 +514,100 @@ void calculateDistances(){
 	}
 }
 
+
+vector<int> recoverPath(vector<int> prev, int dest){
+	int u = dest;
+	vector<int> path;
+	while (prev[u] != -1){
+		path.push_back(prev[u]);
+		u = prev[u];
+	}
+	return path;
+}
+
+vector<pair<int,int> >buildSwaps(vector<int> path){
+	//vector<pair<qbit_t*,qbit_t*> > swaps;
+	vector<pair<int,int> > swaps;
+	for (int i = 0; i < path.size()-1; i++){
+//		pair<qbit_t*, qbit_t*> new_swap = make_pair(getLogicalAddr(path[i]),getLogicalAddr(path[i+1]));
+		pair<int,int> new_swap = make_pair(path[i],path[i+1]);
+		swaps.push_back(new_swap);
+	}
+	return swaps;
+}
+
+vector<pair<int,int> > dijkstraSearch(qbit_t *src, qbit_t *dst){
+//vector<pair<qbit_t *, qbit_t *> > dijkstraSearch(qbit_t *src, qbit_t *dst){
+	int source = getPhysicalID(src);
+	int dest = getPhysicalID(dst);
+	std::priority_queue< std::pair<int,int>, vector<std::pair<int,int> >,greater<std::pair<int,int> > > Q;
+	vector<int> unvisited;
+	vector<int> distances(neighborSets.size(), _INT_MAX);
+	vector<int> previous(neighborSets.size(),-1);
+	//for (int i = 0; i < neighborSets.size(); i++){
+	//	unvisited.push_back(i);
+	//}
+	Q.push(make_pair(0,source));
+	distances[source] = 0;
+	while(!Q.empty()){
+		int u = Q.top().second; 
+		Q.pop();
+		for (int i = 0; i < neighborSets[u].size(); i++){
+			int v = neighborSets[u][i];
+			if (distances[v] > distances[u] + 1){
+				distances[v] = distances[u] + 1;
+				previous[v] = u;
+				Q.push(make_pair(distances[v], v));
+			}
+		}
+	}
+	vector<int> path_reversed = recoverPath(previous, dest);
+	vector<int> path (path_reversed.size(),-1);
+	int j = 0;
+	for(int i = path_reversed.size()-1; i >= 0; i--){
+		path[j++] = path_reversed[i];
+	}
+	vector<pair<int,int> > swap_chain = buildSwaps(path);
+	return swap_chain;
+}
+
+/*******************************************************************
+ * Resolve Interactions
+ * Input: operand list and number of operands
+ * Output: a list of pairs of qubits along a path between operands
+ * Note: controls SWAP to target by convention
+ * *****************************************************************/
+//vector<pair<qbit_t *, qbit_t *> > resolveInteraction(qbit_t **operands, int num_ops){
+vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
+	vector<pair<int,int> > swaps;
+	//vector<pair<qbit_t *, qbit_t *> > swaps;
+	if (num_ops == 2){
+		swaps = dijkstraSearch(operands[0],operands[1]);
+	}
+	return swaps;
+}
+
+void updateMaps(vector<pair<int,int> > swaps){
+	for (int i = 0; i < swaps.size(); i++){
+		//int phys1 = getPhysicalID(swaps[i].first);
+		//int phys1 = getPhysicalID(swaps[i].first);
+		qbit_t *	log1 = getLogicalAddr(swaps[i].first);
+		qbit_t *	log2 = getLogicalAddr(swaps[i].second);
+		logicalPhysicalMap[log1] = swaps[i].second;
+		logicalPhysicalMap[log2] = swaps[i].first;
+		physicalLogicalMap[swaps[i].first] = log2;
+		physicalLogicalMap[swaps[i].second] = log1;
+	}
+}
+
+//void printSwapChain(vector<pair<qbit_t*,qbit_t*> > swaps){
+void printSwapChain(vector<pair<int,int> > swaps){
+	for (int i = 0; i < swaps.size(); i++){
+		//std::cout << "SWAP q" << getPhysicalID(swaps[i].first) << ", q" << getPhysicalID(swaps[i].second) << "\n";
+		std::cout << "SWAP q" << swaps[i].first << ", q" << swaps[i].second << "\n";
+	}
+}
+
 void printDistances(){
 	std::cout << "Distance Matrix: \n";
 	for (int i = 0; i < neighborSets.size(); i++){
@@ -519,14 +618,14 @@ void printDistances(){
 	}
 }
 
-vector<qbit_t*> findClosestFree(vector<qbit_t *> targets, vector<qbit_t *> free, int num){
+vector<qbit_t*> findClosestFree(qbit_t **targets, qbitElement_t **free, int num, int free_size, int targets_size){
 	std::vector<std::pair<int,qbit_t*> > sortedFree;
-	for (int i = 0; i < free.size(); i++){
-		int dist = 0
-		for (int j = 0; j < target.size(); j++){
-			dist += getDistance(free[i], targets[j]);
+	for (int i = 0; i < free_size; i++){
+		int dist = 0;
+		for (int j = 0; j < targets_size; j++){
+			dist += getDistance(free[i]->addr, targets[j]);
 		}
-		sortedFree.push_back(make_pair(dist,free[i]);	
+		sortedFree.push_back(make_pair(dist,free[i]->addr));	
 	}	
 	std::sort(sortedFree.begin(),sortedFree.end());
 	std::vector<qbit_t *> allocated;
@@ -799,7 +898,29 @@ qbitElement_t *memHeapPop (memHeap_t *M) {
 	return M->contents[M->numQubits];
 }
 
-int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res) {
+int memHeapFindQubit (memHeap_t *M, qbit_t *addr) {
+	for (int i = 0; i < M->numQubits; i++){
+		if (M->contents[i]->addr == addr){
+			return i;
+		}
+	}
+	return -1;
+}
+
+qbitElement_t *memHeapRemoveQubit (memHeap_t *M, qbit_t *addr) {
+	int idx = memHeapFindQubit(M, addr);
+	if (idx != -1){
+		qbitElement_t *qubit = M->contents[idx];
+		for (size_t i = idx+1; i < M->numQubits; i++) {
+			M->contents[i-1] = M->contents[i];
+		}
+		M->numQubits--;
+		return qubit;
+	}
+	exit(1);
+}
+
+int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **inter, int targets_size) {
 	if (M == NULL) {
 		fprintf(stderr, "Requesting qubits from invalid memory heap.\n");
 		exit(1);
@@ -812,8 +933,10 @@ int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res) {
 	if (num_qbits <= available) {
   	if (debugRevMemHybrid)
     	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
+		vector<qbit_t *> closestSet = findClosestFree(inter, M->contents, num_qbits, available, targets_size);
 		for (size_t i = 0; i < num_qbits; i++) {
-			qbitElement_t *qq = memHeapPop(M);
+			//qbitElement_t *qq = memHeapPop(M);
+			qbitElement_t *qq = memHeapRemoveQubit(M, closestSet[i]);
 			res[i] = *qq; // copy over the value of the struct
 			free(qq); // since popped off heap, need to free
 		}
@@ -900,7 +1023,8 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 		std::cout << t << ": " << gate_str[gateID] << " ";
 		for (size_t i = 0; i < numOp; i++) {
 			//printf("q%u (%p)", qubitsFind(operands[i]), operands[i]);
-			std::cout << "q" << qubitsFind(operands[i]) << " ";
+			//std::cout << "ql" << qubitsFind(operands[i]) << " ";
+			std::cout << "q" << getPhysicalID(operands[i]) << " ";
 		}
 		std::cout << "\n";
 		//printf("heap size: %zu\n", memoryHeap->numQubits);
@@ -923,22 +1047,24 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			fprintf(stderr, "Unable to initialize %u temporary qubits.\n", num_qbits);
 			exit(1);
 		}
-		acquire_str *temp_acq = new acquire_str();
-		temp_acq->idx = pendingAcquires.size();
-		temp_acq->nq = num_qbits;
+		std::cerr << "here!\n";
+		acquire_str *temp_acq = (acquire_str*)malloc(sizeof(acquire_str));
+		std::cerr << "here!\n";
+		//temp_acq->idx = pendingAcquires.size();
+		//temp_acq->nq = num_qbits;
 		// Store the addresses into result
 		for (size_t i = 0; i < num_qbits; i++) {
 			result[i] = temp_res[i].addr;
-			temp_acq->temp_addrs.push_back(temp_res[i].addr);
+			//temp_acq->temp_addrs.push_back(temp_res[i].addr);
 		}
-		pendingAcquires.push_back(temp_acq);
+		//pendingAcquires.push_back(temp_acq);
 		return num_qbits;
 	} else {
 		if (heap_idx == 0) {
 			// find num_qbits of qubits in the global memoryheap
 			qbitElement_t res[num_qbits];
 			// check if there are available in the heap
-			int num = memHeapGetQubits(num_qbits, memoryHeap, &res[0]);
+			int num = memHeapGetQubits(num_qbits, memoryHeap, &res[0], inter, ninter);
 			// malloc any extra qubits needed
 			int num_new = 0;
 			if (num < num_qbits) {
@@ -951,6 +1077,8 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			// Store the addresses into result
 			for (size_t i = 0; i < num_qbits; i++) {
 				result[i] = res[i].addr;
+				logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
+				physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 			}
 			return num_qbits;
 
@@ -1026,7 +1154,11 @@ void schedule(gate_t *new_gate) {
 	for (int i = 0; i < numOp; i++) {
 		qubitUsage[operands[i]] = Tmax+1; //modify usage in place
 	}
-	recordGate(gateID, operands, numOp, Tmax+1);
+	qbit_t *op_arrs[numOp];
+	for (int i = 0; i < numOp; i++){
+		op_arrs[i] = operands[i];
+	}
+	recordGate(gateID, &op_arrs[0], numOp, Tmax+1);
 	return;	
 }
 
@@ -1052,7 +1184,7 @@ void tryPendingGates() {
 					}
 				}
 				idx = tempQubitsFind(ops[i]);
-				if (idx != tempQubits->N) {
+				if (idx != TempQubits->N) {
 					// is a temp qubit
 					if (temp2perm.find(ops[i]) != temp2perm.end()) {
 						ops[i] = temp2perm[ops[i]]; // replace with perm
@@ -1084,14 +1216,14 @@ void tryPendingGates() {
 							perm_ready.insert(make_pair(ops[i], true));
 						}
 					}
-					waillist[ops[i]] = false;
+					waitlist[ops[i]] = false;
 				}
 				// schedule
 				schedule((*it));
 
 			} else {
 				for (int i = 0; i < numOp; i++) {
-					waillist[ops[i]] = true;
+					waitlist[ops[i]] = true;
 					perm_ready[ops[i]] = false;
 					//perm_ready.insert(make_pair(ops[i], false));
 				}
@@ -1108,29 +1240,34 @@ void tryPendingGates() {
 
 /* check and schedule a gate instruction*/
 void checkAndSched(int gateID, qbit_t **operands, int numOp) {
-	updateWaitlist();
-	tryPendingGates();
+	//updateWaitlist();
+	//tryPendingGates();
 	// check if operand in waiting qubit list
 	vector<qbit_t*> ops;
 	for (int i = 0; i < numOp; i++) {
 		ops.push_back(operands[i]);
 	}
 	gate_t *new_gate = new gate_t();
-	new_gate->gate_name = gate_str[gate_ID];
-	new_gate->gate_id = gate_ID;
+	new_gate->gate_name = gate_str[gateID];
+	new_gate->gate_id = gateID;
 	new_gate->operands = ops;
 	new_gate->num_operands = numOp;
 		
+	//vector<pair<qbit_t*,qbit_t*> > swaps = resolveInteraction(operands, numOp);
+	//vector<pair<int,int> > swaps = resolveInteraction(operands, numOp);
+	//updateMaps(swaps);
+	//printSwapChain(swaps);
+	//
+	//if (isWaiting(ops, numOp)) {
+	//	// push qubit operands to the waitlist
+	//	markAsWait(ops, numOp);
+	//	// push gate to the pending queue
+	//	pendingGates.push_back(new_gate);
 
-	if (isWaiting(ops, numOp)) {
-		// push qubit operands to the waitlist
-		markAsWait(ops, numOp);
-		// push gate to the pending queue
-		pendingGates.push_back(new_gate);
-	} else {
+	//} else {
 		// schedule the gate at the earliest
 		schedule(new_gate);
-	}
+	//}
 }
 
 
@@ -1231,11 +1368,12 @@ void qasm_initialize ()
 
   // initialize with maximum possible levels of calling depth
   //stackInit(_MAX_CALL_DEPTH);
-  readDeviceDescription("DeviceDescription.json");
+	bool auto_gen_graph = false;
+  readDeviceDescription("DeviceDescription.json",auto_gen_graph);
 	initializeDistances();
 	calculateDistances();
-	printConnectivityGraph();
-	printDistances();
+	//printConnectivityGraph();
+	//printDistances();
   //stackInit(_MAX_CALL_DEPTH);
 
   memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
