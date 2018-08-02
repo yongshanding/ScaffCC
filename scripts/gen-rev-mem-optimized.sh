@@ -7,6 +7,7 @@ LIB=$ROOT/build/Release+Asserts/lib
 SCAF=$LIB/Scaffold.so
 OPT=$BIN/opt
 CLANG=$BIN/clang
+CLANGPP=$BIN/clang++
 LLVM_LINK=$BIN/llvm-link
 LLI=$BIN/lli
 I_FLAGS="-I/usr/include -I/usr/include/x86_64-linux-gnu -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include"
@@ -180,7 +181,7 @@ for f in $*; do
   b=$(basename $f .scaffold)  
   b_dir=$(dirname "$(readlink -f $f)")
   echo "[gen-rev-mem-optimized.sh] Compiling rev-memory-manager-hybrid.c" >&2
-  $CLANG -c -O1 -emit-llvm $DIR/rev-memory-manager-hybrid.cpp -o $DIR/rev-memory-manager-hybrid.bcpp
+  $CLANGPP -c -O1 -emit-llvm $DIR/rev-memory-manager-hybrid.cpp -o $DIR/rev-memory-manager-hybrid.bc
   echo "[gen-rev-mem-optimized.sh] $b: Managing reversible memory ..." >&2
   if [ -n ${b}/${b}.freq ]; then
     cp ${b}/${b}.ll ${b}/${b}_dynamic.ll          
@@ -192,9 +193,9 @@ for f in $*; do
     echo -e "\t[gen-rev-mem-optimized.sh] Rolling up Loops" >&2
     $OPT -S -load $SCAF -dyn-rollup-loops ${b}/${b}_marked.ll -o ${b}/${b}_rolled.ll
     echo -e "\t[gen-rev-mem-optimized.sh] Linking rev-memory-manager-hybrid.bc and ${b}/${b}_rolled.ll" >&2
-    $LLVM_LINK $DIR/rev-memory-manager-hybrid.bcpp ${b}/${b}_rolled.ll -S -o=${b}/${b}_linked.ll
+    $LLVM_LINK $DIR/rev-memory-manager-hybrid.bc ${b}/${b}_rolled.ll -S -o=${b}/${b}_linked.ll
     echo -e "\t[gen-rev-mem-optimized.sh] Instrumenting ${b}/${b}_linked.ll" >&2
-    $OPT -S -load $SCAF -runtime-rev-memory-manager-hybrid ${b}/${b}_linked.ll -o ${b}/${b}_instr.ll
+    $OPT -S -load $SCAF -runtime-rev-memory-manager-hybrid -device='DeviceDescription.json' ${b}/${b}_linked.ll -o ${b}/${b}_instr.ll
     $OPT -S -dce -dse -dce ${b}/${b}_instr.ll -o ${b}/${b}_instr2.ll
     $OPT -S -O1 ${b}/${b}_instr2.ll -o ${b}/${b}_instr.ll
     echo -e "\t[gen-rev-mem-optimized.sh] Executing ${b}/${b}_instr.ll with lli" >&2

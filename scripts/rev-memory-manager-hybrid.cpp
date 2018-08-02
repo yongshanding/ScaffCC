@@ -1,7 +1,9 @@
 #include <cstdlib>    /* malloc    */
 #include <cstdio>     /* printf    */
 #include <iostream>
+#include <fstream>
 #include <iomanip>
+#include <limits.h>
 //#include <stddef.h>    /* offsetof  */
 //#include <string.h>    /* strcpy    */
 #include <string>
@@ -10,6 +12,9 @@
 //#include "uthash.h"    /* HASH_ADD  */
 //#include <math.h>      /* floorf    */
 #include <map>
+#include <vector>
+#include <algorithm>
+#include "../llvm/include/rapidjson/document.h"
 
 #define _MAX_FUNCTION_NAME 90
 #define _MAX_INT_PARAMS 4
@@ -62,10 +67,17 @@ typedef struct qbit_struct {
 	int idx;
 } qbitElement_t;
 
+typedef struct swap_gate {
+	qbitElement_t op1;
+	qbitElement_t op2;
+	int gateIndex;
+} swap;
+
 typedef struct all_qbits_struct {
 	int N;
 	qbitElement_t Qubits[_MAX_NUM_QUBITS];
 }	all_qbits_t;
+
 
 //typedef struct {
 //	qbit_t *addr;
@@ -77,9 +89,31 @@ all_qbits_t *AllQubits = NULL;
 //q_entry_t *AllQubitsHash = NULL;
 std::map<qbit_t *, int> AllQubitsHash;
 
+std::map<qbit_t *, int> logicalPhysicalMap;
+std::map<int, qbit_t *> physicalLogicalMap;
+std::vector<std::vector<int> > neighborSets;
+std::vector<std::vector<int> > distanceMatrix;
+std::vector<int> qubitOrdering;
+
 void qubitsInit() {
 	AllQubits = (all_qbits_t *)malloc(sizeof(all_qbits_t));
 	AllQubits->N = 0; 
+}
+
+int getPhysicalID(qbit_t *addr){
+	std::map<qbit_t *, int>::iterator it = logicalPhysicalMap.find(addr);
+	if (it != logicalPhysicalMap.end()) return it->second;
+	else return -1;
+}
+
+qbit_t * getLogicalAddr(int qb){
+	std::map<int, qbit_t *>::iterator it = physicalLogicalMap.find(qb);
+	if (it != physicalLogicalMap.end()) return it->second;
+	else return NULL;
+}
+
+int getDistance(qbit_t *q1, qbit_t *q2){
+	return distanceMatrix[getPhysicalID(q1)][getPhysicalID(q2)];
 }
 
 /* return the index of addr, or AllQubits->N if not found */
@@ -234,6 +268,159 @@ void stackPop () {
   resourcesStack->top--;
 
 }
+
+/*****************************
+* Physical Connectivity Graph 
+******************************/
+
+void initializeConnections(int num){
+  for (int i = 0; i < num; i++){
+    neighborSets.push_back(std::vector<int>());
+		qubitOrdering.push_back(i);
+  }
+}
+
+void printConnectivityGraph(){
+	std::cout << "Connectivity Graph: \n";
+  for (int i = 0; i < neighborSets.size(); i++){
+		std::cout << "Qubit: " << i << " | ";
+    for (int j = 0; j < neighborSets[i].size(); j++){
+			if (j == neighborSets[i].size()-1) std::cout << neighborSets[i][j];
+			else std::cout << neighborSets[i][j] << ","; 
+    }
+		std::cout << "\n";
+ 	}
+}
+
+void generateSquareGrid(int num){
+	gridLength = std::ceil(std::sqrt(num));
+	int length = gridLength;
+	initializeConnections(length*length);
+  for (int i = 0; i < length*length; i++){
+      if (((i+1)%length) > 0)
+      neighborSets[i].push_back(i+1);
+	if ((i)%length > 0)
+      neighborSets[i].push_back(i-1);
+	if (i+length < length*length)
+      neighborSets[i].push_back(i+length);
+	if (i-length >= 0)
+      neighborSets[i].push_back(i-length);
+  }
+}
+
+void readDeviceDescription(std::string deviceName, bool gen){
+	if (gen){
+		generateSquareGrid;
+		return;
+	}
+	string filename = deviceName;
+	std::ifstream file(filename.c_str());
+	if( !(file) ){
+		std::cout << "Cannot find device description, exit...\n";
+		exit(1);
+	}
+	rapidjson::Document doc;
+	string document( (std::istreambuf_iterator<char>(file)),
+				   (std::istreambuf_iterator<char>())	);
+	doc.Parse(document.c_str());
+	const rapidjson::Value& layout = doc["QubitLayout"];
+	const rapidjson::Value& topology = doc["QubitConnectivity"];
+	if(layout.IsArray()){
+		for(rapidjson::SizeType i=0; i < layout.Size(); i++){
+			const rapidjson::Value& entry = layout[i];
+            qubitOrdering.push_back(entry.GetInt());
+		}
+	}
+	else{
+		if(debugRevMemHybrid) 
+			std::cout << "No layout specified\n";
+		exit(1);
+	}
+	if(debugRevMemHybrid) 
+			std::cout << "Completed Layout Description Import\n";
+	int numQubits = topology["NumQbits"].GetInt();
+	initializeConnections(numQubits);
+	rapidjson::Value::ConstMemberIterator itr = topology.MemberBegin();
+	++itr;
+	for(itr; itr!=topology.MemberEnd(); ++itr){
+		int index = std::atoi(itr->name.GetString()); 
+		const rapidjson::Value& list = itr->value;
+		if (list.IsArray()){
+			for(rapidjson::Value::ConstValueIterator it2 = list.Begin(); 
+				   it2 != list.End(); ++it2){
+				int neighbor = it2->GetInt();
+				if (neighbor >= numQubits){
+					std::cout << "Out of bounds qubit specification provided\n";
+				}
+				neighborSets[index].push_back(neighbor);
+			}	
+		}
+		else if(list.IsInt()){
+			int neighbor = list.GetInt();
+			if (neighbor >= numQubits){
+				std::cout << "Out of bounds qubit specification provided\n";
+			}
+			neighborSets[index].push_back(neighbor);
+		}
+	}
+	if(debugRevMemHybrid) std::cout << "Completed Topology Description Import\n";
+}
+
+void initializeDistances(){
+	for (int i = 0; i < neighborSets.size(); i++){
+		distanceMatrix.push_back(std::vector<int>());
+		for (int j = 0; j < neighborSets.size(); j++){
+			distanceMatrix[i].push_back(0);
+		}
+	}
+}
+
+void calculateDistances(){
+	for (int i = 0; i < neighborSets.size(); i++){
+		for (int j = 0; j < neighborSets.size(); j++){
+			if (i == j) distanceMatrix[i][j] = 0;
+			if (std::find(neighborSets[i].begin(), neighborSets[i].end(), j)
+					!= neighborSets[i].end()) distanceMatrix[i][j] = 1;
+			else distanceMatrix[i][j] = 100000;
+		}
+	}
+	for (int k = 0; k < neighborSets.size(); k++){
+		for (int i = 0; i < neighborSets.size(); i++){
+			for (int j = 0; j < neighborSets.size(); j++){
+				if (distanceMatrix[i][j] > distanceMatrix[i][k] + distanceMatrix[k][j]){
+					distanceMatrix[i][j] = distanceMatrix[i][k] + distanceMatrix[k][j];
+				}
+			}
+		}
+	}
+}
+
+void printDistances(){
+	std::cout << "Distance Matrix: \n";
+	for (int i = 0; i < neighborSets.size(); i++){
+		for (int j = 0; j < neighborSets.size(); j++){
+			std::cout << distanceMatrix[i][j] << " ";
+		}
+		std::cout << "\n";
+	}
+}
+
+vector<qbit_t*> findClosestFree(vector<qbit_t *> targets, vector<qbit_t *> free, int num){
+	std::vector<std::pair<int,qbit_t*> > sortedFree;
+	for (int i = 0; i < free.size(); i++){
+		int dist = 0
+		for (int j = 0; j < target.size(); j++){
+			dist += getDistance(free[i], targets[j]);
+		}
+		sortedFree.push_back(make_pair(dist,free[i]);	
+	}	
+	std::sort(sortedFree.begin(),sortedFree.end());
+	std::vector<qbit_t *> allocated;
+	for (int i = 0; i < num; i++){
+		allocated.push_back(sortedFree[i].second);
+	}
+	return allocated;
+}	
 
 /**********************
 * Hash Table Definition
@@ -546,11 +733,13 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
     fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
     exit(1);
   }
-	// Track the new qubits in AllQubits
+	// Track the new qubits in AllQubits and the mapping
 	for (size_t i = 0; i < num_qbits; i++) {
 		res[i].addr = &newt[i];
 		res[i].idx = AllQubits->N;
 		qubitsAdd(&newt[i]);
+		logicalPhysicalMap.insert(make_pair(res[i].addr,res[i].idx));
+		physicalLogicalMap.insert(make_pair(res[i].idx,res[i].addr));
 	}
 	return num_qbits;
 }
@@ -577,7 +766,7 @@ void recordGate(int gateID, qbit_t **operands, int numOp) {
 
 /* memHeapAlloc: memory allocation when qubits are requested */
 /* every function should have a heap index? for now always a global root heap*/
-int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result) {
+int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result/*,qbit **interact,int n*/) {
 	if (heap_idx == 0) {
 		// find num_qbits of qubits in the global memoryheap
 		qbitElement_t res[num_qbits];
@@ -746,7 +935,11 @@ void qasm_initialize ()
 
   // initialize with maximum possible levels of calling depth
   stackInit(_MAX_CALL_DEPTH);
-
+  readDeviceDescription("DeviceDescription.json");
+	initializeDistances();
+	calculateDistances();
+	printConnectivityGraph();
+	printDistances();
   memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
 	qubitsInit();
 	gatesInit();
@@ -788,8 +981,6 @@ void qasm_resource_summary ()
 	printf("Total number of qubits used: %u. \n", AllQubits->N);
 
 	printGateCounts();
-	std::cout << "Test\n";
-	std::cout << "Test again\n";
 	memHeapDelete(memoryHeap);
 	// TODO clean AllQubits
 	free(AllGates);
