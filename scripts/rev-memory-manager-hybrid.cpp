@@ -54,7 +54,8 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _GLOBAL;
-int freePolicy = _NOFREE; 
+int freePolicy = _EAGER; 
+int systemSize = 1000;
 
 // DEBUG switch
 bool trackGates = true;
@@ -79,6 +80,18 @@ typedef struct all_qbits_struct {
 	qbitElement_t Qubits[_MAX_NUM_QUBITS];
 }	all_qbits_t;
 
+struct gate_t {
+	string gate_name;
+	int gate_id;
+	vector<qbit_t*> operands;
+	int num_operands;
+}
+
+struct acquire_str {
+	int idx;
+	int nq; // num of qubits
+	vector<qbit_t*> temp_addrs;
+}
 
 //typedef struct {
 //	qbit_t *addr;
@@ -95,13 +108,54 @@ std::map<qbit_t *, int> TempQubitsHash; // temporary
 std::map<qbit_t*, int> qubitUsage; // latest usage of qubits
 std::map<qbit_t*, int> tempQubitUsage; // latest usage of temporary qubits
 
+std::map<qbit_t*, bool> waitlist; // whether a qubit is being held to stall
 
-bool isWaiting(qbit_t **operands, int numOp) {
+std::vector<gate_t*> pendingGates;
+std::vector<acquire_str*> pendingAcquires;
+
+bool isWaiting(vector<qbit_t*>operands, int numOp) {
+	for (int i = 0; i < numOp; i++) {
+		if (waitlist[operands[i]]) {
+			return true;
+		}
+	}
 	return false;
 }
 
+void markAsWait(vector<qbit_t*>operands, int numOp) {
+	// update waitlist
+	for (int i = 0; i < numOp; i++) {
+		waitlist[operands[i]] = true;
+	}
+	return;
+}
+
+void markAsReady(vector<qbit_t*>operands, int numOp) {
+	// update waitlist
+	for (int i = 0; i < numOp; i++) {
+		waitlist[operands[i]] = false;
+	}
+	return;
+}
+
+void updateWaitlist() {
+	for (vector<acquire_str*>::iterator it = pendingAcquires.begin(); it != pendingAcquires.end(); ) {
+		if (!doStall((*it)->nq, 0)) {
+			markAsReady((*it)->temp_addrs, (*it)->nq);
+			it = pendingAcquires.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+}
+
 bool doStall(int num_qbits, int heap_idx) {
-	return false;
+	if (num_qbits <= 1) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
 
@@ -254,6 +308,7 @@ void printGateCounts() {
 }
 
 
+
 /*****************
 * Stack Definition  
 ******************/
@@ -388,6 +443,7 @@ void readDeviceDescription(std::string deviceName, bool gen){
 			const rapidjson::Value& entry = layout[i];
             qubitOrdering.push_back(entry.GetInt());
 		}
+		systemSize = qubitOrdering.size();
 	}
 	else{
 		if(debugRevMemHybrid) 
@@ -798,6 +854,7 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 		qubitsAdd(&newt[i]);
 		logicalPhysicalMap.insert(make_pair(res[i].addr,res[i].idx));
 		physicalLogicalMap.insert(make_pair(res[i].idx,res[i].addr));
+		waitlist.insert(make_pair(res[i].addr, false));
 	}
 	return num_qbits;
 }
@@ -812,7 +869,7 @@ int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
 		exit(1);
 	}
   if (debugRevMemHybrid)
-  	printf("Obtaining %u new qubits.\n", num_qbits);  
+  	printf("Obtaining %u new temporary qubits.\n", num_qbits);  
 	// malloc new qubits!
 	qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
 	if (newt == NULL) {
@@ -824,6 +881,7 @@ int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
 		res[i].addr = &newt[i];
 		res[i].idx = TempQubits->N;
 		tempQubitsAdd(&newt[i]);
+		waitlist.insert(make_pair(res[i].addr, true));
 	}
 	return num_qbits;
 }
@@ -859,7 +917,22 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 		std::cerr << inter[0] << "\n";
 	}
 	if (doStall(num_qbits, heap_idx)) {
-		return 0;
+		qbitElement_t temp_res[num_qbits];
+		int temp_new = memHeapNewTempQubits(num_qbits, &temp_res[0]);// marked as waiting
+		if (temp_new != num_qbits) {
+			fprintf(stderr, "Unable to initialize %u temporary qubits.\n", num_qbits);
+			exit(1);
+		}
+		acquire_str *temp_acq = new acquire_str();
+		temp_acq->idx = pendingAcquires.size();
+		temp_acq->nq = num_qbits;
+		// Store the addresses into result
+		for (size_t i = 0; i < num_qbits; i++) {
+			result[i] = temp_res[i].addr;
+			temp_acq->temp_addrs.push_back(temp_res[i].addr);
+		}
+		pendingAcquires.push_back(temp_acq);
+		return num_qbits;
 	} else {
 		if (heap_idx == 0) {
 			// find num_qbits of qubits in the global memoryheap
@@ -937,26 +1010,126 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 	return 1;
 }
 
+
+void schedule(gate_t *new_gate) {
+	int numOp = new_gate->num_operands; 
+	vector<qbit_t*> operands = new_gate->operands; 
+	int gateID = new_gate->gate_id;
+
+	int Tmax = 0;
+	for (int i = 0; i < numOp; i++) {
+		int T = qubitUsage[operands[i]];
+		if (T > Tmax) {
+			Tmax = T;
+		}
+	}
+	for (int i = 0; i < numOp; i++) {
+		qubitUsage[operands[i]] = Tmax+1; //modify usage in place
+	}
+	recordGate(gateID, operands, numOp, Tmax+1);
+	return;	
+}
+
+void tryPendingGates() {
+	if (!pendingGates.empty()) {
+		//std::vector<gate_t*> to_schedule;
+		std::map<qbit_t*, qbit_t*> temp2perm;
+		std::map<qbit_t*, bool> perm_ready;
+		for (vector<gate_t*>::iterator it = pendingGates.begin(); it != pendingGates.end(); ++it) {
+			int numOp = (*it)->num_operands;
+			vector<qbit_t*> ops = (*it)->operands;
+			// check if ready (temp qubits no longer wait means other perm ready too)
+			bool allClear = true;
+			for (int i = 0; i < numOp; i++) {
+				int idx = qubitsFind(ops[i]);
+				if (idx != AllQubits->N) {
+					// is a perm qubit
+					if (perm_ready.find(ops[i]) != perm_ready.end()) {
+						if (perm_ready[ops[i]] == false) {
+							allClear = false;
+							break;
+						}
+					}
+				}
+				idx = tempQubitsFind(ops[i]);
+				if (idx != tempQubits->N) {
+					// is a temp qubit
+					if (temp2perm.find(ops[i]) != temp2perm.end()) {
+						ops[i] = temp2perm[ops[i]]; // replace with perm
+						if (perm_ready[ops[i]] == false) {
+							allClear = false;
+							break;
+						}
+					} else if (waitlist[ops[i]] == true){
+						allClear = false;
+						break;
+					}
+				}
+			}
+			if (allClear) {
+				for (int i = 0; i < numOp; i++) {
+					int idx = qubitsFind(ops[i]);
+					if (idx == AllQubits->N) {
+						// not found in permanent pool
+						idx = tempQubitsFind(ops[i]);
+						if (idx == TempQubits->N) {
+							// not found in temporary pool either
+							std::cerr << "Error: Qubit address not found in permanent nor temporary pool.\n";
+						} else {
+							// change address to permanent address
+							qbit_t *perm;
+							memHeapAlloc(1, 0, &perm, NULL, 0);
+							temp2perm.insert(make_pair(ops[i], perm));
+							ops[i] = perm;
+							perm_ready.insert(make_pair(ops[i], true));
+						}
+					}
+					waillist[ops[i]] = false;
+				}
+				// schedule
+				schedule((*it));
+
+			} else {
+				for (int i = 0; i < numOp; i++) {
+					waillist[ops[i]] = true;
+					perm_ready[ops[i]] = false;
+					//perm_ready.insert(make_pair(ops[i], false));
+				}
+
+			}
+
+		}
+	}
+	return;
+}
+
+
+
+
 /* check and schedule a gate instruction*/
 void checkAndSched(int gateID, qbit_t **operands, int numOp) {
-	// tryWaitQueue()
+	updateWaitlist();
+	tryPendingGates();
 	// check if operand in waiting qubit list
-	if (isWaiting(operands, numOp)) {
-		// push gate to wait queue
+	vector<qbit_t*> ops;
+	for (int i = 0; i < numOp; i++) {
+		ops.push_back(operands[i]);
+	}
+	gate_t *new_gate = new gate_t();
+	new_gate->gate_name = gate_str[gate_ID];
+	new_gate->gate_id = gate_ID;
+	new_gate->operands = ops;
+	new_gate->num_operands = numOp;
+		
+
+	if (isWaiting(ops, numOp)) {
+		// push qubit operands to the waitlist
+		markAsWait(ops, numOp);
+		// push gate to the pending queue
+		pendingGates.push_back(new_gate);
 	} else {
-		// schedule the gate at the earliesst
-		int Tmax = 0;
-		for (int i = 0; i < numOp; i++) {
-			int T = qubitUsage[operands[i]];
-			if (T > Tmax) {
-				Tmax = T;
-			}
-		}
-		for (int i = 0; i < numOp; i++) {
-			qubitUsage[operands[i]] = Tmax+1; //modify usage in place
-		}
-		recordGate(gateID, operands, numOp, Tmax+1);
-			
+		// schedule the gate at the earliest
+		schedule(new_gate);
 	}
 }
 
