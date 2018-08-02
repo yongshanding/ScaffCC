@@ -17,6 +17,7 @@
 #include "llvm/Intrinsics.h"
 #include "llvm/Support/InstVisitor.h" 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
@@ -60,6 +61,9 @@ int freePolicy = _EAGER;
 // DEBUG switch
 bool debugRTRevMemHyb = true;
 
+static cl::opt<string>
+DEVICENAME("device", cl::init(""), cl::Hidden,
+  cl::desc("Location of device description file"));
 
 namespace {
 
