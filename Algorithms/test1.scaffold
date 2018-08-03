@@ -22,11 +22,11 @@ void level1(qbit **in, int n) {
 }
 
 int main() {
-	qbit *top[5];
-	acquire(5, top, 0, NULL);
+	qbit *top[10];
+	acquire(10, top, 0, NULL);
 	X(top[1]);
 	for (int i = 0; i < 2; i++) {
-		level1(top, 5);
+		level1(&top[5*i], 5);
 	}
 	return 0;
 }

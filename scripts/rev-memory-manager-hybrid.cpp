@@ -51,7 +51,8 @@
 #define _Rx 15
 #define _Ry 16
 #define _Rz 17
-#define _TOTAL_GATES 18
+#define _free 18
+#define _TOTAL_GATES 19
 
 using namespace std;
 
@@ -116,6 +117,20 @@ std::map<qbit_t*, bool> waitlist; // whether a qubit is being held to stall
 std::vector<gate_t*> pendingGates;
 std::vector<acquire_str*> pendingAcquires;
 
+// defining a structure to act as heap for pointer values to resources that must be updated                    
+typedef struct memHeap_str {
+  size_t maxSize; // capacity of this heap
+  size_t numQubits; // number of free qubits in this heap
+  qbitElement_t **contents;
+	size_t numPredecessors;
+	struct memHeap_str **predecessors;
+	size_t numSuccessors;
+	struct memHeap_str **successors;
+} memHeap_t;
+
+// declare global "resources" array address stack
+memHeap_t *memoryHeap = NULL;
+
 bool isWaiting(vector<qbit_t*>operands, int numOp) {
 	for (int i = 0; i < numOp; i++) {
 		if (waitlist[operands[i]]) {
@@ -142,9 +157,13 @@ void markAsReady(vector<qbit_t*>operands, int numOp) {
 }
 
 bool doStall(int num_qbits, int heap_idx) {
+	std::cout << "heap size: " << memoryHeap->numQubits << " total: " << AllQubits->N << "\n";
 	if (num_qbits <= 1) {
 		return false;
+	} else if (num_qbits + AllQubits->N - memoryHeap->numQubits <= 15) {
+		return false;
 	} else {
+		std::cout << "stalling " << num_qbits << " qubits.\n";
 		return true;
 	}
 }
@@ -161,7 +180,12 @@ void updateWaitlist() {
 	}
 }
 
-
+void clearWaitlist() {
+	for (vector<acquire_str*>::iterator it = pendingAcquires.begin(); it != pendingAcquires.end(); ) {
+		markAsReady((*it)->temp_addrs, (*it)->nq);
+		it = pendingAcquires.erase(it);
+	}
+}
 
 
 std::map<qbit_t *, int> logicalPhysicalMap;
@@ -428,7 +452,7 @@ void generateSquareGrid(int num){
 
 void readDeviceDescription(std::string deviceName, bool gen){
 	if (gen){
-		generateSquareGrid(1000);
+		generateSquareGrid(25);
 		return;
 	}
 	string filename = deviceName;
@@ -767,19 +791,7 @@ vector<qbit_t*> findClosestFree(qbit_t **targets, qbitElement_t **free, int num,
 * Memory Heap Definition  
 ***********************/
 
-// defining a structure to act as heap for pointer values to resources that must be updated                    
-typedef struct memHeap_str {
-  size_t maxSize; // capacity of this heap
-  size_t numQubits; // number of free qubits in this heap
-  qbitElement_t **contents;
-	size_t numPredecessors;
-	struct memHeap_str **predecessors;
-	size_t numSuccessors;
-	struct memHeap_str **successors;
-} memHeap_t;
 
-// declare global "resources" array address stack
-memHeap_t *memoryHeap = NULL;
 
 
 /* memHeapInit: initialize an empty heap for main */
@@ -1010,6 +1022,13 @@ int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
 }
 
 
+
+
+
+
+
+
+
 /*****************************
 * Functions to be instrumented
 ******************************/
@@ -1023,8 +1042,8 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 		std::cout << t << ": " << gate_str[gateID] << " ";
 		for (size_t i = 0; i < numOp; i++) {
 			//printf("q%u (%p)", qubitsFind(operands[i]), operands[i]);
-			//std::cout << "ql" << qubitsFind(operands[i]) << " ";
-			std::cout << "q" << getPhysicalID(operands[i]) << " ";
+			std::cout << "q" << qubitsFind(operands[i]) << " ";
+			//std::cout << "q" << getPhysicalID(operands[i]) << " ";
 		}
 		std::cout << "\n";
 		//printf("heap size: %zu\n", memoryHeap->numQubits);
@@ -1105,8 +1124,23 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	for (size_t i = 0; i < num_qbits; i++) {
 		int qIdx = qubitsFind(ancilla[i]);
 		if (qIdx == AllQubits->N) {
-			fprintf(stderr, "Cannot free qubit %p that has not been recorded.\n", ancilla[i]);
-			exit(1);
+			qIdx = tempQubitsFind(ancilla[i]);
+			if (qIdx == TempQubits->N) {
+				fprintf(stderr, "Cannot free qubit %p that has not been recorded.\n", ancilla[i]);
+				exit(1);
+			} else {
+				// found temp qubits
+				gate_t *free_gate = new gate_t();
+				free_gate->gate_name = "free";
+				free_gate->gate_id = _free;
+				vector<qbit_t*> ops;
+				for (int j = 0; j < num_qbits; j++) {
+					ops.push_back(ancilla[j]);
+				}
+				free_gate->operands = ops;
+				free_gate->num_operands = num_qbits;
+				pendingGates.push_back(free_gate);
+			}
 		}
 		qbitElement_t *toFree = (qbitElement_t *)malloc(sizeof(qbitElement_t));
 		qbitElement_t qe = AllQubits->Qubits[qIdx];
@@ -1143,6 +1177,11 @@ void schedule(gate_t *new_gate) {
 	int numOp = new_gate->num_operands; 
 	vector<qbit_t*> operands = new_gate->operands; 
 	int gateID = new_gate->gate_id;
+
+	string gate_name = new_gate->gate_name;
+	if (gate_name == "free") {
+		memHeapFree(numOp, 0, &operands[0]);;
+	}
 
 	int Tmax = 0;
 	for (int i = 0; i < numOp; i++) {
@@ -1240,8 +1279,8 @@ void tryPendingGates() {
 
 /* check and schedule a gate instruction*/
 void checkAndSched(int gateID, qbit_t **operands, int numOp) {
-	//updateWaitlist();
-	//tryPendingGates();
+	updateWaitlist();
+	tryPendingGates();
 	// check if operand in waiting qubit list
 	vector<qbit_t*> ops;
 	for (int i = 0; i < numOp; i++) {
@@ -1258,16 +1297,16 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 	//updateMaps(swaps);
 	//printSwapChain(swaps);
 	//
-	//if (isWaiting(ops, numOp)) {
-	//	// push qubit operands to the waitlist
-	//	markAsWait(ops, numOp);
-	//	// push gate to the pending queue
-	//	pendingGates.push_back(new_gate);
+	if (isWaiting(ops, numOp)) {
+		// push qubit operands to the waitlist
+		markAsWait(ops, numOp);
+		// push gate to the pending queue
+		pendingGates.push_back(new_gate);
 
-	//} else {
+	} else {
 		// schedule the gate at the earliest
 		schedule(new_gate);
-	//}
+	}
 }
 
 
@@ -1368,7 +1407,7 @@ void qasm_initialize ()
 
   // initialize with maximum possible levels of calling depth
   //stackInit(_MAX_CALL_DEPTH);
-	bool auto_gen_graph = false;
+	bool auto_gen_graph = true;
   readDeviceDescription("DeviceDescription.json",auto_gen_graph);
 	initializeDistances();
 	calculateDistances();
@@ -1418,6 +1457,15 @@ void qasm_resource_summary ()
   //  printf("%8llu %8llu %8llu \n", memo->resources[0], memo->resources[1], memo->resources[2]);   
   //   
   //}
+
+	if (!pendingGates.empty()) {
+		std::cout << " Stall has reached the end of program, \n start scheduling all pending gates...\n";
+		clearWaitlist();
+		//for (vector<gate_t*>::iterator it = pendingGates.begin(); it != pendingGates.end(); ++it) {
+		//	schedule((*it));
+		//}
+		tryPendingGates();
+	}
 
 	printf("==================================\n");
 	printf("Total number of qubits used: %u. \n", AllQubits->N);
