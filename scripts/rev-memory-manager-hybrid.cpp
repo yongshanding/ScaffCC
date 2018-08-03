@@ -51,15 +51,16 @@
 #define _Rx 15
 #define _Ry 16
 #define _Rz 17
-#define _free 18
-#define _TOTAL_GATES 19
+#define _SWAP 18
+#define _FREE 19
+#define _TOTAL_GATES 20
 
 using namespace std;
 
 // Policy switch
 int allocPolicy = _GLOBAL;
-int freePolicy = _EAGER; 
-int systemSize = 1000;
+int freePolicy = _NOFREE; 
+int systemSize = 6600;
 
 // DEBUG switch
 bool trackGates = true;
@@ -160,7 +161,7 @@ bool doStall(int num_qbits, int heap_idx) {
 	std::cout << "heap size: " << memoryHeap->numQubits << " total: " << AllQubits->N << "\n";
 	if (num_qbits <= 1) {
 		return false;
-	} else if (num_qbits + AllQubits->N - memoryHeap->numQubits <= 15) {
+	} else if (num_qbits + AllQubits->N - memoryHeap->numQubits <= systemSize) {
 		return false;
 	} else {
 		std::cout << "stalling " << num_qbits << " qubits.\n";
@@ -172,7 +173,9 @@ void updateWaitlist() {
 	for (vector<acquire_str*>::iterator it = pendingAcquires.begin(); it != pendingAcquires.end(); ) {
 		if (!doStall((*it)->nq, 0)) {
 			markAsReady((*it)->temp_addrs, (*it)->nq);
+			acquire_str *ptr = *it;
 			it = pendingAcquires.erase(it);
+			free(ptr);
 		}
 		else {
 			++it;
@@ -183,7 +186,9 @@ void updateWaitlist() {
 void clearWaitlist() {
 	for (vector<acquire_str*>::iterator it = pendingAcquires.begin(); it != pendingAcquires.end(); ) {
 		markAsReady((*it)->temp_addrs, (*it)->nq);
+		acquire_str *ptr = *it;
 		it = pendingAcquires.erase(it);
+		free(ptr);
 	}
 }
 
@@ -307,7 +312,7 @@ void print_qubit_table() {
 
 size_t *AllGates = NULL;
 
-std::string gate_str[_TOTAL_GATES] = {"X", "Y", "Z", "H", "T", "Tdag", "S", "Sdag", "CNOT", "PrepZ", "MeasZ", "PrepX", "MeasX", "Fredkin", "Toffoli", "Rx", "Ry", "Rz"};
+std::string gate_str[_TOTAL_GATES] = {"X", "Y", "Z", "H", "T", "Tdag", "S", "Sdag", "CNOT", "PrepZ", "MeasZ", "PrepX", "MeasX", "Fredkin", "Toffoli", "Rx", "Ry", "Rz", "swap", "free"};
 
 void gatesInit() {
 	AllGates = (size_t *)malloc(_TOTAL_GATES * sizeof(size_t));
@@ -319,97 +324,36 @@ void gatesInit() {
 void printGateCounts() {
 	std::cout << "Total number of gates by type: \n";
 	for (size_t i = 0; i < _TOTAL_GATES / 2; i++) {
-		std::cout << std::left << setw(7) << gate_str[i];
+		std::cout << std::left << setw(8) << gate_str[i];
 	}
 	std::cout << "\n";
 	for (size_t i = 0; i < _TOTAL_GATES / 2; i++) {
-		std::cout << std::left << setw(7) <<AllGates[i];
+		std::cout << std::left << setw(8) <<AllGates[i];
 	}
 	std::cout << "\n";
 	for (size_t i = _TOTAL_GATES / 2; i < _TOTAL_GATES; i++) {
-		std::cout << std::left << setw(7) <<gate_str[i];
+		std::cout << std::left << setw(8) <<gate_str[i];
 	}
 	std::cout << "\n";
 	for (size_t i = _TOTAL_GATES / 2; i < _TOTAL_GATES; i++) {
-		std::cout << std::left << setw(7) <<AllGates[i];
+		std::cout << std::left << setw(8) <<AllGates[i];
 	}
 	std::cout << "\n";
 }
 
 
+void printSchedLength() {
+	int maxT = 0;
+	for (std::map<qbit_t*, int>::iterator it= qubitUsage.begin(); it != qubitUsage.end(); ++it) {
+		if (it->second > maxT) {
+			maxT = it->second;
+		}
+	}
+	printf("==================================\n");
+	printf("Total number of time steps: %d. \n", maxT);
+	
+}
 
-/*****************
-* Stack Definition  
-******************/
-// The stack is in fact a call stack, but keeps frequencies of all previous parents
-// so that a childs frequency would be multiplied by that of all before it
-
-//// elements on the stack are of type:
-//struct {
-//	std::string func_name;
-//	int nInput;
-//	std::map<int, int> itrack; // idx -> time last used in function
-//	int nAncilla;
-//	std::map<int, int> atrack; // idx -> time last used in function
-//} stackElement_t;
-//
-//std::stack<stackElement_t*> fullStack;
-
-// defining a structure to act as stack for pointer values to resources that must be updated                    
-//typedef struct {
-//  stackElement_t *contents;
-//  int top;
-//  int maxSize;
-//} resourcesStack_t;
-//
-//// declare global "resources" array address stack
-//resourcesStack_t *resourcesStack = NULL;
-//
-//void stackInit (int maxSize) {
-//  resourcesStack = (resourcesStack_t*)malloc(sizeof(resourcesStack_t));
-//  if (resourcesStack == NULL) {
-//    fprintf(stderr, "Insufficient memory to initialize stack.\n");
-//    exit(1);
-//  }
-//  stackElement_t *newContents;
-//  newContents = (stackElement_t*)malloc( sizeof(stackElement_t)*maxSize );
-//  if (newContents == NULL) {
-//    fprintf(stderr, "Insufficient memory to initialize stack.\n");
-//    exit(1);
-//  }
-//  resourcesStack->contents = newContents;
-//  resourcesStack->maxSize = maxSize;
-//  resourcesStack->top = -1; /* i.e. empty */ 
-//}
-//
-//void stackDestroy() {
-//  free(resourcesStack->contents);
-//  resourcesStack->contents = NULL;
-//  resourcesStack->maxSize = 0;
-//  resourcesStack->top = -1;
-//}
-//
-//void stackPush (stackElement_t stackElement) {
-//  if (resourcesStack->top >= resourcesStack->maxSize - 1) {
-//    fprintf (stderr, "Can't push element on stack: Stack is full.\n");
-//    exit(1);
-//  }
-//  // insert element and update "top"
-//  resourcesStack->contents[++resourcesStack->top] = stackElement;
-//}
-//
-//void stackPop () {
-//  if (debugRevMemHybrid)
-//    printf("Popping from stack\n");  
-//  if (resourcesStack->top < 0) {
-//    fprintf (stderr, "Can't pop element from stack: Stack is empty.\n");
-//    exit(1);    
-//  }
-//
-//  //update "top"
-//  resourcesStack->top--;
-//
-//}
 
 /*****************************
 * Physical Connectivity Graph 
@@ -450,9 +394,9 @@ void generateSquareGrid(int num){
   }
 }
 
-void readDeviceDescription(std::string deviceName, bool gen){
-	if (gen){
-		generateSquareGrid(25);
+void readDeviceDescription(std::string deviceName){
+	if (systemSize != -1){
+		generateSquareGrid(systemSize);
 		return;
 	}
 	string filename = deviceName;
@@ -485,7 +429,7 @@ void readDeviceDescription(std::string deviceName, bool gen){
 	initializeConnections(numQubits);
 	rapidjson::Value::ConstMemberIterator itr = topology.MemberBegin();
 	++itr;
-	for(itr; itr!=topology.MemberEnd(); ++itr){
+	for( ; itr!=topology.MemberEnd(); ++itr){
 		int index = std::atoi(itr->name.GetString()); 
 		const rapidjson::Value& list = itr->value;
 		if (list.IsArray()){
@@ -518,24 +462,70 @@ void initializeDistances(){
 	}
 }
 
-void calculateDistances(){
-	for (int i = 0; i < neighborSets.size(); i++){
-		for (int j = 0; j < neighborSets.size(); j++){
-			if (i == j) distanceMatrix[i][j] = 0;
-			if (std::find(neighborSets[i].begin(), neighborSets[i].end(), j)
-					!= neighborSets[i].end()) distanceMatrix[i][j] = 1;
-			else distanceMatrix[i][j] = 100000;
-		}
-	}
-	for (int k = 0; k < neighborSets.size(); k++){
-		for (int i = 0; i < neighborSets.size(); i++){
-			for (int j = 0; j < neighborSets.size(); j++){
-				if (distanceMatrix[i][j] > distanceMatrix[i][k] + distanceMatrix[k][j]){
-					distanceMatrix[i][j] = distanceMatrix[i][k] + distanceMatrix[k][j];
-				}
+void bfs(int src) {
+	int V = neighborSets.size();
+	bool *visited = new bool[V];
+	for(int i = 0; i < V; i++)
+		visited[i] = false;
+	
+	queue<pair<int,int> > queue;
+	
+	visited[src] = true;
+	distanceMatrix[src][src] = 0;
+	queue.push(make_pair(src, 0));
+	
+	int i;
+	
+	while(!queue.empty())
+	{
+		pair<int, int> p = queue.front();
+		int s = p.first;
+		int d = p.second;
+		cout << s << " ";
+		queue.pop();
+		
+		for (i = 0; i < neighborSets[s].size(); i++)
+		{
+			int j = neighborSets[s][i];
+			if (!visited[j])
+			{
+				visited[j] = true;
+				distanceMatrix[src][j] = d+1;
+				distanceMatrix[j][src] = d+1;
+				queue.push(make_pair(j, d+1));
 			}
 		}
 	}
+}
+
+
+void calculateDistances(){
+	// Floyd-Warshall
+	//for (int i = 0; i < neighborSets.size(); i++){
+	//	for (int j = 0; j < neighborSets.size(); j++){
+	//		if (i == j) distanceMatrix[i][j] = 0;
+	//		if (std::find(neighborSets[i].begin(), neighborSets[i].end(), j)
+	//				!= neighborSets[i].end()) distanceMatrix[i][j] = 1;
+	//		else distanceMatrix[i][j] = 100000;
+	//	}
+	//}
+	//for (int i = 0; i < neighborSets.size(); i++){
+	//	for (int j = i; j < neighborSets.size(); j++){
+	//		for (int k = 0; k < neighborSets.size(); k++){
+	//			std::cerr << "k i j: " << k << " " << i << " " << j << "\n";
+	//			int d = distanceMatrix[i][k] + distanceMatrix[k][j];
+	//			if (distanceMatrix[i][j] > d){
+	//				distanceMatrix[i][j] = d;
+	//				distanceMatrix[j][i] = d;
+	//			}
+	//		}
+	//	}
+	//}
+	// All BFS
+	for (int i = 0; i < neighborSets.size(); i++) {
+		bfs(i);
+	}
+	
 }
 
 
@@ -633,12 +623,12 @@ void printSwapChain(vector<pair<int,int> > swaps){
 }
 
 void printDistances(){
-	std::cout << "Distance Matrix: \n";
+	std::cerr << "Distance Matrix: \n";
 	for (int i = 0; i < neighborSets.size(); i++){
 		for (int j = 0; j < neighborSets.size(); j++){
-			std::cout << distanceMatrix[i][j] << " ";
+			std::cerr << std::left << setw(6) << distanceMatrix[i][j] << " ";
 		}
-		std::cout << "\n";
+		std::cerr << "\n";
 	}
 }
 
@@ -659,140 +649,10 @@ vector<qbit_t*> findClosestFree(qbit_t **targets, qbitElement_t **free, int num,
 	return allocated;
 }	
 
-/**********************
-* Hash Table Definition
-***********************/
-
-// defining a structure that can be hashed using "uthash.h"
-//typedef struct {
-//  
-//  char function_name[_MAX_FUNCTION_NAME];             /* these three fields */
-//  int int_params[_MAX_INT_PARAMS];                    /* comprise */
-//  double double_params[_MAX_DOUBLE_PARAMS];           /* the key */
-//
-//  // resources[0] ---> Invocation count (frequency) of module 
-//  // resources[1] ---> Number of integer arguments
-//  // resources[2] ---> Number of double arguments
-//  int long long resources[3];                    /* hash table value field */
-//
-//  UT_hash_handle hh;                                  /* make this structure hashable  */
-//
-//} hash_entry_t;
-//
-//// defining multi-field key for hash table
-//typedef struct {
-//  char function_name[_MAX_FUNCTION_NAME];      
-//  int int_params[_MAX_INT_PARAMS];             
-//  double double_params[_MAX_DOUBLE_PARAMS];    
-//} lookup_key_t;
-//
-//// how many bytes long is the key?
-//const size_t keylen = _MAX_FUNCTION_NAME * sizeof(char)
-//                    + _MAX_INT_PARAMS * sizeof(int)
-//                    + _MAX_DOUBLE_PARAMS * sizeof(double);
-//
-//// declare global memoization hash table
-//hash_entry_t *memos = NULL;
-//
-//void print_hash_table() {
-//  printf("<<<---------------------------------------\n");  
-//  printf("current hash table:\n");
-//  int i;
-//  hash_entry_t *memo;
-//  for (memo=memos; memo != NULL; memo=memo->hh.next) {
-//    printf("%s -- ", memo->function_name);
-//    for (i=0; i<_MAX_INT_PARAMS; i++)
-//     printf("%d ", memo->int_params[i]); 
-//    printf("-- ");
-//    for (i=0; i<_MAX_DOUBLE_PARAMS; i++)
-//     printf("%f ", memo->double_params[i]);   
-//    printf("-- ");       
-//    for (i=0; i<3; i++)
-//     printf("%llu ", memo->resources[i]);   
-//    printf("\n"); 
-//  }
-//  printf("--------------------------------------->>>\n");  
-//}
-//
-///* add_memo: add entry in hash table */
-//void add_memo ( char *function_name,                          /* function name string */
-//                int *int_params, int num_ints,           /* integer parameters */
-//                double *double_params, int num_doubles,  /* double parameters */
-//                int long long *resources                 /* resources for that function version */
-//                ) {             
-//
-//  // allocate space for "memo" entry and
-//  // set "memo" space to zero to avoid random byte inconsistency in lookup 
-//  hash_entry_t *memo = calloc( 1, sizeof(hash_entry_t) );
-//  if (memo == NULL) {
-//    fprintf(stderr, "Insufficient memory to add memo.\n");
-//    exit(1);
-//  }  
-//
-//  // copy into field of "memo"
-//  strcpy (memo->function_name, function_name);
-//  memcpy (memo->int_params, int_params, num_ints * sizeof(int));
-//  memcpy (memo->double_params, double_params, num_doubles * sizeof(double));
-//  memcpy (memo->resources, resources, 3 * sizeof(int long long));
-// 
-//  // HASH_ADD (hh_name, head, keyfield_name, key_len, item_ptr)
-//  HASH_ADD(hh, memos, function_name, keylen, memo);
-//}
-//
-///* find_memo: find an entry in hash table */
-//hash_entry_t *find_memo ( char *function_name, 
-//                          int *int_params, int num_ints,
-//                          double *double_params, int num_doubles
-//                              ) {
-//
-//  // returned entry -- NULL if not found
-//  hash_entry_t *memo = NULL;
-//
-//  // build appropriate lookup_key object
-//  lookup_key_t *lookup_key = calloc(1, sizeof(lookup_key_t) );
-//  if (lookup_key == NULL) {
-//    fprintf(stderr, "Insufficient memory to create lookup key.\n");
-//    exit(1);
-//  }  
-//  memset (lookup_key, 0, sizeof(lookup_key_t));
-//  strcpy (lookup_key->function_name, function_name);
-//  memcpy (lookup_key->int_params, int_params, num_ints * sizeof(int));
-//  memcpy (lookup_key->double_params, double_params, num_doubles * sizeof(double));
-//
-//  HASH_FIND (hh, memos, lookup_key, keylen, memo);
-//    
-//
-//  //free(lookup_key->double_params);  
-//  //free(lookup_key->int_params);
-//  //free(lookup_key->function_name);
-//  free(lookup_key);
-//  lookup_key = NULL;
-//  return memo;
-//}
-//
-///* delete_memo: delete a hash table entry */
-//void delete_memo (hash_entry_t *memos, hash_entry_t *memo) {
-//  HASH_DEL (memos, memo);
-//  free(memo);
-//}
-//
-///*void delete_all_memos() {
-//  hash_entry_t *memo, *tmp;
-//
-//  // deletion-safe iteration
-//  HASH_ITER(hh, memos, memo, tmp) {
-//    HASH_DEL(memos, memo);  
-//    free(memo);            
-//  }
-//}*/
-
 
 /***********************
 * Memory Heap Definition  
 ***********************/
-
-
-
 
 /* memHeapInit: initialize an empty heap for main */
 memHeap_t *memHeapNew(size_t maxSize) {
@@ -943,19 +803,21 @@ int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **i
 	}
 	size_t available = M->numQubits;
 	if (num_qbits <= available) {
-  	if (debugRevMemHybrid)
+  	if (debugRevMemHybrid) {
     	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
-		vector<qbit_t *> closestSet = findClosestFree(inter, M->contents, num_qbits, available, targets_size);
+		}
+		//vector<qbit_t *> closestSet = findClosestFree(inter, M->contents, num_qbits, available, targets_size);
 		for (size_t i = 0; i < num_qbits; i++) {
-			//qbitElement_t *qq = memHeapPop(M);
-			qbitElement_t *qq = memHeapRemoveQubit(M, closestSet[i]);
+			qbitElement_t *qq = memHeapPop(M);
+			//qbitElement_t *qq = memHeapRemoveQubit(M, closestSet[i]);
 			res[i] = *qq; // copy over the value of the struct
 			free(qq); // since popped off heap, need to free
 		}
 		return num_qbits;
 	} else {
-  	if (debugRevMemHybrid)
+  	if (debugRevMemHybrid) {
     	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
+		}
 		for (size_t i = 0; i < available; i++) {
 			qbitElement_t *qq = memHeapPop(M);
 			res[i] = *qq; // copy over the value of the struct
@@ -1032,7 +894,6 @@ int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
 /*****************************
 * Functions to be instrumented
 ******************************/
-//TODO!!
 // 1. memory heap with mirroring shape: node contains heap pointer
 // 2. optimize for uncompute choices
 
@@ -1042,8 +903,8 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 		std::cout << t << ": " << gate_str[gateID] << " ";
 		for (size_t i = 0; i < numOp; i++) {
 			//printf("q%u (%p)", qubitsFind(operands[i]), operands[i]);
-			std::cout << "q" << qubitsFind(operands[i]) << " ";
-			//std::cout << "q" << getPhysicalID(operands[i]) << " ";
+			//std::cout << "q" << qubitsFind(operands[i]) << " ";
+			std::cout << "q" << getPhysicalID(operands[i]) << " ";
 		}
 		std::cout << "\n";
 		//printf("heap size: %zu\n", memoryHeap->numQubits);
@@ -1132,7 +993,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 				// found temp qubits
 				gate_t *free_gate = new gate_t();
 				free_gate->gate_name = "free";
-				free_gate->gate_id = _free;
+				free_gate->gate_id = _FREE;
 				vector<qbit_t*> ops;
 				for (int j = 0; j < num_qbits; j++) {
 					ops.push_back(ancilla[j]);
@@ -1179,6 +1040,8 @@ void schedule(gate_t *new_gate) {
 	int gateID = new_gate->gate_id;
 
 	string gate_name = new_gate->gate_name;
+
+
 	if (gate_name == "free") {
 		memHeapFree(numOp, 0, &operands[0]);;
 	}
@@ -1190,14 +1053,39 @@ void schedule(gate_t *new_gate) {
 			Tmax = T;
 		}
 	}
-	for (int i = 0; i < numOp; i++) {
-		qubitUsage[operands[i]] = Tmax+1; //modify usage in place
+
+	if (gate_name == "swap_chain") {
+		for (int i = 0; i < numOp; i++) {
+			qubitUsage[operands[i]] = Tmax+numOp-1; //modify usage in place
+		}
+		vector<pair<int,int> > swaps;
+		for (int i = 0; i < numOp-1; i++) {
+			qbit_t *swapOp[2];
+			swapOp[0] = operands[i];
+			swapOp[1] = operands[i+1];
+			swaps.push_back(make_pair(getPhysicalID(swapOp[0]), getPhysicalID(swapOp[1])));
+			recordGate(_SWAP, &swapOp[0], 2, Tmax+i+1);
+		}
+		updateMaps(swaps);
 	}
-	qbit_t *op_arrs[numOp];
-	for (int i = 0; i < numOp; i++){
-		op_arrs[i] = operands[i];
+	else {
+		for (int i = 0; i < numOp; i++) {
+			qubitUsage[operands[i]] = Tmax+1; //modify usage in place
+		}
+		qbit_t *op_arrs[numOp];
+		for (int i = 0; i < numOp; i++){
+			op_arrs[i] = operands[i];
+		}
+		recordGate(gateID, &op_arrs[0], numOp, Tmax+1);
+		//if (gate_name == "swap" && numOp == 2) {
+		//	int pq0 = getPhysicalID(operands[0]); //logicalPhysicalMap[operands[0]];
+		//	int pq1 = getPhysicalID(operands[1]); //logicalPhysicalMap[operands[1]];
+		//	vector<pair<int, int> > op_pair;
+		//	op_pair.push_back(make_pair(pq0,pq1));
+		//	updateMaps(op_pair);
+		//}
 	}
-	recordGate(gateID, &op_arrs[0], numOp, Tmax+1);
+
 	return;	
 }
 
@@ -1293,19 +1181,46 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 	new_gate->num_operands = numOp;
 		
 	//vector<pair<qbit_t*,qbit_t*> > swaps = resolveInteraction(operands, numOp);
-	//vector<pair<int,int> > swaps = resolveInteraction(operands, numOp);
+	vector<pair<int,int> > swaps = resolveInteraction(operands, numOp);
 	//updateMaps(swaps);
 	//printSwapChain(swaps);
-	//
-	if (isWaiting(ops, numOp)) {
-		// push qubit operands to the waitlist
-		markAsWait(ops, numOp);
-		// push gate to the pending queue
-		pendingGates.push_back(new_gate);
+	
+	vector<gate_t*> resolvedGates;
+	if (!swaps.empty()) {
+		gate_t *swap_gate = new gate_t();
+		swap_gate->gate_name = "swap_chain";
+		swap_gate->gate_id = _SWAP;
+		swap_gate->num_operands = 0;
+		vector<qbit_t*> swap_ops;
+		vector<pair<int,int> >::iterator it = swaps.begin();
+		qbit_t *q0 =  getLogicalAddr(it->first); 
+		swap_ops.push_back(q0);	
+		swap_gate->num_operands++;
+		for (it = swaps.begin(); it != swaps.end(); it++) {
+			qbit_t *q2 = getLogicalAddr(it->second); //physicalLogicalMap[it->second];
+			swap_ops.push_back(q2);
 
-	} else {
-		// schedule the gate at the earliest
-		schedule(new_gate);
+			swap_gate->num_operands++;
+		}
+		swap_gate->operands = swap_ops;
+		resolvedGates.push_back(swap_gate);
+	}
+	resolvedGates.push_back(new_gate);
+
+	for (vector<gate_t*>::iterator it = resolvedGates.begin(); it != resolvedGates.end(); ++it) {
+		gate_t *this_gate = *it;
+		vector<qbit_t*> this_ops = this_gate->operands;
+		int this_numOp= this_gate->num_operands;
+		if (isWaiting(this_ops, this_numOp)) {
+			// push qubit operands to the waitlist
+			markAsWait(this_ops, this_numOp);
+			// push gate to the pending queue
+			pendingGates.push_back(this_gate);
+
+		} else {
+			// schedule the gate at the earliest
+			schedule(this_gate);
+		}
 	}
 }
 
@@ -1407,10 +1322,13 @@ void qasm_initialize ()
 
   // initialize with maximum possible levels of calling depth
   //stackInit(_MAX_CALL_DEPTH);
-	bool auto_gen_graph = true;
-  readDeviceDescription("DeviceDescription.json",auto_gen_graph);
+	//bool auto_gen_graph = true;
+  readDeviceDescription("DeviceDescription.json");
+	std::cerr << "Device reading complete.\n";
 	initializeDistances();
 	calculateDistances();
+	std::cerr << "Graph distances calculated.\n";
+	
 	//printConnectivityGraph();
 	//printDistances();
   //stackInit(_MAX_CALL_DEPTH);
@@ -1469,6 +1387,10 @@ void qasm_resource_summary ()
 
 	printf("==================================\n");
 	printf("Total number of qubits used: %u. \n", AllQubits->N);
+
+	printSchedLength();
+
+	printf("==================================\n");
 
 	printGateCounts();
 	memHeapDelete(memoryHeap);
