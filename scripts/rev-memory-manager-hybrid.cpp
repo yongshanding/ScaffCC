@@ -28,14 +28,17 @@
 #define _GLOBAL 0
 #define _GLOBAL_MAX_SIZE 100000
 #define _HIERAR 1
+
 #define _EAGER 0
 #define _LAZY 1
 #define _OPT 2
 #define _NOFREE 3
+
 #define _LIFO 0
 #define _MINQ 1
 #define _HALF 2
-#define _CLOSEST 3
+#define _CLOSEST_BLOCK 3
+#define _CLOSEST_QUBIT 4
 
 
 #define _X 0
@@ -63,7 +66,7 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST;
+int allocPolicy = _CLOSEST_QUBIT;
 int freePolicy = _EAGER; 
 bool swapAlloc = false;
 int systemSize = 500;
@@ -859,6 +862,8 @@ qbitElement_t *memHeapRemoveQubit (memHeap_t *M, qbit_t *addr) {
 	exit(1);
 }
 
+
+/* closest qubits block (heap or new)*/
 int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **inter, int targets_size) {
 	if (M == NULL) {
 		fprintf(stderr, "Requesting qubits from invalid memory heap.\n");
@@ -1148,7 +1153,24 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				heap_num = num_qbits;
 			} else if (allocPolicy == _HALF){
 				heap_num = num_qbits / 2;
-			} else if (allocPolicy == _CLOSEST) {
+			} else if (allocPolicy == _CLOSEST_QUBIT) {
+				for (int j = 0; j < num_qbits; j++) {
+					int num = memHeapClosestQubits(1, memoryHeap, &res[j], inter, ninter); 
+					if (num != 1) {
+						fprintf(stderr, "Unable to initialize %u qubits.\n", 1);
+						exit(1);
+					}
+					// Store the addresses into result
+					//for (size_t i = 0; i < num_qbits; i++) {
+					result[j] = res[j].addr;
+						//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
+						//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
+					//}
+					//std::cerr << "hihi\n";
+				}
+				return num_qbits;
+
+			} else if (allocPolicy == _CLOSEST_BLOCK) {
 
 				int num = memHeapClosestQubits(num_qbits, memoryHeap, &res[0], inter, ninter); 
 				if (num != num_qbits) {
@@ -1249,14 +1271,20 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 
 /* freeOnOff: return 1 if uncompute, 0 otherwise*/
 int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
-	int weight_q = 1;
-	int weight_g = 1;
-	if (nOut > nAnc) {
+	if (freePolicy == _EAGER) {
+		return 1;
+	} else if (freePolicy == _NOFREE) {
 		return 0;
-	} else if (weight_q * (nAnc-nOut) < weight_g * nGate) {
-		return 0;
+	} else if (freePolicy == _OPT) {
+		int weight_q = 1;
+		int weight_g = 1;
+		if (nOut > nAnc) {
+			return 0;
+		} else if (weight_q * (nAnc-nOut) < weight_g * nGate) {
+			return 0;
+		}
+		return 1;
 	}
-	return 1;
 }
 
 
