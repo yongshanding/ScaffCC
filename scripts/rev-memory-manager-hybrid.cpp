@@ -32,6 +32,11 @@
 #define _LAZY 1
 #define _OPT 2
 #define _NOFREE 3
+#define _LIFO 0
+#define _MINQ 1
+#define _HALF 2
+#define _CLOSEST 3
+
 
 #define _X 0
 #define _Y 1
@@ -58,13 +63,17 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _GLOBAL;
-int freePolicy = _NOFREE; 
-int systemSize = 6600;
+int allocPolicy = _CLOSEST;
+int freePolicy = _EAGER; 
+bool swapAlloc = false;
+int systemSize = 500;
 
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = false;
+
+
+int num_gate_scheduled = 0;
 
 typedef int16_t qbit_t;
 
@@ -197,7 +206,8 @@ std::map<qbit_t *, int> logicalPhysicalMap;
 std::map<int, qbit_t *> physicalLogicalMap;
 std::vector<std::vector<int> > neighborSets;
 std::vector<std::vector<int> > distanceMatrix;
-std::vector<int> qubitOrdering;
+std::vector<int> unusedQubits;
+int CoM = 0; // physical id of center of mass of all qubits so far, init by calculateDistances
 
 void qubitsInit() {
 	AllQubits = (all_qbits_t *)malloc(sizeof(all_qbits_t));
@@ -362,7 +372,7 @@ void printSchedLength() {
 void initializeConnections(int num){
   for (int i = 0; i < num; i++){
     neighborSets.push_back(std::vector<int>());
-		qubitOrdering.push_back(i);
+		unusedQubits.push_back(i);
   }
 }
 
@@ -383,6 +393,7 @@ void generateSquareGrid(int num){
 	int length = gridLength;
 	initializeConnections(length*length);
   for (int i = 0; i < length*length; i++){
+			//unusedQubits.push_back(i);
       if (((i+1)%length) > 0)
       neighborSets[i].push_back(i+1);
 	if ((i)%length > 0)
@@ -414,9 +425,9 @@ void readDeviceDescription(std::string deviceName){
 	if(layout.IsArray()){
 		for(rapidjson::SizeType i=0; i < layout.Size(); i++){
 			const rapidjson::Value& entry = layout[i];
-            qubitOrdering.push_back(entry.GetInt());
+            unusedQubits.push_back(entry.GetInt());
 		}
-		systemSize = qubitOrdering.size();
+		systemSize = unusedQubits.size();
 	}
 	else{
 		if(debugRevMemHybrid) 
@@ -462,7 +473,8 @@ void initializeDistances(){
 	}
 }
 
-void bfs(int src) {
+int bfs(int src) {
+	int acc = 0; // accumulative sum of distances to all other nodes
 	int V = neighborSets.size();
 	bool *visited = new bool[V];
 	for(int i = 0; i < V; i++)
@@ -481,7 +493,7 @@ void bfs(int src) {
 		pair<int, int> p = queue.front();
 		int s = p.first;
 		int d = p.second;
-		cout << s << " ";
+		//cout << s << " ";
 		queue.pop();
 		
 		for (i = 0; i < neighborSets[s].size(); i++)
@@ -492,10 +504,12 @@ void bfs(int src) {
 				visited[j] = true;
 				distanceMatrix[src][j] = d+1;
 				distanceMatrix[j][src] = d+1;
+				acc += d+1;
 				queue.push(make_pair(j, d+1));
 			}
 		}
 	}
+	return acc;
 }
 
 
@@ -522,12 +536,35 @@ void calculateDistances(){
 	//	}
 	//}
 	// All BFS
+	int min_dist = systemSize*systemSize;
+	int min_i = 0;
 	for (int i = 0; i < neighborSets.size(); i++) {
-		bfs(i);
+		int d = bfs(i);
+		if (d < min_dist) {
+			min_i = i;
+			min_dist = d;
+		}
 	}
+	CoM = min_i;
 	
 }
 
+/* find physical index of node in subgraph that's closest to center of mass of targets*/
+int findCoM(vector<int> targets, vector<int> subgraph) {
+	int min_d = systemSize * systemSize;
+	int min_i = 0;
+	for (vector<int>::iterator sit = subgraph.begin(); sit != subgraph.end(); ++sit) {
+		int sum_d = 0;
+		for (vector<int>::iterator tit = targets.begin(); tit != targets.end(); ++tit) {
+			sum_d += distanceMatrix[*sit][*tit];
+		}
+		if (sum_d <= min_d) {
+			min_d = sum_d;
+			min_i = *sit;
+		}
+	}
+	return min_i;
+}
 
 vector<int> recoverPath(vector<int> prev, int dest){
 	int u = dest;
@@ -542,6 +579,7 @@ vector<int> recoverPath(vector<int> prev, int dest){
 vector<pair<int,int> >buildSwaps(vector<int> path){
 	//vector<pair<qbit_t*,qbit_t*> > swaps;
 	vector<pair<int,int> > swaps;
+	//std::cerr << "path " << path.size() << "\n";
 	for (int i = 0; i < path.size()-1; i++){
 //		pair<qbit_t*, qbit_t*> new_swap = make_pair(getLogicalAddr(path[i]),getLogicalAddr(path[i+1]));
 		pair<int,int> new_swap = make_pair(path[i],path[i+1]);
@@ -554,6 +592,7 @@ vector<pair<int,int> > dijkstraSearch(qbit_t *src, qbit_t *dst){
 //vector<pair<qbit_t *, qbit_t *> > dijkstraSearch(qbit_t *src, qbit_t *dst){
 	int source = getPhysicalID(src);
 	int dest = getPhysicalID(dst);
+	//std::cerr << "resolve src: " << source << " dst: " << dest << "\n";
 	std::priority_queue< std::pair<int,int>, vector<std::pair<int,int> >,greater<std::pair<int,int> > > Q;
 	vector<int> unvisited;
 	vector<int> distances(neighborSets.size(), _INT_MAX);
@@ -568,20 +607,24 @@ vector<pair<int,int> > dijkstraSearch(qbit_t *src, qbit_t *dst){
 		Q.pop();
 		for (int i = 0; i < neighborSets[u].size(); i++){
 			int v = neighborSets[u][i];
-			if (distances[v] > distances[u] + 1){
-				distances[v] = distances[u] + 1;
-				previous[v] = u;
-				Q.push(make_pair(distances[v], v));
+			if (getLogicalAddr(v) != NULL) { // only used qubits
+				if (distances[v] > distances[u] + 1){
+					distances[v] = distances[u] + 1;
+					previous[v] = u;
+					Q.push(make_pair(distances[v], v));
+				}
 			}
 		}
 	}
 	vector<int> path_reversed = recoverPath(previous, dest);
+	//std::cerr << "size: " << path_reversed.size() << "\n";
 	vector<int> path (path_reversed.size(),-1);
 	int j = 0;
 	for(int i = path_reversed.size()-1; i >= 0; i--){
 		path[j++] = path_reversed[i];
 	}
 	vector<pair<int,int> > swap_chain = buildSwaps(path);
+
 	return swap_chain;
 }
 
@@ -632,19 +675,43 @@ void printDistances(){
 	}
 }
 
-vector<qbit_t*> findClosestFree(qbit_t **targets, qbitElement_t **free, int num, int free_size, int targets_size){
+vector<int> findClosestNew(int center, int num, int *sum_dist){
+	std::vector<std::pair<int,int> > sortedFree;// dist,physicalID
+	int unusedQubits_size = unusedQubits.size();
+	//std::cerr << "findClosestNew(" << num << ")\n";
+	for (int i = 0; i < unusedQubits_size; i++){
+		//std::cerr << unusedQubits[i] << "\t";
+		int dist = distanceMatrix[center][unusedQubits[i]];
+		
+		sortedFree.push_back(make_pair(dist,unusedQubits[i]));	
+	}	
+	std::sort(sortedFree.begin(),sortedFree.end());
+	std::vector<int> allocated;
+	//std::cerr << "\nallocated\n";
+	for (int i = 0; i < num; i++){
+		//std::cerr << sortedFree[i].second << "\t"; 
+		allocated.push_back(sortedFree[i].second);
+		*sum_dist += sortedFree[i].first;
+	}
+	//std::cerr << "\n";
+	return allocated;
+}	
+
+vector<qbit_t*> findClosestFree(int center, qbitElement_t **free, int num, int free_size, int targets_size, int *sum_dist){
 	std::vector<std::pair<int,qbit_t*> > sortedFree;
 	for (int i = 0; i < free_size; i++){
-		int dist = 0;
-		for (int j = 0; j < targets_size; j++){
-			dist += getDistance(free[i]->addr, targets[j]);
-		}
+		//int dist = 0;
+		//for (int j = 0; j < targets_size; j++){
+		//	dist += getDistance(free[i]->addr, targets[j]);
+		//}
+		int dist = distanceMatrix[center][getPhysicalID(free[i]->addr)];
 		sortedFree.push_back(make_pair(dist,free[i]->addr));	
 	}	
 	std::sort(sortedFree.begin(),sortedFree.end());
 	std::vector<qbit_t *> allocated;
 	for (int i = 0; i < num; i++){
 		allocated.push_back(sortedFree[i].second);
+		*sum_dist += sortedFree[i].first;
 	}
 	return allocated;
 }	
@@ -792,6 +859,105 @@ qbitElement_t *memHeapRemoveQubit (memHeap_t *M, qbit_t *addr) {
 	exit(1);
 }
 
+int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **inter, int targets_size) {
+	if (M == NULL) {
+		fprintf(stderr, "Requesting qubits from invalid memory heap.\n");
+		exit(1);
+	}
+	if (res == NULL) {
+		fprintf(stderr, "Result array not properly initialized.\n.");
+		exit(1);
+	}
+	if (num_qbits == 0) {
+		return 0;
+	}
+	size_t available = M->numQubits;
+	vector<qbit_t *> closestSet;
+
+	int new_dist = 0;
+	int subsize = M->numQubits + unusedQubits.size();
+	vector<int> subgraph;
+	for (int i = 0; i < subsize; i++) {
+		int heapsize = M->numQubits;
+		if (i < heapsize) {
+			subgraph.push_back(getPhysicalID(M->contents[i]->addr));
+		} else {
+			subgraph.push_back(unusedQubits[i - heapsize]);
+		}
+	}
+	vector<int> targets;
+	for (int i = 0; i < targets_size; i++) {
+		targets.push_back(getPhysicalID(inter[i]));
+	}
+	int CoM_inter = findCoM(targets, subgraph);
+	vector<int> closestNewSet = findClosestNew(CoM_inter, num_qbits, &new_dist);
+
+	if (num_qbits <= available) {
+  	if (debugRevMemHybrid) {
+    	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
+		}
+		int free_dist = 0;
+		vector<qbit_t *> closestFreeSet = findClosestFree(CoM_inter, M->contents, num_qbits, available, targets_size, &free_dist);
+		//std::cerr << "free dist: " << free_dist << " new dist: " << new_dist << "\n";
+		if (free_dist <= new_dist) {
+			//std::cerr << "choosing free\n";
+			closestSet = closestFreeSet;
+			for (size_t i = 0; i < num_qbits; i++) {
+				qbitElement_t *qq;
+				if (allocPolicy == _LIFO) {
+					qq = memHeapPop(M);
+				} else {
+					qq = memHeapRemoveQubit(M, closestSet[i]);
+				}
+				res[i] = *qq; // copy over the value of the struct
+				free(qq); // since popped off heap, need to free
+			}
+		} else {
+			//std::cerr << "choosing new\n";
+			vector<int> physicalIDs = closestNewSet;
+		  if (debugRevMemHybrid)
+		  	printf("Obtaining %u new qubits.\n", num_qbits);  
+			// malloc new qubits!
+			qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
+			if (newt == NULL) {
+		    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+		    exit(1);
+		  }
+			for (size_t i = 0; i < num_qbits; i++) {
+				unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
+				res[i].addr = &newt[i];
+				res[i].idx = AllQubits->N;
+				qubitsAdd(&newt[i]);
+				logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
+				physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
+				waitlist.insert(make_pair(res[i].addr, false));
+			}
+		}
+
+
+	} else {
+		vector<int> physicalIDs = closestNewSet;
+	  if (debugRevMemHybrid)
+	  	printf("Obtaining %u new qubits.\n", num_qbits);  
+		// malloc new qubits!
+		qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
+		if (newt == NULL) {
+	    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+	    exit(1);
+	  }
+		for (size_t i = 0; i < num_qbits; i++) {
+			unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
+			res[i].addr = &newt[i];
+			res[i].idx = AllQubits->N;
+			qubitsAdd(&newt[i]);
+			logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
+			physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
+			waitlist.insert(make_pair(res[i].addr, false));
+		}
+	}
+	return num_qbits;
+}
+
 int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **inter, int targets_size) {
 	if (M == NULL) {
 		fprintf(stderr, "Requesting qubits from invalid memory heap.\n");
@@ -801,15 +967,38 @@ int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **i
 		fprintf(stderr, "Result array not properly initialized.\n.");
 		exit(1);
 	}
+	if (num_qbits == 0) {
+		return 0;
+	}
 	size_t available = M->numQubits;
+	vector<qbit_t *> closestSet;
 	if (num_qbits <= available) {
   	if (debugRevMemHybrid) {
     	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
-		//vector<qbit_t *> closestSet = findClosestFree(inter, M->contents, num_qbits, available, targets_size);
+		if (allocPolicy != _LIFO) {
+			int free_dist = 0;
+			int subsize = M->numQubits;
+			vector<int> subgraph;
+			for (int i = 0; i < subsize; i++) {
+				int heapsize = M->numQubits;
+				subgraph.push_back(getPhysicalID(M->contents[i]->addr));
+
+			}
+			vector<int> targets;
+			for (int i = 0; i < targets_size; i++) {
+				targets.push_back(getPhysicalID(inter[i]));
+			}
+			int inter_center = findCoM(targets, subgraph);
+			closestSet = findClosestFree(inter_center, M->contents, num_qbits, available, targets_size, &free_dist);
+		}
 		for (size_t i = 0; i < num_qbits; i++) {
-			qbitElement_t *qq = memHeapPop(M);
-			//qbitElement_t *qq = memHeapRemoveQubit(M, closestSet[i]);
+			qbitElement_t *qq;
+			if (allocPolicy == _LIFO) {
+				qq = memHeapPop(M);
+			} else {
+				qq = memHeapRemoveQubit(M, closestSet[i]);
+			}
 			res[i] = *qq; // copy over the value of the struct
 			free(qq); // since popped off heap, need to free
 		}
@@ -845,12 +1034,18 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
     exit(1);
   }
 	// Track the new qubits in AllQubits and the mapping
+  //printf("Obtain\n");  
+  int sum_dist;
+	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
+  //printf("Obtained\n");  
+  //std::cerr << physicalIDs.size() << "\n";
 	for (size_t i = 0; i < num_qbits; i++) {
+		unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
 		res[i].addr = &newt[i];
 		res[i].idx = AllQubits->N;
 		qubitsAdd(&newt[i]);
-		logicalPhysicalMap.insert(make_pair(res[i].addr,res[i].idx));
-		physicalLogicalMap.insert(make_pair(res[i].idx,res[i].addr));
+		logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
+		physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
 		waitlist.insert(make_pair(res[i].addr, false));
 	}
 	return num_qbits;
@@ -917,19 +1112,21 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 	// decide if we want to stall the allocation to control parallelism/memory sharing
 	if (inter == NULL) {
 		std::cerr << "interaction bits are null.\n";
-	} else {
-		std::cerr << inter[0] << "\n";
-	}
+	}// else {
+	//	std::cerr << inter[0] << "\n";
+	//}
+	//std::cerr << "memHeapAlloc " << num_qbits << "\n";
 	if (doStall(num_qbits, heap_idx)) {
+		//std::cerr << "stall here?\n";
 		qbitElement_t temp_res[num_qbits];
 		int temp_new = memHeapNewTempQubits(num_qbits, &temp_res[0]);// marked as waiting
 		if (temp_new != num_qbits) {
 			fprintf(stderr, "Unable to initialize %u temporary qubits.\n", num_qbits);
 			exit(1);
 		}
-		std::cerr << "here!\n";
+		//std::cerr << "here!\n";
 		acquire_str *temp_acq = (acquire_str*)malloc(sizeof(acquire_str));
-		std::cerr << "here!\n";
+		//std::cerr << "here!\n";
 		//temp_acq->idx = pendingAcquires.size();
 		//temp_acq->nq = num_qbits;
 		// Store the addresses into result
@@ -940,14 +1137,42 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 		//pendingAcquires.push_back(temp_acq);
 		return num_qbits;
 	} else {
+		//std::cerr << "Allocating " << num_qbits << " qubits.\n";
 		if (heap_idx == 0) {
 			// find num_qbits of qubits in the global memoryheap
 			qbitElement_t res[num_qbits];
 			// check if there are available in the heap
-			int num = memHeapGetQubits(num_qbits, memoryHeap, &res[0], inter, ninter);
+			//std::cerr << "haha\n";
+			int heap_num;
+			if (allocPolicy == _MINQ) {
+				heap_num = num_qbits;
+			} else if (allocPolicy == _HALF){
+				heap_num = num_qbits / 2;
+			} else if (allocPolicy == _CLOSEST) {
+
+				int num = memHeapClosestQubits(num_qbits, memoryHeap, &res[0], inter, ninter); 
+				if (num != num_qbits) {
+					fprintf(stderr, "Unable to initialize %u qubits.\n", num_qbits);
+					exit(1);
+				}
+				// Store the addresses into result
+				for (size_t i = 0; i < num_qbits; i++) {
+					result[i] = res[i].addr;
+					//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
+					//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
+				}
+				//std::cerr << "hihi\n";
+				return num_qbits;
+
+			} else {
+				heap_num = num_qbits;
+			}
+
+			int num = memHeapGetQubits(heap_num, memoryHeap, &res[0], inter, ninter);
 			// malloc any extra qubits needed
 			int num_new = 0;
 			if (num < num_qbits) {
+				//std::cerr << "hehe\n";
 				num_new = memHeapNewQubits(num_qbits-num, &res[num]);
 			}
 			if (num + num_new != num_qbits) {
@@ -957,9 +1182,10 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			// Store the addresses into result
 			for (size_t i = 0; i < num_qbits; i++) {
 				result[i] = res[i].addr;
-				logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
-				physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
+				//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
+				//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 			}
+			//std::cerr << "hihi\n";
 			return num_qbits;
 
 		} else {
@@ -1040,6 +1266,7 @@ void schedule(gate_t *new_gate) {
 	int gateID = new_gate->gate_id;
 
 	string gate_name = new_gate->gate_name;
+	//std::cerr << "Scheduling " << gate_name << "\n";
 
 
 	if (gate_name == "free") {
@@ -1084,8 +1311,11 @@ void schedule(gate_t *new_gate) {
 		//	op_pair.push_back(make_pair(pq0,pq1));
 		//	updateMaps(op_pair);
 		//}
+	}	
+	num_gate_scheduled++;
+	if (num_gate_scheduled % 10000 == 0) {
+		std::cerr << num_gate_scheduled << " gates scheduled.\n";
 	}
-
 	return;	
 }
 
@@ -1182,6 +1412,7 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 		
 	//vector<pair<qbit_t*,qbit_t*> > swaps = resolveInteraction(operands, numOp);
 	vector<pair<int,int> > swaps = resolveInteraction(operands, numOp);
+	//std::cerr << "building gate\n";
 	//updateMaps(swaps);
 	//printSwapChain(swaps);
 	

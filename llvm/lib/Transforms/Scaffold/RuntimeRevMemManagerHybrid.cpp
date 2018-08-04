@@ -55,11 +55,11 @@ using namespace std;
 #define _Rz 17
 
 // Policy switch
-int allocPolicy = _GLOBAL;
-int freePolicy = _NOFREE; 
+//int allocPolicy = _GLOBAL;
+int freePolicy = _EAGER; 
 
 // DEBUG switch
-bool debugRTRevMemHyb = true;
+bool debugRTRevMemHyb = false;
 
 static cl::opt<string>
 DEVICENAME("device", cl::init(""), cl::Hidden,
@@ -253,7 +253,7 @@ namespace {
 			freeArgs.push_back(res);
 			CallInst::Create(memHeapFree, ArrayRef<Value*>(freeArgs), "", Bterm);
 		
-			errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			//errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
 			//if(delAfterInst)
 			//  vInstRemove.push_back((Instruction*)CI);
 
@@ -428,7 +428,7 @@ namespace {
 					Value *ninter = CI->getArgOperand(2); // int num_interaction
 					allocArgs.push_back(ninter);
 					CallInst::Create(memHeapAlloc, ArrayRef<Value*>(allocArgs), "", (Instruction *)CI);
-					errs() << "pass\n";
+					//errs() << "pass\n";
 
     	    if(delAfterInst)
     	      vInstRemove.push_back((Instruction*)CI);
@@ -463,7 +463,7 @@ namespace {
 					
 				}      
     	  else if (!CF->isDeclaration() && isQuantumModuleCall){
-					errs() << "no declare  visit\n";
+					//errs() << "no declare  visit\n";
 					//visitFunction(*CF);
     	    // insert memoize call before this function call
     	    // int memoize ( char *function_name, int *int_params, unsigned num_ints, double *double_params, unsigned num_doubles, unsigned repeat)          

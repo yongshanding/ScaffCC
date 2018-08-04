@@ -10,7 +10,12 @@
 
 void computeCarry(qbit **a, qbit **b, qbit **res, int i) {
 	qbit *all_anc[3];
-	acquire(3, all_anc);
+	qbit *d[4];
+	d[0] = a[i];
+	d[1] = a[i-1];
+	d[2] = b[i];
+	d[3] = b[i-1];
+	acquire(3, all_anc, 4, d);
 	qbit **carry = &all_anc[0];
 	qbit **anc = &all_anc[1];
 	qbit **anc2 = &all_anc[2];
@@ -30,7 +35,7 @@ void computeCarry(qbit **a, qbit **b, qbit **res, int i) {
 	all_anc[0] = carry[0];
 	all_anc[1] = anc[0];
 	all_anc[2] = anc2[0];
-	release(&res[i], 1, all_anc, 3);
+	release(&res[i], 1, all_anc, 3, NULL);
 }
 
 void carryRippleAdder(qbit **a, qbit **b, qbit **res, int n) {
@@ -45,7 +50,7 @@ void carryRippleAdder(qbit **a, qbit **b, qbit **res, int n) {
 int main() {
 	int n = 64;
 	qbit *new[3*n];
-	acquire(3*n, new);
+	acquire(3*n, new, 0, NULL);
 	qbit **a = &new[0];
 	qbit **b = &new[n];
 	qbit **res = &new[2*n];
