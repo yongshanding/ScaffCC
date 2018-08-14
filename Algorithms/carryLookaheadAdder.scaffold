@@ -3,6 +3,12 @@
 #include <math.h>
 #include "qalloc.h"
 
+
+#define N 64
+#define LOGN 6
+#define LOG2N3 5
+#define NANC 55 // n - w(n) - floor(log2(n)): 64 - 1 - 8
+
 //void acquire(int n, qbit **addr) {
 //	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
 //	*addr = new;
@@ -44,92 +50,156 @@
 //	
 //}
 
-void carryRippleHelper(qbit **a, qbit ** b, qbit **res, qbit **carry, int i) {
-	qbit *anc[1];
-	acquire(1, anc);
-	Toffoli(b[i-1], carry[0], anc[0]); 
-	Toffoli(b[i-1], a[i-1], anc[0]); 
-	Toffoli(a[i-1], carry[0], anc[0]); 
-	CNOT(anc[0], carry[0]);
-	CNOT(carry[0], anc[0]);
-	CNOT(anc[0], carry[0]);
-	CNOT(a[i], res[i]);
-	CNOT(b[i], res[i]);
-	CNOT(carry[0], res[i]);
-	qbit *out[2];
-	out[0] = carry[0];
-	out[1] = res[i];
-	release(out, 2, anc, 1);
+//void carryRippleHelper(qbit **a, qbit ** b, qbit **res, qbit **carry, int i) {
+//	qbit *anc[1];
+//	acquire(1, anc);
+//	Toffoli(b[i-1], carry[0], anc[0]); 
+//	Toffoli(b[i-1], a[i-1], anc[0]); 
+//	Toffoli(a[i-1], carry[0], anc[0]); 
+//	CNOT(anc[0], carry[0]);
+//	CNOT(carry[0], anc[0]);
+//	CNOT(anc[0], carry[0]);
+//	CNOT(a[i], res[i]);
+//	CNOT(b[i], res[i]);
+//	CNOT(carry[0], res[i]);
+//	qbit *out[2];
+//	out[0] = carry[0];
+//	out[1] = res[i];
+//	release(out, 2, anc, 1);
+//}
+//
+//void carryRipple(qbit **a, qbit **b, qbit **res, int flag, int adderSize) {
+//	qbit *carry[1];
+//	acquire(1, carry);
+//	if (flag == 1) {
+//		X(carry[0]);
+//	}
+//	CNOT(a[0], res[0]);
+//	CNOT(b[0], res[0]);
+//	CNOT(carry[0], res[0]);
+//	for (int i = 1; i < adderSize; i++) {
+//		carryRippleHelper(a, b, res, carry, i);
+//	}
+//	CNOT(carry[0], res[adderSize]);
+//	release(res, 8, carry, 1); // adderSize = 8
+//}
+//
+//void lookaheadHelper(qbit **carry, qbit **IR, qbit **res, int i, int adderSize, int imSpacing) {
+//	qbit *temp[1];
+//	acquire(1, temp);
+//	for (int j = 0; j < adderSize; j++) {
+//		Toffoli(carry[0], IR[i * imSpacing + j], res[i * adderSize + j]);
+//		X(carry[0]);
+//		Toffoli(carry[0], IR[i * imSpacing + adderSize + 1 + j], res[i * adderSize + j]);
+//		X(carry[0]);
+//	}
+//	Toffoli(carry[0], IR[i * imSpacing + adderSize], temp[0]);
+//	X(carry[0]);
+//	Toffoli(carry[0], IR[i * imSpacing + 2*adderSize + 1], temp[0]);
+//	X(carry[0]);
+//	CNOT(carry[0], temp[0]);
+//	CNOT(temp[0], carry[0]);
+//	CNOT(carry[0], temp[0]);
+//	qbit *out[9];//1+adderSize
+//	out[0] = carry[0];
+//	for (int k = 1; k < 9; k++) {
+//		out[k] = res[i * adderSize + k];
+//	}
+//	release(out, 9, temp, 1); //1+adderSize = 9
+//}
+//
+//void carryLookaheadAdder(qbit **a, qbit **b, qbit **res, int n) {
+//	int adderSize = 8;//(int)sqrt((double)n);
+//	int imSpacing = 2*(adderSize+1);
+//	int numQ = 191;//3 * n - 1;//3 * adderSize * adderSize - 1 
+//	qbit *all[191];
+//	acquire(191, all);
+//	qbit **result = &all[0];
+//	qbit **a0b0 = &all[adderSize*(adderSize-1)];
+//	qbit **IR = &all[adderSize*adderSize + 1];
+//	qbit **aa = &a[adderSize];// size: adderSize - 1
+//	qbit **bb = &b[adderSize];
+//	qbit **carry = &a0b0[adderSize];
+//	for (int i = 0; i < adderSize - 1; i++) {
+//		carryRipple(&aa[i * adderSize], &bb[i * adderSize], &result[2*i*(adderSize+1)], 0, adderSize);
+//		carryRipple(&aa[i * adderSize], &bb[i * adderSize], &result[(2*i+1)*(adderSize+1)], 1, adderSize);
+//	}
+//	for (int i = 0; i < adderSize - 1; i++) {
+//		lookaheadHelper(carry, IR, result, i, adderSize, imSpacing);
+//	}
+//}
+
+int getPIdx(int t, int m, int n) {
+	return (n / (1<<t)) * t + m - 1;
 }
 
-void carryRipple(qbit **a, qbit **b, qbit **res, int flag, int adderSize) {
-	qbit *carry[1];
-	acquire(1, carry);
-	if (flag == 1) {
-		X(carry[0]);
+int getNumAnc(int n) {
+	int ret = 0;
+	for (int t = 0; t < (int)log2((double)n) - 1; t++) {
+		ret += (n / (1 << t)) - 1;
 	}
-	CNOT(a[0], res[0]);
-	CNOT(b[0], res[0]);
-	CNOT(carry[0], res[0]);
-	for (int i = 1; i < adderSize; i++) {
-		carryRippleHelper(a, b, res, carry, i);
-	}
-	CNOT(carry[0], res[adderSize]);
-	release(res, 8, carry, 1); // adderSize = 8
+	return ret;
 }
 
-void lookaheadHelper(qbit **carry, qbit **IR, qbit **res, int i, int adderSize, int imSpacing) {
-	qbit *temp[1];
-	acquire(1, temp);
-	for (int j = 0; j < adderSize; j++) {
-		Toffoli(carry[0], IR[i * imSpacing + j], res[i * adderSize + j]);
-		X(carry[0]);
-		Toffoli(carry[0], IR[i * imSpacing + adderSize + 1 + j], res[i * adderSize + j]);
-		X(carry[0]);
+void lookaheadHelper(qbit **a, qbit **b, qbit **res, int n) {
+	//qbit *all_anc[NANC];
+	//acquire(NANC, all_anc, N, b);
+	qbit *all_anc[N];
+	acquire(N, all_anc, N, b);
+	//int num = NANC;// getNumAnc(n);
+	int ni = LOGN; //(int) log2 ((double) N);
+	for (int i = 1; i < ni; i++) {
+		int nj = N / (1 << i);
+		for (int j = 1; j < nj; j++) {
+			//int idx0 = (N / (1<<(i-1))) * (i-1) + 2*j - 1;
+			//int idx1 = (N / (1<<(i-1))) * (i-1) + 2*j+1 - 1;
+			//int idx2 = (N / (1<<i)) * i + j - 1;
+			Toffoli(all_anc[2*j], all_anc[2*j+1], all_anc[j]); 
+		}
 	}
-	Toffoli(carry[0], IR[i * imSpacing + adderSize], temp[0]);
-	X(carry[0]);
-	Toffoli(carry[0], IR[i * imSpacing + 2*adderSize + 1], temp[0]);
-	X(carry[0]);
-	CNOT(carry[0], temp[0]);
-	CNOT(temp[0], carry[0]);
-	CNOT(carry[0], temp[0]);
-	qbit *out[9];//1+adderSize
-	out[0] = carry[0];
-	for (int k = 1; k < 9; k++) {
-		out[k] = res[i * adderSize + k];
+	for (int i = 1; i <= ni; i++) {
+		int nj = N / (1 << i);
+		for (int j = 0; j < nj; j++) {
+			//int idx0 = (N / (1<<(i-1))) * (i-1) + 2*j+1 - 1;
+			Toffoli(res[(1<<i)*j + (1<<(i-1))], all_anc[2*j+1], res[(1<<i)*j + (1<<i)]);
+		}
 	}
-	release(out, 9, temp, 1); //1+adderSize = 9
+	ni = LOG2N3; //(int) log2((double)(2*N / 3));
+	for (int i = ni; i >= 1; i--) {
+		int nj = (n - (1 << (i - 1))) / (1 << i);
+		for (int j = 1; j <= nj; j++) {
+			//int idx0 = (N / (1<<(i-1))) * (i-1) + 2*j - 1;
+			Toffoli(res[(1<<i)*j], all_anc[2*j], res[(1<<i)*j + (1<<(i-1))]);
+		}
+	}
+	release(b, N, &all_anc[0], N, res); // b->res
+	//release(b, N, &all_anc[0], NANC, res); // b->res
 }
 
+
+/*Out of place addition*/
 void carryLookaheadAdder(qbit **a, qbit **b, qbit **res, int n) {
-	int adderSize = 8;//(int)sqrt((double)n);
-	int imSpacing = 2*(adderSize+1);
-	int numQ = 191;//3 * n - 1;//3 * adderSize * adderSize - 1 
-	qbit *all[191];
-	acquire(191, all);
-	qbit **result = &all[0];
-	qbit **a0b0 = &all[adderSize*(adderSize-1)];
-	qbit **IR = &all[adderSize*adderSize + 1];
-	qbit **aa = &a[adderSize];// size: adderSize - 1
-	qbit **bb = &b[adderSize];
-	qbit **carry = &a0b0[adderSize];
-	for (int i = 0; i < adderSize - 1; i++) {
-		carryRipple(&aa[i * adderSize], &bb[i * adderSize], &result[2*i*(adderSize+1)], 0, adderSize);
-		carryRipple(&aa[i * adderSize], &bb[i * adderSize], &result[(2*i+1)*(adderSize+1)], 1, adderSize);
+	Toffoli(a[0], b[0], res[1]);
+	for (int i = 1; i < n; i++) {
+		Toffoli(a[i], b[i], res[i+1]);
+		CNOT(a[i], b[i]);
 	}
-	for (int i = 0; i < adderSize - 1; i++) {
-		lookaheadHelper(carry, IR, result, i, adderSize, imSpacing);
+	lookaheadHelper(a, b, res, n);
+	// reset b to initial value
+	for (int i = 1; i < n; i++) {
+		CNOT(a[i], b[i]);
 	}
+
 }
 
+/* quant-ph/0406142 */
 int main() {
-	int n = 64;
-	qbit *new[3*n];
-	acquire(3*n, new);
-	qbit **a = &new[0];
-	qbit **b = &new[n];
-	qbit **res = &new[2*n];
+	int n = N;
+	qbit *new[3*n+1];
+	acquire(3*n+1, new, 0, NULL);
+	qbit **a = &new[0]; //n bits
+	qbit **b = &new[n]; //n bits
+	qbit **res = &new[2*n]; //n+1 bits
 	//qbit *b[n];
 	//acquire(n, b);
 	//qbit *res[n];

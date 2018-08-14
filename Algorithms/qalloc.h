@@ -16,5 +16,11 @@ void acquire(int n, qbit **addr, int n_inter, qbit **inter) {
 
 void release(qbit **out, int n1, qbit **anc, int n2, qbit **cpy);
 
+void declare_free(qbit **anc, int nanc) {
+	if (nanc <= 0 || anc == NULL || anc[0] == NULL) {
+		printf("Invalid call to declare_free.\n");
+	}
+}
+
 #endif
 

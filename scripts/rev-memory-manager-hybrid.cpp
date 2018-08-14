@@ -66,14 +66,15 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_QUBIT;
+int allocPolicy = _CLOSEST_BLOCK;
 int freePolicy = _EAGER; 
 bool swapAlloc = false;
-int systemSize = 500;
+int systemSize = 10000;
 
 // DEBUG switch
 bool trackGates = true;
-bool debugRevMemHybrid = false;
+bool debugRevMemHybrid = true;
+bool swapflag = true;
 
 
 int num_gate_scheduled = 0;
@@ -1439,7 +1440,10 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 	new_gate->num_operands = numOp;
 		
 	//vector<pair<qbit_t*,qbit_t*> > swaps = resolveInteraction(operands, numOp);
-	vector<pair<int,int> > swaps = resolveInteraction(operands, numOp);
+	vector<pair<int,int> > swaps;
+	if (swapflag) {
+		swaps = resolveInteraction(operands, numOp);
+	}
 	//std::cerr << "building gate\n";
 	//updateMaps(swaps);
 	//printSwapChain(swaps);

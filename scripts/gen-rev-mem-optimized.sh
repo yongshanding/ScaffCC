@@ -91,6 +91,7 @@ for f in $*; do
 	$OPT -S ${b}/${b}.clone.tmp.ll -internalize -globaldce -adce -o ${b}/${b}.clone.ll > /dev/null 
 	$OPT -S -load $SCAF -ToffoliReplace ${b}/${b}.clone.ll -o ${b}/${b}.toff.ll > /dev/null
 	cp ${b}/${b}.toff.ll ${b}/${b}.ll
+	#cp ${b}/${b}.clone.ll ${b}/${b}.ll
 done
 
 

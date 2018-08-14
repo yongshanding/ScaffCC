@@ -620,7 +620,7 @@ void InterpretKeywords::buildReleaseFunction(Function *F, CallInst *CI, CallInst
 							if (rfCore == "release") {
 								// Need to take care of the new paramters
 								size_t nao = CI->getNumArgOperands();
-								if (nao != 4) {
+								if (nao != 6) {
 									errs() << "Error: release have unmatched number of arguments after cloning.\n";
 								}
 								for (size_t i = 0; i < nao; i++) {

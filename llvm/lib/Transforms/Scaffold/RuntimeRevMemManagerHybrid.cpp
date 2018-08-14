@@ -56,7 +56,7 @@ using namespace std;
 
 // Policy switch
 //int allocPolicy = _GLOBAL;
-int freePolicy = _EAGER; 
+int freePolicy = _OPT; // do not change! always opt!!
 
 // DEBUG switch
 bool debugRTRevMemHyb = false;
@@ -217,6 +217,47 @@ namespace {
 		  return Tail->getTerminator();
 		}
 
+		void declare2memHeapFree(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned num_qbits = 0; // num of anc that's free
+			unsigned num_outs= 0; // num of out bits that's copied
+			unsigned num_gates= 0; // num of gates copied
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume declare_free(anc, nAnc)
+			if (total_narg != 2) {
+				errs() << "Invalid declare_free function encountered: numArg = " << total_narg << " != 2.\n";
+			}
+			unsigned nAnc_idx = 1;
+			ConstantInt *nQ = dyn_cast<ConstantInt>(CI->getArgOperand(nAnc_idx));
+			//if (nQ == NULL) {
+			//	// nAnc is undef
+			//	if(debugRTRevMemHyb)
+			//		errs() << "\tRelease instruction: " << *CI << "\n";
+			//	std::string origName = CF->getName(); 
+			//	getNumQubitsByName(origName, &num_outs, &num_qbits, &num_gates);
+			//  nQ = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_qbits);
+			//} else {
+			//	num_qbits = nQ->getZExtValue(); // number of qubits to free
+			//}
+			num_qbits = nQ->getZExtValue(); // number of qubits to free
+			if(debugRTRevMemHyb)
+			  errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			// Get the heap idx
+			CallInst *hidx = CallInst::Create(getHeapIdx, "", CI);
+			//CallInst *hidx = CallInst::Create(getHeapIdx, "", (Instruction *)CI);
+			// Get the stack array for results
+			Value *res = CI->getArgOperand(nAnc_idx-1);
+			// Create the memHeapFree call
+			vector<Value*> freeArgs;
+			freeArgs.push_back(nQ);
+			freeArgs.push_back(hidx);
+			freeArgs.push_back(res);
+			CallInst::Create(memHeapFree, ArrayRef<Value*>(freeArgs), "", CI);
+		
+			errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			//if(delAfterInst)
+			//  vInstRemove.push_back((Instruction*)CI);
+
+		}
 
 		void release2memHeapFree(Function *CF, CallInst *CI, BasicBlock::iterator I, Instruction *Bterm) {
 			unsigned num_qbits = 0; // num of anc that's free
@@ -407,6 +448,7 @@ namespace {
 				//errs() << "calling: << " << CF->getName() << "\n";
 
 				if (CF->getName().find("acquire") != std::string::npos) {
+					//errs() << "Found acquire\n";
 					// repalce with memHeapAlloc
 					unsigned num_qbits = 0;
 					ConstantInt *nQ = dyn_cast<ConstantInt>(CI->getArgOperand(0));
@@ -462,6 +504,10 @@ namespace {
     	    }
 					
 				}      
+				else if (CF->getName().find("declare_free") != std::string::npos) {
+					//errs() << "Found declare_free\n";
+					declare2memHeapFree(CF, CI, I);//add a memHeapFree after the inst
+				}
     	  else if (!CF->isDeclaration() && isQuantumModuleCall){
 					//errs() << "no declare  visit\n";
 					//visitFunction(*CF);

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "qalloc.h"
 
+#define N 16
 //void acquire(int n, qbit **addr) {
 //	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
 //	*addr = new;
@@ -8,17 +9,16 @@
 //
 //void release(qbit **out, int n1, qbit **anc, int n2);
 
-void computeCarry(qbit **a, qbit **b, qbit **res, int i) {
-	qbit *all_anc[3];
+void computeCarry(qbit **a, qbit **b, qbit **res, qbit **carry, int i) {
+	qbit *all_anc[2];
 	qbit *d[4];
 	d[0] = a[i];
 	d[1] = a[i-1];
 	d[2] = b[i];
 	d[3] = b[i-1];
-	acquire(3, all_anc, 4, d);
-	qbit **carry = &all_anc[0];
-	qbit **anc = &all_anc[1];
-	qbit **anc2 = &all_anc[2];
+	acquire(2, all_anc, 4, d);
+	qbit **anc = &all_anc[0];
+	qbit **anc2 = &all_anc[1];
 	//qbit *carry[1];
 	//acquire(1, carry);
 	//qbit *anc[1];
@@ -31,24 +31,37 @@ void computeCarry(qbit **a, qbit **b, qbit **res, int i) {
 	CNOT(a[i], anc2[0]);
 	CNOT(b[i], anc2[0]);
 	CNOT(anc2[0], carry[0]);
-	CNOT(carry[0], res[i]);
-	all_anc[0] = carry[0];
-	all_anc[1] = anc[0];
-	all_anc[2] = anc2[0];
-	release(&res[i], 1, all_anc, 3, NULL);
+	//CNOT(carry[0], res[i]);
+	//all_anc[0] = carry[0];
+	//all_anc[1] = anc[0];
+	//all_anc[2] = anc2[0];
+	release(carry, 1, all_anc, 2, NULL);
 }
 
 void carryRippleAdder(qbit **a, qbit **b, qbit **res, int n) {
-	CNOT(a[0], b[0]);
+	qbit *carry[1];
+	qbit *d[2*n];
+	for (int i = 0; i < 2*n; i++) {
+		if (i < n) {
+			d[i] = a[i];
+		} else {
+			d[i] = b[i];
+		}
+	}
+	acquire(1, carry, 2*N, d);
+	CNOT(a[0], res[0]);
 	CNOT(b[0], res[0]);
 	for (int i = 1; i < n; i++) {
-		computeCarry(a, b, res, i);
+		computeCarry(a, b, res, carry, i);
+		CNOT(a[i], res[i]);
+		CNOT(b[i], res[i]);
+		CNOT(carry[0], res[i]);
 	}
 	
 }
 
 int main() {
-	int n = 64;
+	int n = N;
 	qbit *new[3*n];
 	acquire(3*n, new, 0, NULL);
 	qbit **a = &new[0];

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "qalloc.h"
 
+#define N 32
 //void acquire(int n, qbit **addr) {
 //	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
 //	*addr = new;
@@ -8,57 +9,91 @@
 //
 //void release(qbit **out, int n1, qbit **anc, int n2);
 
-void ctrlAddMod_n2(qbit **ctrl, qbit **a, qbit **b, int n) {
-	qbit *all_anc[1];
-	acquire(1, all_anc);
-	qbit **c = &all_anc[0];
-//	qbit **ctrl = &all_anc[1];
-	Toffoli(a[0],ctrl[0],b[0]);
-	CNOT(a[0],c[0]);
-	Toffoli(c[0],b[0],a[0]);
-	Toffoli(a[n-1],ctrl[0],b[n-1]);
-	Toffoli(a[n-2],ctrl[0],b[n-1]);
-	Toffoli(c[0],b[0],a[0]);
-	CNOT(a[0],c[0]);
-	Toffoli(c[0],ctrl[0],b[0]);
-	release(b,64,all_anc,1);
-}
-void ctrlAddMod(qbit **ctrl, qbit **a, qbit **b, int n, int start, int end) {
-	qbit *c[1];
-	acquire(1, c);
-	
-	Toffoli(a[0], ctrl[0], b[start]);
-	CNOT(a[0], c[0]);
-	Toffoli(c[0], b[start], a[0]);
-	for (int i = 1; i < n-1; i++) {
-		Toffoli(a[i],ctrl[0],b[i+start]);
-		CNOT(a[i],a[i-1]);
-		Toffoli(a[i-1],b[i+start],a[i]);
-	}
-	Toffoli(a[n-1], ctrl[0],b[start+n-1]);
-	Toffoli(a[n-2], ctrl[0],b[start+n-1]);
 
+
+/* in place */
+void cucarroAdder(qbit **a, qbit **b, int n) {
+	qbit *anc[1];
+	acquire(1, anc, 1, a);
+	for (int i = 1; i < n; i++) {
+		CNOT(a[i], b[i]);
+	}
+	CNOT(a[1], anc[0]);
+	Toffoli(a[0], b[0], anc[0]);
+	CNOT(a[2], a[1]);
+	Toffoli(anc[0], b[1], a[1]);
+	CNOT(a[3], a[2]);
+	for (int i = 2; i < n-2; i++) {
+		Toffoli(a[i-1], b[i], a[i]);
+		CNOT(a[i+2], a[i+1]);
+	}
+	Toffoli(a[n-3], b[n-2], a[n-2]);
+	CNOT(a[n-1], anc[0]);
+	Toffoli(a[n-2], b[n-1], anc[0]);
+	for (int i = 1; i < n-1; i++) {
+		X(b[i]);
+	}
+	CNOT(anc[0], b[1]);
 	for (int i = 2; i < n; i++) {
-		Toffoli(a[n-i-1],b[start+n-i],a[n-i]);
-		CNOT(a[n-i],a[n-i-1]);
-		Toffoli(a[n-i-1],ctrl[0],b[start+n-i]);
+		CNOT(a[i-1], b[i]);
 	}
-	Toffoli(c[0], b[start], a[0]);
-	CNOT(a[0], c[0]);
-	Toffoli(c[0],ctrl[0],b[start]);
-	release(b, 64, c, 1);
+	Toffoli(a[n-3], b[n-2], a[n-2]);
+	for (int i = n-3; i >= 2; i--) {
+		Toffoli(a[i-1], b[i], a[i]);
+		CNOT(a[i+2], a[i+1]);
+		X(b[i+1]);
+	}
+	Toffoli(anc[0], b[1], a[1]);
+	CNOT(a[3], a[2]);
+	X(b[2]);
+	Toffoli(a[0], b[0], anc[0]);
+	CNOT(a[2], a[1]);
+	X(b[1]);
+	CNOT(a[1], anc[0]);
+	for (int i = 0; i < n; i++) {
+		CNOT(a[i], b[i]);
+	}
+
 }
-int main() {
-	int n = 64;
-	qbit *new[3*64];
-	acquire(3*64, new);
-	qbit **a = &new[0];
-	qbit **b = &new[n];
-	qbit **res =&new[2*n];
-	for (int i = 0; i < n; i++){
-		//Create new result subarray
-		ctrlAddMod(&a[i], b, res, n, i, i+n-1);
+
+void inPlaceAdd(qbit **a, qbit **b, int n) {
+	cucarroAdder(a, b, n);
+}
+
+void partialProduct(qbit **a, qbit *b, qbit **res, int n, int i) {
+	qbit *prod[N+1];
+	acquire(N+1, prod, N, a);
+	//qbit **temp = &prod[N]; // length: N+2
+	for (int j = 0; j < n; j++) {
+		Toffoli(a[j], b, prod[j+1]);
 	}
+	inPlaceAdd(prod, &res[i], N+1); // do not reverse this. how?
+	//release(&res[i], N, prod, N+1, NULL);
+	int to_free = 0;// temporary flag
+	if (to_free == 1) {
+		for (int j = 0; j < n; j++) {
+			Toffoli(a[j], b, prod[j+1]);
+		}
+		declare_free(prod, N+1);
+	}
+}
+
+void multiply(qbit **a, qbit **b, qbit **res, int n) {
+	//qbit *partial[N+2];
+	//acquire(N+2, partial, 0, NULL);
+	for (int i = 0; i < n; i++) { // b
+		partialProduct(a, b[i], res, n, i);
+	}
+}
+
+int main() {
+	int n = N;
+	qbit *new[2*N+2*N];
+	acquire(2*N+2*N, new, 0, NULL);
+	qbit **a = &new[0];
+	qbit **b = &new[N];
+	qbit **res = &new[2*N];
+	multiply(a, b, res, n);
 	return 0;
 	
 }
