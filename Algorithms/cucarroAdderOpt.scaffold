@@ -1,0 +1,104 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include "qalloc.h"
+
+#define N 64
+//void acquire(int n, qbit **addr) {
+//	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
+//	*addr = new;
+//}
+//
+//void release(qbit **out, int n1, qbit **anc, int n2);
+
+
+/* in place */
+//void cucarroAdder(qbit **a, qbit **b, int n) {
+//	qbit *anc[1];
+//	acquire(1, anc, 1, a);
+//	CNOT(a[0], b[0]);
+//	CNOT(a[0], anc[0]);
+//	Toffoli(anc[0], b[0], a[0]);
+//	if (n > 2) {
+//		for (int i = 1; i < n-1; i++) {
+//			CNOT(a[i], b[i]);
+//			CNOT(a[i], a[i-1]);
+//			Toffoli(a[i-1], b[i], a[i]);
+//		}
+//	}
+//	CNOT(a[n-1], b[n]);
+//	CNOT(a[n-2], b[n-1]);
+//	Toffoli(anc[0], b[0], a[0]);
+//	CNOT(a[0], anc[0]);
+//	CNOT(anc[0], b[0]);
+//
+//	release(b, N, anc, 1); // TODO
+//
+//}
+
+
+/* in place */
+void cucarroAdder(qbit **a, qbit **b, qbit **res, int n) {
+	qbit *anc[1];
+	acquire(1, anc, 1, a);
+	for (int i = 1; i < n; i++) {
+		CNOT(a[i], b[i]);
+	}
+	CNOT(a[1], anc[0]);
+	Toffoli(a[0], b[0], anc[0]);
+	CNOT(a[2], a[1]);
+	Toffoli(anc[0], b[1], a[1]);
+	CNOT(a[3], a[2]);
+	for (int i = 2; i < n-2; i++) {
+		Toffoli(a[i-1], b[i], a[i]);
+		CNOT(a[i+2], a[i+1]);
+	}
+	Toffoli(a[n-3], b[n-2], a[n-2]);
+	CNOT(a[n-1], res[n]);
+	Toffoli(a[n-2], b[n-1], res[n]);
+	for (int i = 1; i < n-1; i++) {
+		X(b[i]);
+	}
+	CNOT(anc[0], b[1]);
+	for (int i = 2; i < n; i++) {
+		CNOT(a[i-1], b[i]);
+	}
+	Toffoli(a[n-3], b[n-2], a[n-2]);
+	for (int i = n-3; i >= 2; i--) {
+		Toffoli(a[i-1], b[i], a[i]);
+		CNOT(a[i+2], a[i+1]);
+		X(b[i+1]);
+	}
+	Toffoli(anc[0], b[1], a[1]);
+	CNOT(a[3], a[2]);
+	X(b[2]);
+	Toffoli(a[0], b[0], anc[0]);
+	CNOT(a[2], a[1]);
+	X(b[1]);
+	CNOT(a[1], anc[0]);
+	for (int i = 0; i < n; i++) {
+		CNOT(a[i], b[i]);
+	}
+
+	release(b, N, anc, 1, res);// made out of place
+}
+
+
+int main() {
+	int n = N;
+	qbit *new[3*n+1];
+	acquire(3*n+1, new, 0, NULL);
+	qbit **a = &new[0];
+	qbit **b = &new[n];
+	qbit **res = &new[2*n];
+	//qbit **res = &new[2*n];
+	
+	cucarroAdder(a,b,res,n); // in place: quant-ph/0410184
+	for (int i = 0; i < n; i++) {
+		CNOT(b[i], res[i]);
+		CNOT(res[i], b[i]);
+		CNOT(b[i], res[i]);
+	}
+	//cucarroAdder(a,b,res, n); // out of place: 
+	return 0;
+	
+}
