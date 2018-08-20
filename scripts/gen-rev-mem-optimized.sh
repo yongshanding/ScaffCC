@@ -53,10 +53,12 @@ for f in $*; do
 		echo "[gen-rev-mem-optimized.sh] Unrolling Loops ($UCNT) ..."; \
 		cp ${b}/${b}6tmp.ll ${b}/${b}5.ll; \
 		$OPT -S ${b}/${b}5.ll -mem2reg -loops -loop-simplify -loop-rotate -lcssa -loop-unroll -unroll-threshold=100000000 -sccp -simplifycfg -o ${b}/${b}5a.ll > /dev/null && \
+	  echo "[gen-rev-mem-optimized.sh] Resolve reverse function ..." && \
+		$OPT -S -load $SCAF -FunctionReverse ${b}/${b}5a.ll -o ${b}/${b}5b.ll && \
 		echo "[gen-rev-mem-optimized.sh] Cloning Functions ($UCNT) ..." && \
-		$OPT -S -load $SCAF -FunctionClone -sccp ${b}/${b}5a.ll -o ${b}/${b}5b.ll > /dev/null && \
+		$OPT -S -load $SCAF -FunctionClone -sccp ${b}/${b}5b.ll -o ${b}/${b}5c.ll > /dev/null && \
 		echo "[gen-rev-mem-optimized.sh] Dead Argument Elimination ($UCNT) ..." && \
-		$OPT -S -deadargelim ${b}/${b}5b.ll -o ${b}/${b}6tmp.ll > /dev/null; \
+		$OPT -S -deadargelim ${b}/${b}5c.ll -o ${b}/${b}6tmp.ll > /dev/null; \
 	done && \
 	$OPT -S ${b}/${b}6tmp.ll -internalize -globaldce -adce -o ${b}/${b}6.ll > /dev/null  
 	cp ${b}/${b}6.ll ${b}/${b}.ll

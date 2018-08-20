@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include "qalloc.h"
 
@@ -6,7 +7,7 @@
 #define LOGB 2 // num bits of base
 #define M 55 // modulo
 #define LOGM 6 // num bits of modulo
-#define N1 16 // top
+#define N1 6 // top
 #define N2 6 // bottom = logm
 
 /* in place */
@@ -107,40 +108,41 @@ void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n) {
 }
 
 void partialProduct(qbit *ctrl, qbit **a, qbit *b, qbit **res, int n, int i) {
-	qbit *prod[N+1];
-	acquire(N+1, prod, N, a);
+	qbit *prod[N2/2+1];
+	acquire(N2/2+1, prod, N2/2, a);
+	//printf("here1\n");
 	//qbit **temp = &prod[N]; // length: N+2
 	for (int j = 0; j < n; j++) {
 		Toffoli(a[j], b, prod[j+1]);
 	}
-	inPlaceAdd(ctrl, &res[i], prod, N+1); 
+	//printf("here2\n");
+	inPlaceAdd(ctrl, &res[i], prod, N2/2+1); 
+	//printf("here3\n");
 	//release(&res[i], N, prod, N+1, NULL);
 	int to_free = 0;// temporary flag
 	if (to_free == 1) {
 		for (int j = 0; j < n; j++) {
 			Toffoli(a[j], b, prod[j+1]);
 		}
-		declare_free(prod, N+1);
+		declare_free(prod, N2/2+1);
 	}
 }
 
 void multiply(qbit *ctrl, qbit **a, qbit **b, qbit **res, int n) {
-	//qbit *partial[N+2];
-	//acquire(N+2, partial, 0, NULL);
-	for (int i = 0; i < n; i++) { // b
-		partialProduct(ctrl, a, b[i], res, n, i);
+	for (int i = 0; i < n/2; i++) { // b
+		partialProduct(ctrl, a, b[i], res, n/2, i);
 	}
 }
 
 
 void myFredkin(qbit *ctrl, qbit *targ0, qbit *targ1) {
 	Toffoli(ctrl, targ0, targ1);
-	Toffoli(ctrl, targ1, targ2);
+	Toffoli(ctrl, targ1, targ0);
 	Toffoli(ctrl, targ0, targ1);
 }
 
 void ctrlSwap(qbit *ctrl, qbit **a, qbit **b, int nb) {
-	for (int i = 0; i < nb, i++) {
+	for (int i = 0; i < nb; i++) {
 		myFredkin(ctrl, a[i], b[i]);
 	}
 }
@@ -193,7 +195,7 @@ void cucarroSubIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 }
 
 
-void comparator(qbit **a, qbit **b, qbit **out, int n) {
+void comparator(qbit *ctrl, qbit **a, qbit **b, qbit **out, int n) {
 	qbit *cin[1];
 	acquire(1, cin, 1, a);
 
@@ -202,7 +204,7 @@ void comparator(qbit **a, qbit **b, qbit **out, int n) {
 	qbit *x; qbit *y; qbit *z; // rename
 	for (int i = 0; i < n; i++) {
 		if (i == 0) {
-			x = cin;
+			x = cin[0];
 			y = a[0];
 			z = b[0];
 		} else {
@@ -216,7 +218,7 @@ void comparator(qbit **a, qbit **b, qbit **out, int n) {
 	
 	for (int i = n-1; i >=0; i--) {
 		if (i == 0) {
-			x = cin;
+			x = cin[0];
 			y = a[0];
 			z = b[0];
 		} else {
@@ -232,53 +234,6 @@ void comparator(qbit **a, qbit **b, qbit **out, int n) {
 
 }
 
-
-/* Computes res % m, conditioned on ctrl bit*/
-void ctrlModReduction(qbit *ctrl, qbit **res, int nb, int m) {
-	qbit *temp[LOGM+1];
-	acquire(LOGM+1, temp, 0, NULL);
-	ctrlStore(ctrl, m, temp, LOGM);
-	qbit *new_ctrl = temp[LOGM];
-	// assume res <= 2m, so only subtract once
-	comparator(ctrl, res, temp, &new_ctrl, LOGM);
-	cucarroSubIn(new_ctrl, res, temp, LOGM);
-
-	_reverse_comparator(ctrl, res, temp, &new_ctrl, LOGM);
-	_reverse_ctrlStore(ctrl, m, temp, LOGM);
-	declare_free(temp, LOGM+1);
-}
-
-/* Computes a*b % m out-of-place, conditioned on ctrl bit */
-void ctrlModMultOut(qbit *ctrl, qbit **a, int na, qbit **b, int nb, qbit **ab, int nab, int m) {
-	multiply(ctrl, a, b, ab, nab);
-	ctrlModReduction(ctrl, ab, nab, m);
-}
-
-
-/* Computes c*x % m in-place, conditioned on ctrl bit */
-void ctrlModMult(qbit *ctrl, qbit **c, int numc, int nc, qbit **x, int nx, int m) {
-	qbit *temp[LOGM];
-	acquire(LOGM, temp, 0, NULL);
-	
-	ctrlModMultOut(ctrl, c, nc, x, nx, temp, LOGM, m);
-	ctrlSwap(ctrl, x, temp, LOGM);
-	_reverse_ctrlModMultOut(ctrl, c, nc, x, nx, temp, LOGM, m); // TODO: actually need the reverse of divide
-	declare_free(temp, LOGM);
-	
-}
-
-
-
-//void ctrlModSquare(qbit *ctrl, int m, qbit **res, int nb) {
-//	// in place squaring res
-//	qbit *temp[LOGM];
-//	acquire(LOGM, temp, 0, NULL);
-//	for (int i = 0; i < nb; i++) {
-//		CNOT(res[i], temp[i]);
-//	}
-//	ctrlModMult(ctrl, temp, nb, res, nb, m);
-//}
-
 /* Store b^(2^idx) into res, conditioned on ctrl bit */
 void ctrlStore(qbit *ctrl, int num, qbit **res, int nb) {
 	int con = num;
@@ -288,34 +243,72 @@ void ctrlStore(qbit *ctrl, int num, qbit **res, int nb) {
 		}
 		con /= 2;
 	}
-	////set res up as b
-	//int btemp = b;
-	//for (int i = 0; i < LOGB; i++) {
-	//	//converting to binary
-	//	if (btemp % 2 == 1) {
-	//		X(res[i]);
-	//	}
-	//	btemp /= 2;
-	//}
-	//for (int i = 0; i < idx; i++) {
-	//	// squaring i times
-	//	ctrlModSquare(ctrl, m, res, nb)
-	//}
+
+}
+
+/* Computes res % m, conditioned on ctrl bit*/
+void ctrlModReduction(qbit *ctrl, qbit **res, int nb, int m) {
+	qbit *temp[LOGM+1];
+	acquire(LOGM+1, temp, LOGM, res);
+	ctrlStore(ctrl, m, temp, LOGM);
+	qbit *new_ctrl = temp[LOGM];
+	// assume res <= 2m, so only subtract once
+	comparator(ctrl, res, temp, &new_ctrl, LOGM);
+	cucarroSubIn(new_ctrl, res, temp, LOGM);
+	int to_free = 0;// temporary flag
+	if (to_free == 1) {
+		_reverse_comparator(ctrl, res, temp, &new_ctrl, LOGM);//uncompute
+		_reverse_ctrlStore(ctrl, m, temp, LOGM);//uncompute
+		declare_free(temp, LOGM+1);
+	}
+}
+
+/* Computes a*b % m out-of-place, conditioned on ctrl bit */
+void ctrlModMultOut(qbit *ctrl, qbit **a, qbit **b, qbit **ab, int nab, int m) {
+	multiply(ctrl, a, b, ab, nab);
+	ctrlModReduction(ctrl, ab, nab, m);
+}
+
+
+/* Computes c*x % m in-place, conditioned on ctrl bit */
+void ctrlModMult(qbit *ctrl, qbit **c, int nc, qbit **x, int nx, int m) {
+	qbit *temp[LOGM];
+	acquire(LOGM, temp, LOGM, c);
+	
+	ctrlModMultOut(ctrl, c, x, temp, LOGM, m);
+	//printf("mult1\n");
+	ctrlSwap(ctrl, x, temp, LOGM);
+	//printf("mult2\n");
+	int to_free = 0;// temporary flag
+	if (to_free == 1) {
+		ctrlModMultOut(ctrl, c, x, temp, LOGM, m); // TODO: actually need the reverse of divide
+		//printf("mult3\n");
+		declare_free(temp, LOGM);
+	}
+	
 }
 
 
 /* Compute b^(2^i)*bot % m, conditioned on ctrl bit */
-void ctrlModExp(qbit * ctrl, int idx, qbit **bot, int n, int b, int m, int logm) {
-	// bot is acumulative
+// bot is acumulative
+void ctrlModExp(qbit *ctrl, int idx, qbit **bot, int n, int b, int m) {
 	qbit *Ck[LOGM];
-	acquire(LOGM, Ck, 0, NULL);
+	acquire(LOGM, Ck, 1, &ctrl);
 	int num = pow(b, 1 << idx);
+	int logm = LOGM;
+	//printf("p1\n");
 	ctrlStore(ctrl, num, Ck, logm);
-	ctrlModReduction(ctrl, Ck, nb, m);
-	ctrlModMult(ctrl, Ck, num, logm, bot, n, m); // assume logm == n
-	//_reverse_ctrlExp(ctrl, idx, b, m, Ck, logm); // uncompute
-	_reverse_ctrlStore(ctrl, num, m, Ck, logm); // uncompute
-	declare_free(Ck, LOGM);
+	//printf("p2\n");
+	ctrlModReduction(ctrl, Ck, logm, m);
+	//printf("p3\n");
+	ctrlModMult(ctrl, Ck, logm, bot, n, m); // assume logm == n
+	//printf("p4\n");
+	int to_free = 0;// temporary flag
+	if (to_free == 1) {
+		_reverse_ctrlStore(ctrl, num, Ck, logm); // uncompute
+		//printf("p5\n");
+		declare_free(Ck, LOGM);
+	}
 }
 
 
@@ -330,12 +323,10 @@ int main() {
 	acquire(N1+N2, new, 0, NULL);
 	qbit **top = &new[0]; // N1
 	qbit **bot = &new[N1]; // N2
-	//qbit **res = &new[2*N];
-	//sha2(k,w,x,32);
 	for (int i = 0; i < N1; i++) {
-		ctrlModExp(top[i], i, bot, n2, b, mi, logm);
+		//printf("iter%d\n", i);
+		ctrlModExp(top[i], i, bot, n2, b, m);
 	}
-	//multiply(a, b, res, n);
 	return 0;
 	
 }
