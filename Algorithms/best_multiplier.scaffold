@@ -1,0 +1,115 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "qalloc.h"
+
+#define N 8
+
+
+/*arxiv:1202.6614*/
+void CMaj(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
+	Toffoli(ctrl, z, y);
+	CNOT(z, x);
+	Toffoli(x, y, z);
+}
+
+void CUma(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
+	Toffoli(x, y, z);
+	CNOT(z, x);
+	Toffoli(ctrl, x, y);
+}
+
+
+/* In place: a,b -> a+b, b, arxiv:1202.6614*/
+void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
+	qbit *anc[2];
+	acquire(2, anc, 1, a);
+	qbit *cin = anc[0];
+	qbit *cout = anc[1];
+	qbit *x; qbit *y; qbit *z; // rename
+	for (int i = 0; i < n; i++) {
+		if (i == 0) {
+			x = cin;
+			y = a[0];
+			z = b[0];
+		} else {
+			x = b[i-1];
+			y = a[i];
+			z = b[i];
+		}
+		CMaj(ctrl, x, y, z);
+	}
+	Toffoli(ctrl, b[n-1], cout);
+	
+	for (int i = n-1; i >=0; i--) {
+		if (i == 0) {
+			x = cin;
+			y = a[0];
+			z = b[0];
+		} else {
+			x = b[i-1];
+			y = a[i];
+			z = b[i];
+		}
+		CUma(ctrl, x, y, z);
+	}
+}
+
+void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n) {
+	cucarroAdderIn(ctrl, a, b, n);
+}
+
+
+void partialProduct(qbit *ctrl, qbit **a, qbit *b, qbit **res, int n, int i) {
+	qbit *prod[N+1];
+	acquire(N+1, prod, N, a);
+	//printf("here1\n");
+	//qbit **temp = &prod[N]; // length: N+2
+	for (int j = 0; j < n; j++) {
+		Toffoli(a[j], b, prod[j+1]);
+	}
+	//printf("here2\n");
+	inPlaceAdd(ctrl, &res[i], prod, N+1); 
+	//printf("here3\n");
+	//release(&res[i], N, prod, N+1, NULL);
+	int to_free = 1;// temporary flag
+	if (to_free == 1) {
+		for (int j = 0; j < n; j++) {
+			Toffoli(a[j], b, prod[j+1]);
+		}
+		declare_free(prod, N+1);
+	}
+}
+
+void multiply(qbit *ctrl, qbit **a, qbit **b, qbit **res, int n) {
+	for (int i = 0; i < n/2; i++) { // b
+		partialProduct(ctrl, a, b[i], res, n/2, i);
+	}
+}
+
+
+int main() {
+	int n = N;
+	qbit *new[N+N+2*N+1];
+	acquire(4*N+1, new, 0, NULL);
+	qbit **ctrl = &new[0]; // 1 bit
+	qbit **a = &new[1]; // N bits (last bit for resulting carry bit)
+	qbit **b = &new[N+1]; // N bits
+	qbit **res = &new[2*N+1]; // 2*N bits
+	/* Initialize a, b here; default a=b=0 */
+	X(ctrl[0]);
+	//X(a[1]);
+	//X(a[3]);
+	//X(a[5]);
+	//X(b[1]);
+	//X(b[3]);
+	//X(b[5]);
+	/* Out of place multiplier */
+	multiply(ctrl[0], a, b, res, 2*N);
+	for (int i = 0; i < 2*N; i++) {
+		MeasZ(res[i]);
+	}
+	return 0;
+	
+}
+
