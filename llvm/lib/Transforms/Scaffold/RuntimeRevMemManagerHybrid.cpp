@@ -259,6 +259,25 @@ namespace {
 
 		}
 
+		void translateFree(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume _free_option(out, nout, anc, nAnc, ngate)
+			if (total_narg != 5) {
+				errs() << "Invalid Free() encountered: numArg = " << total_narg << " != 5.\n";
+			}
+			vector<Value*> onoffArgs;
+			onoffArgs.push_back(CI->getArgOperand(1)); //nout
+			onoffArgs.push_back(CI->getArgOperand(3)); //nanc
+			onoffArgs.push_back(CI->getArgOperand(4)); //ngate
+			onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
+			CallInst *onoff = CallInst::Create(freeOnOff, ArrayRef<Value*>(onoffArgs), "", CI);
+			CI->replaceAllUsesWith(onoff);
+		  //ReplaceInstWithInst(CI, onoff);
+			 vInstRemove.push_back((Instruction*)CI);
+	
+			//return onoff;
+		}
+
 		void release2memHeapFree(Function *CF, CallInst *CI, BasicBlock::iterator I, Instruction *Bterm) {
 			unsigned num_qbits = 0; // num of anc that's free
 			unsigned num_outs= 0; // num of out bits that's copied
@@ -504,6 +523,11 @@ namespace {
     	    }
 					
 				}      
+				else if (CF->getName().find("_free_option") != std::string::npos) {
+					//errs() << "Found _free_option\n";
+					translateFree(CF, CI, I);//add a memHeapFree after the inst
+					//errs() << "Complete _free_option\n";
+				}
 				else if (CF->getName().find("declare_free") != std::string::npos) {
 					//errs() << "Found declare_free\n";
 					declare2memHeapFree(CF, CI, I);//add a memHeapFree after the inst

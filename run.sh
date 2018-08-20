@@ -1,4 +1,4 @@
-FILE=mult
+FILE=uncompute
 cd build/
 make -j 12 #>/dev/null 2>/dev/null 
 cd -  

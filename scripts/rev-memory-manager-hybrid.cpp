@@ -66,8 +66,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _NOFREE; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _OPT; 
 bool swapAlloc = false;
 int systemSize = 10000;
 
@@ -171,13 +171,17 @@ void markAsReady(vector<qbit_t*>operands, int numOp) {
 }
 
 bool doStall(int num_qbits, int heap_idx) {
-	std::cout << "heap size: " << memoryHeap->numQubits << " total: " << AllQubits->N << "\n";
+	if (debugRevMemHybrid) { 
+		std::cout << "heap size: " << memoryHeap->numQubits << " total: " << AllQubits->N << "\n";
+	}
 	if (num_qbits <= 1) {
 		return false;
 	} else if (num_qbits + AllQubits->N - memoryHeap->numQubits <= systemSize) {
 		return false;
 	} else {
-		std::cout << "stalling " << num_qbits << " qubits.\n";
+		if (debugRevMemHybrid) { 
+			std::cout << "stalling " << num_qbits << " qubits.\n";
+		}
 		return true;
 	}
 }
