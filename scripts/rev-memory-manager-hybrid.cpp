@@ -33,6 +33,7 @@
 #define _LAZY 1
 #define _OPT 2
 #define _NOFREE 3
+#define _EXT 4
 
 #define _LIFO 0
 #define _MINQ 1
@@ -67,9 +68,9 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _LIFO;
-int freePolicy = _NOFREE; 
+int freePolicy = _EXT; 
 bool swapAlloc = false;
-int systemSize = 10000;
+int systemSize = 1000;
 
 // DEBUG switch
 bool trackGates = true;
@@ -130,6 +131,8 @@ std::map<qbit_t*, bool> waitlist; // whether a qubit is being held to stall
 
 std::vector<gate_t*> pendingGates;
 std::vector<acquire_str*> pendingAcquires;
+
+int CURRENT_IDX = 0;
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
 typedef struct memHeap_str {
@@ -1274,6 +1277,35 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	return num_qbits;	
 }
 
+int exhaustiveOnOff(int index){
+  string filename = "on_off_sequences.txt";
+  string outfilename = "on_off_sequences_temp.txt";
+	std::ifstream file(filename.c_str());
+	std::ofstream outfile(outfilename.c_str());
+	if( !(file) ){
+		std::cout << "Cannot find on_off_sequences.txt file\n";
+		exit(1);
+	}
+	vector<string> vec;
+	string seq;
+	string current_seq;
+	int iter = 0;
+	getline(file,current_seq);
+//	while (getline(file, seq)) {
+//			if (iter > 1) outfile << seq;
+//			else current_seq = seq;
+//	}
+	
+	std::cout << " Controlled Uncompute Index: " << index << " ";
+	std::cout << current_seq[index] << "\n";
+//	std::remove(filename);
+//	std::rename(outfilename,filename);
+	int val = int(current_seq[index] - '0');
+
+
+	return val;
+}
+
 /* freeOnOff: return 1 if uncompute, 0 otherwise*/
 int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 	if (freePolicy == _EAGER) {
@@ -1283,14 +1315,20 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 	} else if (freePolicy == _OPT) {
 		int weight_q = 1;
 		int weight_g = 1;
+		int total_q = AllQubits->N;
 		if (nOut > nAnc) {
 			return 0;
-		} else if (weight_q * (nAnc-nOut) < weight_g * nGate) {
+		} else if (weight_q * (nAnc-nOut+total_q) < weight_g * nGate) {
 			return 0;
 		}
 		return 1;
 	}
+	else if (freePolicy == _EXT) {
+		return exhaustiveOnOff( CURRENT_IDX++ );
+	}
 }
+
+
 
 
 void schedule(gate_t *new_gate) {
