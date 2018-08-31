@@ -1,4 +1,4 @@
-FILE=uncompute
+FILE=best_multiplier
 cd build/
 make -j 12 #>/dev/null 2>/dev/null 
 cd -  

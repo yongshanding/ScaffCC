@@ -66,8 +66,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPT; 
+int allocPolicy = _LIFO;
+int freePolicy = _NOFREE; 
 bool swapAlloc = false;
 int systemSize = 10000;
 

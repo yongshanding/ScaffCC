@@ -11,7 +11,18 @@
 #define N1 6 // top
 #define N2 6 // bottom = logm
 
-
+void helper(qbit **top, int n0, qbit **bot, int n2) {
+	qbit *anc[N2];
+	acquire(N2, anc, 0, NULL);
+	CNOT(top[0], bot[0]);
+	for (int i = 0; i < N2; i++) {
+		CNOT(bot[i], anc[i]);
+	}
+	CNOT(anc[N2-1], top[0]);
+	Free(top, 1, anc, 2, N2+1) {
+		release(top, 1, anc, 2, NULL);
+	} Nofree {}
+}
 
 
 /* Computes map from |top>|0> to |top>|f(top)>, where f(y) = b^y % m */
@@ -25,18 +36,17 @@ int main() {
 	acquire(N1+N2, new, 0, NULL);
 	qbit **top = &new[0]; // N1
 	qbit **bot = &new[N1]; // N2
+	Toffoli(top[0], top[1], bot[0]);
 	for (int i = 0; i < N1; i++) {
 		printf("iter%d\n", i);
 		//ctrlModExp(top[i], i, bot, n2, b, m);
-		Toffoli(top[0], top[1], bot[0]);
-		Free(top, N1, bot, N2, 1) {
-			//printf("try here\n");
-			CNOT(top[0], top[1]);
-			Toffoli(top[0], top[1], bot[0]);
-			declare_free(bot, N2);
-		} Nofree {
-			//printf("catch here\n");
-		}
+		helper(&top[i], 1, bot, N2);
+		//Free(top, N1, bot, N2, 1) {
+		//	//CNOT(top[0], top[1]);
+		//	//Toffoli(top[0], top[1], bot[0]);
+		//	//declare_free(bot, N2);
+		//}
+		//Nofree {}
 	}
 	return 0;
 	

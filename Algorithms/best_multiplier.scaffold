@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "qalloc.h"
+#include "uncompute.h"
 
 #define N 8
 
@@ -65,20 +66,22 @@ void partialProduct(qbit *ctrl, qbit **a, qbit *b, qbit **res, int n, int i) {
 	acquire(N+1, prod, N, a);
 	//printf("here1\n");
 	//qbit **temp = &prod[N]; // length: N+2
+	Compute {
 	for (int j = 0; j < n; j++) {
 		Toffoli(a[j], b, prod[j+1]);
 	}
 	//printf("here2\n");
-	inPlaceAdd(ctrl, &res[i], prod, N+1); 
+	}
+	Store {
+		inPlaceAdd(ctrl, &res[i], prod, N+1); 
+	}
 	//printf("here3\n");
 	//release(&res[i], N, prod, N+1, NULL);
-	int to_free = 1;// temporary flag
-	if (to_free == 1) {
+	Uncompute(res,n,prod,N+1,N*14){
 		for (int j = 0; j < n; j++) {
 			Toffoli(a[j], b, prod[j+1]);
 		}
-		declare_free(prod, N+1);
-	}
+	} Free(prod,N+1) {}
 }
 
 void multiply(qbit *ctrl, qbit **a, qbit **b, qbit **res, int n) {
