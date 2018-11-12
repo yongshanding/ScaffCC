@@ -240,7 +240,7 @@ namespace {
 			//}
 			num_qbits = nQ->getZExtValue(); // number of qubits to free
 			if(debugRTRevMemHyb)
-			  errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			  errs() << "\tPotential free: " << num_qbits << " qubits.\n";
 			// Get the heap idx
 			CallInst *hidx = CallInst::Create(getHeapIdx, "", CI);
 			//CallInst *hidx = CallInst::Create(getHeapIdx, "", (Instruction *)CI);
@@ -253,7 +253,7 @@ namespace {
 			freeArgs.push_back(res);
 			CallInst::Create(memHeapFree, ArrayRef<Value*>(freeArgs), "", CI);
 		
-			errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			errs() << "\tPotential free: " << num_qbits << " qubits.\n";
 			//if(delAfterInst)
 			//  vInstRemove.push_back((Instruction*)CI);
 
@@ -300,7 +300,7 @@ namespace {
 				num_qbits = nQ->getZExtValue(); // number of qubits to free
 			}
 			if(debugRTRevMemHyb)
-			  errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			  errs() << "\tPotential free: " << num_qbits << " qubits.\n";
 			// Get the heap idx
 			CallInst *hidx = CallInst::Create(getHeapIdx, "", Bterm);
 			//CallInst *hidx = CallInst::Create(getHeapIdx, "", (Instruction *)CI);
@@ -313,7 +313,7 @@ namespace {
 			freeArgs.push_back(res);
 			CallInst::Create(memHeapFree, ArrayRef<Value*>(freeArgs), "", Bterm);
 		
-			//errs() << "\tFreeing up: " << num_qbits << " qubits.\n";
+			//errs() << "\tPotential free: " << num_qbits << " qubits.\n";
 			//if(delAfterInst)
 			//  vInstRemove.push_back((Instruction*)CI);
 
