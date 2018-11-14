@@ -74,7 +74,7 @@ int systemSize = 1000;
 
 // DEBUG switch
 bool trackGates = true;
-bool debugRevMemHybrid = true;
+bool debugRevMemHybrid = false;
 bool swapflag = true;
 
 
@@ -1296,8 +1296,10 @@ int exhaustiveOnOff(int index){
 //			else current_seq = seq;
 //	}
 	
-	std::cout << " Controlled Uncompute Index: " << index << " ";
-	std::cout << current_seq[index] << "\n";
+  if (debugRevMemHybrid) {
+		std::cout << " Controlled Uncompute Index: " << index << " ";
+		std::cout << current_seq[index] << "\n";
+	}
 //	std::remove(filename);
 //	std::rename(outfilename,filename);
 	int val = int(current_seq[index] - '0');

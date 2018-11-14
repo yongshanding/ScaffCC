@@ -184,7 +184,7 @@ done
 for f in $*; do
   b=$(basename $f .scaffold)  
   b_dir=$(dirname "$(readlink -f $f)")
-  echo "[gen-rev-mem-optimized.sh] Compiling rev-memory-manager-hybrid.c" >&2
+  echo "[gen-rev-mem-optimized.sh] Compiling rev-memory-manager-hybrid.cpp" >&2
   $CLANGPP -c -O1 -emit-llvm $DIR/rev-memory-manager-hybrid.cpp -o $DIR/rev-memory-manager-hybrid.bc
   echo "[gen-rev-mem-optimized.sh] $b: Managing reversible memory ..." >&2
   if [ -n ${b}/${b}.freq ]; then
