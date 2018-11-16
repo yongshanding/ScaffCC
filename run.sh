@@ -1,4 +1,4 @@
-FILE=best_multiplier
+FILE=first
 cd build/
 make -j 12 #>/dev/null 2>/dev/null 
 cd -  

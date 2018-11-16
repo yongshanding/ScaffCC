@@ -70,11 +70,11 @@ using namespace std;
 int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
 bool swapAlloc = false;
-int systemSize = 1000;
+int systemSize = 10000;
 
 // DEBUG switch
 bool trackGates = true;
-bool debugRevMemHybrid = false;
+bool debugRevMemHybrid = true;
 bool swapflag = true;
 
 
