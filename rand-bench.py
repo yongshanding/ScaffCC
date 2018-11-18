@@ -5,9 +5,9 @@
 
 import os, sys, getopt, math, random
 
-SEED = 33001
+SEED = 3300
 # call graph degree: number of distinct callees in a function
-MAX_DEGREE = 3
+DEFAULT_MAX_DEGREE = 3
 TL = 0 # tab level
 
 def tab():
@@ -36,8 +36,8 @@ def build_fun(i, all_calls, outf):
     # all_calls[i]: (i, callees, [nq,na,ng])
     callees = all_calls[i][1]
     nq = all_calls[i][2][0]
-    na = all_calls[i][2][2]
-    ng = all_calls[i][2][1]
+    na = all_calls[i][2][1]
+    ng = all_calls[i][2][2]
     # Write a function with branching degree b
     writeline(outf, "// Function " + str(i) + " with degree " + str(len(callees)))
     writeline(outf, "// nq: " + str(nq) + ", na: " + str(na) + ", ng: " + str(ng))
@@ -179,9 +179,9 @@ def printStructure(call_lists):
         call_str = ",".join([str(c) for c in calls])
         print("\tFun " + str(i) + ": " + call_str)
 
-def rand_synth(outf, nq, na, ng, nl):
+def rand_synth(outf, nq, na, ng, nl, nd):
     writeline(outf, "// Scaffold file synthesized by rand-bench.py")
-    writeline(outf, "// qubits: " + str(nq) + " ancilla: " + str(na) + " gates: " + str(ng) + " levels: " + str(nl) + " ")
+    writeline(outf, "// qubits: " + str(nq) + " ancilla: " + str(na) + " gates: " + str(ng) + " levels: " + str(nl) + " degrees: "+ str(nd))
     writeline(outf, "#include \"qalloc.h\"")
     writeline(outf, "#include \"uncompute.h\"")
     # Build a tree-like program with depth nl, and random branching
@@ -190,34 +190,39 @@ def rand_synth(outf, nq, na, ng, nl):
     random.seed(SEED)
     print("[rand-bench.py] Random seed used: " + str(SEED))
 
-    branch = [random.randint(0,MAX_DEGREE) for li in xrange(MAX_DEGREE**nl)]
-    if branch[0]==0:
-        branch[0]+=1
-    cuts = [1]
-    start = 0
-    end = 1
-    for b in branch:
-        if end >= len(branch):
-            break
-        temp = 0
-        for i in range(start,end):
-            temp += branch[i]
-        cuts.append(cuts[-1]+temp)
-        start = end
-        end = end + temp
-    acc = 1
-    ll = 0
-    call_lists = []
-    for (i, b) in enumerate(branch):
-        call_lists.append(range(acc, acc+b))
-        acc += b
-        if i in cuts:
-            ll += 1 
-        if ll >= nl:
-            break
+    if (nl == 1):
+        call_lists = [range(1,nd+1)]
+    else:
+        branch = [random.randint(0,nd) for li in xrange(nd**nl)]
+        if branch[0]==0:
+            branch[0]+=1
+        cuts = [1]
+        start = 0
+        end = 1
+        for b in branch:
+            if end >= len(branch):
+                break
+            temp = 0
+            for i in range(start,end):
+                temp += branch[i]
+            cuts.append(cuts[-1]+temp)
+            start = end
+            end = end + temp
+        acc = 1
+        ll = 0
+        call_lists = []
+        for (i, b) in enumerate(branch):
+            call_lists.append(range(acc, acc+b))
+            acc += b
+            if i in cuts:
+                ll += 1 
+            if ll >= nl:
+                break
         
+    print(call_lists)
         
     printStructure(call_lists)
+    writeline(outf, "// Call list: " + (";".join([",".join([str(c) for c in calls]) for calls in call_lists])))
     #print(cuts)
     num_funs = 0
     for calls in call_lists:
@@ -235,9 +240,11 @@ def rand_synth(outf, nq, na, ng, nl):
                 suba = na
                 subg = ng
             else:
-                subq = random.randint(3,min(nq, all_calls[i][2][0]))
-                suba = random.randint(3,min(na, all_calls[i][2][1]))
-                subg = random.randint(1,min(ng, all_calls[i][2][2]))
+                subq = random.randint(3,min(nq, all_calls[i][2][0]+all_calls[i][2][1])) # fewer than nq+na of parent
+                #suba = random.randint(3,min(na, all_calls[i][2][1]))
+                suba = random.randint(1, na) # ancs dont have to be fewer 
+                #subg = random.randint(1,min(ng, all_calls[i][2][2]))
+                subg = random.randint(1, ng) # gates dont have to be fewer 
             #print c
             all_calls[c] = (c, callees, [subq, suba, subg])
             #all_subs.append([subq, suba, subg])
@@ -261,15 +268,17 @@ def main():
     num_qubtis = 0
     num_ancilla= 0
     num_gates = 0
+    L = 0
+    d = DEFAULT_MAX_DEGREE
     try:
-        opt, args = getopt.getopt(sys.argv[1:], "ho:q:a:g:L:", ["help", "output=", "qubits=", "ancilla=", "gates=", "levels="])
+        opt, args = getopt.getopt(sys.argv[1:], "ho:q:a:g:L:d:", ["help", "output=", "qubits=", "ancilla=", "gates=", "levels=", "degree="])
     except getopt.GetOptError as err:
         print(err)
-        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels>")
+        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
         sys.exit(2)
     for o,a in opt:
         if o in ("-h", "--help"):
-            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels>")
+            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
             sys.exit()
         elif o in ("-o", "--output"):
             outname = a
@@ -281,18 +290,20 @@ def main():
             num_gates = int(a)
         elif o in ("-L", "--levels"):
             L = int(a)
+        elif o in ("-d", "--degree"):
+            d = int(a)
         else:
-            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels>")
+            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
             sys.exit()
-    if (num_qubits > 0 and num_ancilla > 0 and num_gates > 0 and L > 0):
+    if (num_qubits > 0 and num_ancilla > 0 and num_gates > 0 and L > 0 and d > 0):
         if (not outname):
             print("Please specify valid output scaffold filename")
         else:
             with open(outname, 'w') as outfile:
-                rand_synth(outfile, num_qubits, num_ancilla,  num_gates, L)
+                rand_synth(outfile, num_qubits, num_ancilla,  num_gates, L, d)
     else:
         print("qubits, gates, or levels needs to be a positive integer")
-        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels>")
+        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
  
 if __name__ == "__main__":
   main()

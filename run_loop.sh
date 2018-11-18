@@ -1,6 +1,6 @@
 FILE=first
-n=10
-N=1024
+n=5
+N=32
 cd build/
 make -j 12 >/dev/null 2>/dev/null 
 cd -  
@@ -14,7 +14,10 @@ echo "[run.sh] Running ${N} iterations..."
 for i in $(seq 1 ${N}) ; do
 	./scripts/gen-rev-mem-optimized.sh Algorithms/${FILE}.scaffold >>${FILE}.err 2>> ${FILE}.err2
 	tail -n +2 on_off_sequences.txt > seq.tmp && mv seq.tmp on_off_sequences.txt	
-	tail "${FILE}/${FILE}.flat000k.freq" >> "${FILE}.results${i}.out"
-done
+	#tail "${FILE}/${FILE}.flat000k.freq" >> "${FILE}.results${i}.out"
+	bits=$(($i - 1))
+	echo "bit seq: ${bits}" 
+	tail "${FILE}/${FILE}.flat000k.freq" 
+	#cat ${FILE}.results${i}.out >> ${FILE}.results.out
+done >> ${FILE}.results.out
 #tail ${FILE}/*freq > ${FILE}.out 
-cat ${FILE}/${FILE}.results*.out > ${FILE}.results.out
