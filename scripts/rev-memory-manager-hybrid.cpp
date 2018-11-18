@@ -70,7 +70,7 @@ using namespace std;
 int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
 bool swapAlloc = false;
-int systemSize = 10000;
+int systemSize = 1000;
 
 // DEBUG switch
 bool trackGates = true;

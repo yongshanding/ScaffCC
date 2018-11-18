@@ -5,7 +5,7 @@
 
 import os, sys, getopt, math, random
 
-SEED = 3300
+SEED = 33001
 # call graph degree: number of distinct callees in a function
 MAX_DEGREE = 3
 TL = 0 # tab level
@@ -32,7 +32,12 @@ def sample_gates(ng, nq, na):
     return res
    
 
-def build_fun(i, callees, outf, nq, na, ng):
+def build_fun(i, all_calls, outf):
+    # all_calls[i]: (i, callees, [nq,na,ng])
+    callees = all_calls[i][1]
+    nq = all_calls[i][2][0]
+    na = all_calls[i][2][2]
+    ng = all_calls[i][2][1]
     # Write a function with branching degree b
     writeline(outf, "// Function " + str(i) + " with degree " + str(len(callees)))
     writeline(outf, "// nq: " + str(nq) + ", na: " + str(na) + ", ng: " + str(ng))
@@ -46,16 +51,18 @@ def build_fun(i, callees, outf, nq, na, ng):
     outs = random.sample(range(nq), num_out)
     writeline(outf, "qbit *res["+str(num_out)+"];") # rename the outputs
     callees_nq = []
-    for i in xrange(len(callees)):
-        num_q = random.randint(3, nq+na)
+    for j in xrange(len(callees)):
+        # num_q = random.randint(3, nq+na)
+        # need to sample the same number of qubits that callee needs
+        num_q = all_calls[callees[j]][2][0]
         callees_nq.append(num_q)
-        writeline(outf, "qbit *nq"+str(i)+"["+str(num_q)+"];") # rename callee inputs
+        writeline(outf, "qbit *nq"+str(j)+"["+str(num_q)+"];") # rename callee inputs
     # Building the interaction set (distinct qubits or weighted by appearances?)
-    for (i, x) in enumerate(interqs):
-        writeline(outf, "nb["+str(i)+"] = q["+str(x)+"];")
+    for (j, x) in enumerate(interqs):
+        writeline(outf, "nb["+str(j)+"] = q["+str(x)+"];")
     # Identify the output bits
-    for (i, x) in enumerate(outs):
-        writeline(outf, "res["+str(i)+"] = q["+str(x)+"];")
+    for (j, x) in enumerate(outs):
+        writeline(outf, "res["+str(j)+"] = q["+str(x)+"];")
     # Now ready to allocate the ancilla
     writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
     # Start computations
@@ -82,16 +89,16 @@ def build_fun(i, callees, outf, nq, na, ng):
         writeline(outf, "Store {")
         tab()
         temp_bits = random.sample(range(nq+na), num_out) 
-        for i in xrange(num_out):
-            if (temp_bits[i]<nq):
+        for j in xrange(num_out):
+            if (temp_bits[j]<nq):
                 # need to be different from outs
-                if (temp_bits[i] == outs[i]):
+                if (temp_bits[j] == outs[j]):
                     temp_op = "anc["+str(random.randint(0,na-1))+"]"
                 else:
-                    temp_op = "q["+str(temp_bits[i])+"]" 
+                    temp_op = "q["+str(temp_bits[j])+"]" 
             else:
-                temp_op = "anc["+str(temp_bits[i]-nq)+"]"
-            writeline(outf, "CNOT( " + temp_op + ", res[" + str(i) + "] );")
+                temp_op = "anc["+str(temp_bits[j]-nq)+"]"
+            writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
         untab()
         writeline(outf, "}")
         writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng) + "){")
@@ -104,13 +111,13 @@ def build_fun(i, callees, outf, nq, na, ng):
     else:
         writeline(outf, "// Non-leaf function")
         # Interleaving function calls among gates
-        for (i, c) in enumerate(callees):
-            num_q = callees_nq[i]
+        for (j, c) in enumerate(callees):
+            num_q = callees_nq[j]
             callee_q = random.sample(range(nq+na), num_q)
-            for (j,cq) in enumerate(callee_q):
+            for (k,cq) in enumerate(callee_q):
                 cq_op = "q["+str(cq)+"]" if (cq<nq) else "anc["+str(cq-nq)+"]"
-                writeline(outf, "nq"+str(i)+"["+str(j)+"] = " + cq_op + ";")
-            all_ins.append("func" + str(c) + "(nq"+str(i)+", "+str(num_q)+");")
+                writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
+            all_ins.append("func" + str(c) + "(nq"+str(j)+", "+str(num_q)+");")
         random.shuffle(all_ins)
         writeline(outf, "Compute {")
         tab()
@@ -121,16 +128,16 @@ def build_fun(i, callees, outf, nq, na, ng):
         writeline(outf, "Store {")
         tab()
         temp_bits = random.sample(range(nq+na), num_out) 
-        for i in xrange(num_out):
-            if (temp_bits[i]<nq):
+        for j in xrange(num_out):
+            if (temp_bits[j]<nq):
                 # need to be different from outs
-                if (temp_bits[i] == outs[i]):
+                if (temp_bits[j] == outs[j]):
                     temp_op = "anc["+str(random.randint(0,na-1))+"]"
                 else:
-                    temp_op = "q["+str(temp_bits[i])+"]" 
+                    temp_op = "q["+str(temp_bits[j])+"]" 
             else:
-                temp_op = "anc["+str(temp_bits[i]-nq)+"]"
-            writeline(outf, "CNOT( " + temp_op + ", res[" + str(i) + "] );")
+                temp_op = "anc["+str(temp_bits[j]-nq)+"]"
+            writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
         untab()
         writeline(outf, "}")
         writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng) + "){")
@@ -166,6 +173,11 @@ def build_main(callees, outf, nq, na, ng):
     untab()
     writeline(outf, "}")
     
+def printStructure(call_lists):
+    print("[rand-bench.py] Program structure:")
+    for (i,calls) in enumerate(call_lists):
+        call_str = ",".join([str(c) for c in calls])
+        print("\tFun " + str(i) + ": " + call_str)
 
 def rand_synth(outf, nq, na, ng, nl):
     writeline(outf, "// Scaffold file synthesized by rand-bench.py")
@@ -176,6 +188,7 @@ def rand_synth(outf, nq, na, ng, nl):
     # First create the random branching array A[l] is the branching 
 
     random.seed(SEED)
+    print("[rand-bench.py] Random seed used: " + str(SEED))
 
     branch = [random.randint(0,MAX_DEGREE) for li in xrange(MAX_DEGREE**nl)]
     if branch[0]==0:
@@ -204,24 +217,37 @@ def rand_synth(outf, nq, na, ng, nl):
             break
         
         
-    print(call_lists)
-    print(cuts)
-    for (i, calls) in enumerate(reversed(call_lists)):
+    printStructure(call_lists)
+    #print(cuts)
+    num_funs = 0
+    for calls in call_lists:
+        num_funs += len(calls)
+    #print num_funs
+    all_calls = [(0,[],[]) for _ in xrange(num_funs+1)]
+    #all_callees = []
+    #all_subs = []
+    for (i, calls) in enumerate(call_lists):
         for c in calls:
             callees = call_lists[c] if (c < len(call_lists)) else []
-            degrees = len(callees)
-            if (i == len(call_lists)-1):
+            #degrees = len(callees)
+            if (i == 0):
                 subq = nq
                 suba = na
                 subg = ng
             else:
-                subq = random.randint(3,nq)
-                suba = random.randint(3,na)
-                subg = random.randint(1,ng)
-            build_fun(c, callees, outf, subq, suba, subg)
+                subq = random.randint(3,min(nq, all_calls[i][2][0]))
+                suba = random.randint(3,min(na, all_calls[i][2][1]))
+                subg = random.randint(1,min(ng, all_calls[i][2][2]))
+            #print c
+            all_calls[c] = (c, callees, [subq, suba, subg])
+            #all_subs.append([subq, suba, subg])
+            
+    for (c, _, _) in reversed(all_calls[1:]):
+        build_fun(c, all_calls, outf)
 
     # Lastly, build main
     build_main(call_lists[0], outf, nq, na, ng)
+    print("[rand-bench.py] Sythetic benchmark written to: " + outf.name)
     #for li in xrange(nl):
     #    # start from the leaf level (i=0), build the necessary functions
     #    b = branch[li]
