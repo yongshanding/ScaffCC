@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "qalloc.h"
+#include "uncompute.h"
 
 //void acquire(int n, qbit **addr) {
 //	qbit *new = (qbit *)malloc(sizeof(qbit)*n);
@@ -17,7 +18,7 @@ void addMod(qbit **a, qbit **b, int n) {
 	}
 	qbit *c[1];
 	acquire(1, c, 64, d);
-	
+
 	CNOT(a[0], b[0]);
 	CNOT(a[0], c[0]);
 	Toffoli(c[0], b[0], a[0]);
@@ -50,11 +51,24 @@ void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
 	qbit *anc[2*n];
 	acquire(64, anc, 96, d);
 	qbit **t = &anc[32];
-	for (int i = 0; i < n; i++){
-		Toffoli(e[i], f[i], anc[i]);
-		Toffoli(anc[i], g[i], t[i]);
+
+	Compute{
+		for (int i = 0; i < n; i++){
+			Toffoli(e[i], f[i], anc[i]);
+			Toffoli(anc[i], g[i], t[i]);
+		}
 	}
-	release(h,32,anc,64,t);
+	Store{
+		for (int i = 0; i < 32; i++){
+			CNOT(h[i], t[i]);
+		}
+	}
+	Uncompute(h, 32, anc, 64, 2*32){
+		for (int i = n-1; i >= 0; i--){
+			Toffoli(anc[i], g[i], t[i]);
+			Toffoli(e[i], f[i], anc[i]);
+		}
+	}
 }
 
 void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
@@ -72,11 +86,21 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 	d[3] = t;
 	qbit *anc[1];
 	acquire(1, anc, 4, d);
-	Toffoli(a,b,anc[0]);
-	Toffoli(a,c,anc[0]);
-	Toffoli(b,c,anc[0]);
-	CNOT(anc[0], t);
-	release(&t, 1, anc, 1, &ttemp);
+	Compute{
+		Toffoli(a,b,anc[0]);
+		Toffoli(a,c,anc[0]);
+		Toffoli(b,c,anc[0]);
+		CNOT(anc[0], t);
+	}
+	Store{
+		CNOT(t, ttemp);
+	}
+	Uncompute(&t, 1, &anc, 1, 4){
+		CNOT(anc[0], t);
+		Toffoli(b,c,anc[0]);
+		Toffoli(a,c,anc[0]);
+		Toffoli(a,b,anc[0]);
+	}
 }
 
 void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
@@ -89,10 +113,23 @@ void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
 	qbit *t[33];
 	acquire(33,t, 96, d);
 	qbit **ttemp = &t[32];
-	for (int i = 0; i < n; i++){
-		toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
+
+	Compute{
+		for (int i = 0; i < n; i++){
+			toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
+		}
 	}
-	release(h, 32, t, 32, t);
+	Store{
+		for (int i = 0; i < 32; i++){
+			CNOT(h[i], t[i]);
+		}
+	}
+	Uncompute(h, 32, t, 32, 5*32){
+		for (int i = n - 1; i >= 0; i--){
+			_reverse_toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
+		}
+	};
+
 }
 
 void rot(qbit **a, qbit **b, int n, int shift){
@@ -114,36 +151,72 @@ void s0(qbit **a, qbit **h, int n){
 	qbit *a2[32];
 	qbit *a13[32];
 	qbit *a22[32];
-	
-	rot(a, a2, n, 2);
-	rot(a, a13, n, 13);
-	rot(a, a22, n, 22);
 
-	for (int i = 0; i < n; i++){
-		CNOT(a2[i], t[i]);	
-		CNOT(a13[i], t[i]);	
-		CNOT(a22[i], t[i]);	
+	Compute{
+		rot(a, a2, n, 2);
+		rot(a, a13, n, 13);
+		rot(a, a22, n, 22);
+
+		for (int i = 0; i < n; i++){
+			CNOT(a2[i], t[i]);	
+			CNOT(a13[i], t[i]);	
+			CNOT(a22[i], t[i]);	
+		}
 	}
-	release(h,32,t,32,t);
+
+	Store{
+		for (int i = 0; i < 32; i++){
+			CNOT(h[i], t[i]);
+		}
+	}
+
+	Uncompute(h, 32, t, 32, 32*3){
+		for (int i = n - 1; i >= 0; i--){
+			CNOT(a22[i], t[i]);
+			CNOT(a13[i], t[i]);
+			CNOT(a2[i], t[i]);
+		}
+		_reverse_rot(a, a22, n, 22);
+		_reverse_rot(a, a13, n, 13);
+		_reverse_rot(a, a2, n, 2);
+	}
 }
 void s1(qbit **a, qbit **h, int n){
 	qbit *t[32];
 	acquire(32,t, 32, a);
 
-	qbit *a6[32];
-	qbit *a11[32];
-	qbit *a25[32];
+	Compute{
+		qbit *a6[32];
+		qbit *a11[32];
+		qbit *a25[32];
 
-	rot(a, a6, n, 6);
-	rot(a, a11, n, 11);
-	rot(a, a25, n, 25);
-	
-	for (int i = 0; i < n; i++){
-		CNOT(a6[i], t[i]);
-		CNOT(a11[i], t[i]);
-		CNOT(a25[i], t[i]);
+		rot(a, a6, n, 6);
+		rot(a, a11, n, 11);
+		rot(a, a25, n, 25);
+
+		for (int i = 0; i < n; i++){
+			CNOT(a6[i], t[i]);
+			CNOT(a11[i], t[i]);
+			CNOT(a25[i], t[i]);
+		}
 	}
-	release(h,32,t,32,t);
+
+	Store{
+		for (int i = 0; i < 32; i++){
+			CNOT(h[i], t[i]);
+		}
+	}
+	Uncompute(h, 32, t, 32, 32*3){
+		for (int i = n - 1; i >= 0; i--){
+			CNOT(a25[i], t[i]);
+			CNOT(a11[i], t[i]);
+			CNOT(a6[i], t[i]);
+		}
+		_reverse_rot(a, a25, n, 25);
+		_reverse_rot(a, a11, n, 11);
+		_reverse_rot(a, a6, n, 6);
+
+	}
 }
 
 //void ch_addMod(qbit **e, qbit **f, qbit **g, qbit **h, qbit **t0, int n){
@@ -209,5 +282,5 @@ int main() {
 	qbit **x = &new[64];
 	sha2(k,w,x,32);
 	return 0;
-	
+
 }
