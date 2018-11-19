@@ -60,7 +60,7 @@ void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
 	}
 	Store{
 		for (int i = 0; i < 32; i++){
-			CNOT(h[i], t[i]);
+			CNOT(t[i], h[i]);
 		}
 	}
 	Uncompute(h, 32, anc, 64, 2*32){
@@ -68,7 +68,7 @@ void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
 			Toffoli(anc[i], g[i], t[i]);
 			Toffoli(e[i], f[i], anc[i]);
 		}
-	}
+	}Free(anc, 64){}
 }
 
 void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
@@ -100,7 +100,7 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 		Toffoli(b,c,anc[0]);
 		Toffoli(a,c,anc[0]);
 		Toffoli(a,b,anc[0]);
-	}
+	}Free(&anc, 1){}
 }
 
 void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
@@ -121,14 +121,14 @@ void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
 	}
 	Store{
 		for (int i = 0; i < 32; i++){
-			CNOT(h[i], t[i]);
+			CNOT(t[i], h[i]);
 		}
 	}
 	Uncompute(h, 32, t, 32, 5*32){
 		for (int i = n - 1; i >= 0; i--){
-			_reverse_toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
+			toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
 		}
-	};
+	}Free(t, 32) {}
 
 }
 
@@ -166,7 +166,7 @@ void s0(qbit **a, qbit **h, int n){
 
 	Store{
 		for (int i = 0; i < 32; i++){
-			CNOT(h[i], t[i]);
+			CNOT(t[i], h[i]);
 		}
 	}
 
@@ -179,16 +179,16 @@ void s0(qbit **a, qbit **h, int n){
 		_reverse_rot(a, a22, n, 22);
 		_reverse_rot(a, a13, n, 13);
 		_reverse_rot(a, a2, n, 2);
-	}
+	}Free(t, 32){}
 }
 void s1(qbit **a, qbit **h, int n){
 	qbit *t[32];
 	acquire(32,t, 32, a);
-
+	qbit *a6[32];
+	qbit *a11[32];
+	qbit *a25[32];
 	Compute{
-		qbit *a6[32];
-		qbit *a11[32];
-		qbit *a25[32];
+
 
 		rot(a, a6, n, 6);
 		rot(a, a11, n, 11);
@@ -203,7 +203,7 @@ void s1(qbit **a, qbit **h, int n){
 
 	Store{
 		for (int i = 0; i < 32; i++){
-			CNOT(h[i], t[i]);
+			CNOT(t[i], h[i]);
 		}
 	}
 	Uncompute(h, 32, t, 32, 32*3){
@@ -216,7 +216,7 @@ void s1(qbit **a, qbit **h, int n){
 		_reverse_rot(a, a11, n, 11);
 		_reverse_rot(a, a6, n, 6);
 
-	}
+	}Free(t, 32){}
 }
 
 //void ch_addMod(qbit **e, qbit **f, qbit **g, qbit **h, qbit **t0, int n){
