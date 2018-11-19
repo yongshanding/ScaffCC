@@ -69,13 +69,13 @@ using namespace std;
 // Policy switch
 int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
-bool swapAlloc = false;
+bool swapAlloc = false; // not this flag
 int systemSize = 1000;
 
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
-bool swapflag = false;
+bool swapflag = true;
 
 
 int num_gate_scheduled = 0;
