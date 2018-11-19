@@ -1,6 +1,6 @@
 FILE=first
-n=5
-N=32
+n=12
+N=4096
 cd build/
 make -j 12 >/dev/null 2>/dev/null 
 cd -  

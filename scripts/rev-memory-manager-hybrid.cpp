@@ -75,7 +75,7 @@ int systemSize = 1000;
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
-bool swapflag = true;
+bool swapflag = false;
 
 
 int num_gate_scheduled = 0;

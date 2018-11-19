@@ -5,7 +5,7 @@
 
 import os, sys, getopt, math, random
 
-SEED = 3300
+SEED = 15859211
 # call graph degree: number of distinct callees in a function
 DEFAULT_MAX_DEGREE = 3
 TL = 0 # tab level
@@ -150,10 +150,11 @@ def build_fun(i, all_calls, outf):
     untab()
     writeline(outf, "}")
 
-def build_main(callees, outf, nq, na, ng):
+def build_main(callees, all_calls, outf, nq, na, ng):
     if (len(callees) == 0):
         print ("Error. main function should have at least one callees.")
         sys.exit()
+
     writeline(outf, "// main function")
     writeline(outf, "int main() {")
     tab()
@@ -167,12 +168,33 @@ def build_main(callees, outf, nq, na, ng):
     for b in bits:
         writeline(outf, "X (new[" + str(b) + "]);")
     writeline(outf, "// Start computation")
-    for c in callees:
-        writeline(outf, "func" + str(c) + "(new, " + str(nq) + ");")
+    if (len(callees) == 1):
+        for c in callees:
+            writeline(outf, "func" + str(c) + "(new, " + str(nq) + ");")
+
+    else:
+        callees_nq = []
+        all_ins = []
+        for j in xrange(len(callees)):
+            # num_q = random.randint(3, nq+na)
+            # need to sample the same number of qubits that callee needs
+            num_q = all_calls[callees[j]][2][0]
+            callees_nq.append(num_q)
+            writeline(outf, "qbit *nq"+str(j)+"["+str(num_q)+"];") # rename callee inputs
+
+        for (j, c) in enumerate(callees):
+            num_q = callees_nq[j]
+            callee_q = random.sample(range(nq), num_q)
+            for (k,cq) in enumerate(callee_q):
+                cq_op = "new["+str(cq)+"]" 
+                writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
+            all_ins.append("func" + str(c) + "(nq"+str(j)+", "+str(num_q)+");")
+        for ins in all_ins:
+            writeline(outf, ins)
     writeline(outf, "return 0;")
     untab()
     writeline(outf, "}")
-    
+
 def printStructure(call_lists):
     print("[rand-bench.py] Program structure:")
     for (i,calls) in enumerate(call_lists):
@@ -236,9 +258,15 @@ def rand_synth(outf, nq, na, ng, nl, nd):
             callees = call_lists[c] if (c < len(call_lists)) else []
             #degrees = len(callees)
             if (i == 0):
-                subq = nq
-                suba = na
-                subg = ng
+                if (len(calls) == 1):
+                    subq = nq
+                    suba = na
+                    subg = ng
+                else:
+                    subq = random.randint(3, nq)
+                    suba = random.randint(1, na)
+                    subg = random.randint(1, ng)
+                    
             else:
                 subq = random.randint(3,min(nq, all_calls[i][2][0]+all_calls[i][2][1])) # fewer than nq+na of parent
                 #suba = random.randint(3,min(na, all_calls[i][2][1]))
@@ -253,7 +281,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
         build_fun(c, all_calls, outf)
 
     # Lastly, build main
-    build_main(call_lists[0], outf, nq, na, ng)
+    build_main(call_lists[0], all_calls, outf, nq, na, ng)
     print("[rand-bench.py] Sythetic benchmark written to: " + outf.name)
     #for li in xrange(nl):
     #    # start from the leaf level (i=0), build the necessary functions
