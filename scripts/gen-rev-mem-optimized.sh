@@ -10,7 +10,7 @@ CLANG=$BIN/clang
 CLANGPP=$BIN/clang++
 LLVM_LINK=$BIN/llvm-link
 LLI=$BIN/lli
-I_FLAGS="-I/usr/include -I/usr/include/x86_64-linux-gnu -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include"
+I_FLAGS="-I/usr/include -I/usr/include/x86_64-linux-gnu -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/usr/include/x86_64-linux-gnu/c++/5" 
 
 # Capacity of each SIMD region
 D=(1024)
@@ -185,7 +185,7 @@ for f in $*; do
   b=$(basename $f .scaffold)  
   b_dir=$(dirname "$(readlink -f $f)")
   echo "[gen-rev-mem-optimized.sh] Compiling rev-memory-manager-hybrid.cpp" >&2
-  $CLANGPP -c -O1 -emit-llvm $DIR/rev-memory-manager-hybrid.cpp -o $DIR/rev-memory-manager-hybrid.bc
+  $CLANGPP $I_FLAGS -c -O1 -emit-llvm $DIR/rev-memory-manager-hybrid.cpp -o $DIR/rev-memory-manager-hybrid.bc
   echo "[gen-rev-mem-optimized.sh] $b: Managing reversible memory ..." >&2
   if [ -n ${b}/${b}.freq ]; then
     cp ${b}/${b}.ll ${b}/${b}_dynamic.ll          
