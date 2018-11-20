@@ -7,7 +7,7 @@ import os, sys, getopt, math, json
 
 def gen_topology(outf, nq, ty):
     res = dict()
-    res["QubitLayout"] = range(nq)
+    res["QubitLayout"] = [i for i in range(nq)]
     if (ty == 0):
         # linear topology
         res["QubitConnectivity"] = dict()

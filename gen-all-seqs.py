@@ -7,7 +7,7 @@ import os, sys, getopt, math, random
 
 def gen_seqs(outf, n):
     # n is number of bits
-    for i in xrange(2**n):
+    for i in range(2**n):
         n_str = ("{0:0"+str(n)+"b}").format(i)
         outf.write(n_str+'\n')
 

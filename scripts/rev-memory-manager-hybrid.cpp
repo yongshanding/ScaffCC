@@ -1,9 +1,10 @@
-#include <cstdlib>    /* malloc    */
-#include <cstdio>     /* printf    */
+//#include <cstdlib>    /* malloc    */
+//#include <cstdio>     /* printf    */
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <limits.h>
+//#include <limits.h>
+
 //#include <stddef.h>    /* offsetof  */
 //#include <string.h>    /* strcpy    */
 #include <string>

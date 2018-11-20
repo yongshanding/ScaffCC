@@ -40,5 +40,7 @@ clang/build
 scaffold/*.scaffold
 # Ignore object files
 scaffold/*.o
+*.o
+*.bc
 # Ignore the scaffold executable
 scaffold/scaffold

@@ -2,11 +2,11 @@
 
 lines = []
 vols = []
-with open("first/first.results.out", "r") as f:
+with open("sha2/sha2.results.out", "r") as f:
     lines = f.readlines()
     linesplits = [x.split() for x in lines]
     #print(len(linesplits))
-    num = len(linesplits)/11-1
+    num = int(len(linesplits)/11)-1
     for x in range(num):
         idx = int(linesplits[11*x][-1])
         qbs = int(linesplits[11*x+2][-1][:-1])

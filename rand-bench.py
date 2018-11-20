@@ -24,7 +24,7 @@ def writeline(outf, line_str):
 def sample_gates(ng, nq, na):
     # returns the operands
     res = []
-    for ig in xrange(ng):
+    for ig in range(ng):
         # Sample a random gate (CNOT or Toffoli)
         num_op = random.randint(2,3)
         ops = random.sample(range(nq+na), num_op)
@@ -51,7 +51,7 @@ def build_fun(i, all_calls, outf):
     outs = random.sample(range(nq), num_out)
     writeline(outf, "qbit *res["+str(num_out)+"];") # rename the outputs
     callees_nq = []
-    for j in xrange(len(callees)):
+    for j in range(len(callees)):
         # num_q = random.randint(3, nq+na)
         # need to sample the same number of qubits that callee needs
         num_q = all_calls[callees[j]][2][0]
@@ -89,7 +89,7 @@ def build_fun(i, all_calls, outf):
         writeline(outf, "Store {")
         tab()
         temp_bits = random.sample(range(nq+na), num_out) 
-        for j in xrange(num_out):
+        for j in range(num_out):
             if (temp_bits[j]<nq):
                 # need to be different from outs
                 if (temp_bits[j] == outs[j]):
@@ -128,7 +128,7 @@ def build_fun(i, all_calls, outf):
         writeline(outf, "Store {")
         tab()
         temp_bits = random.sample(range(nq+na), num_out) 
-        for j in xrange(num_out):
+        for j in range(num_out):
             if (temp_bits[j]<nq):
                 # need to be different from outs
                 if (temp_bits[j] == outs[j]):
@@ -175,7 +175,7 @@ def build_main(callees, all_calls, outf, nq, na, ng):
     else:
         callees_nq = []
         all_ins = []
-        for j in xrange(len(callees)):
+        for j in range(len(callees)):
             # num_q = random.randint(3, nq+na)
             # need to sample the same number of qubits that callee needs
             num_q = all_calls[callees[j]][2][0]
@@ -213,9 +213,9 @@ def rand_synth(outf, nq, na, ng, nl, nd):
     print("[rand-bench.py] Random seed used: " + str(SEED))
 
     if (nl == 1):
-        call_lists = [range(1,nd+1)]
+        call_lists = [[i for i in range(1,nd+1)]]
     else:
-        branch = [random.randint(0,nd) for li in xrange(nd**nl)]
+        branch = [random.randint(0,nd) for li in range(nd**nl)]
         if branch[0]==0:
             branch[0]+=1
         cuts = [1]
@@ -234,7 +234,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
         ll = 0
         call_lists = []
         for (i, b) in enumerate(branch):
-            call_lists.append(range(acc, acc+b))
+            call_lists.append([j for j in range(acc, acc+b)])
             acc += b
             if i in cuts:
                 ll += 1 
@@ -250,7 +250,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
     for calls in call_lists:
         num_funs += len(calls)
     #print num_funs
-    all_calls = [(0,[],[]) for _ in xrange(num_funs+1)]
+    all_calls = [(0,[],[]) for _ in range(num_funs+1)]
     #all_callees = []
     #all_subs = []
     for (i, calls) in enumerate(call_lists):
@@ -283,7 +283,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
     # Lastly, build main
     build_main(call_lists[0], all_calls, outf, nq, na, ng)
     print("[rand-bench.py] Sythetic benchmark written to: " + outf.name)
-    #for li in xrange(nl):
+    #for li in range(nl):
     #    # start from the leaf level (i=0), build the necessary functions
     #    b = branch[li]
     #    build_level(li, b, outf, nq, na, ng)
