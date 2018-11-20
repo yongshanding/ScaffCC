@@ -1,0 +1,145 @@
+#include <stdlib.h>
+#include <math.h>
+#include "qalloc.h"
+#include "uncompute.h"
+
+#define N 32
+#define LOGN 5
+#define LOG2N3 4
+
+
+void XOR(qbit **a, qbit **b){
+	for (int i = 0; i < N; i++){
+		CNOT(a[i], b[i]);
+	}
+}
+
+
+void rotate(qbit **a, int n){
+	qbit* tmp = a[N - 1];
+	for (int i = N - 1; i >= 0; i--){
+		if (i - n == -1){
+			a[i] = tmp;
+		}
+		else if (i - n >= 0){
+			a[i] = a[i - n];
+		} else {
+			a[i] = a[i - n + N];
+		}
+	}
+}
+
+
+void lookaheadHelper(qbit **a, qbit **b, qbit **res, int n) {
+	qbit *all_anc[N];
+	acquire(N, all_anc, N, b);
+	int ni = LOGN;
+
+	Compute{
+		for (int i = 1; i < ni; i++) {
+			int nj = N / (1 << i);
+			for (int j = 1; j < nj; j++) {
+				Toffoli(all_anc[2*j], all_anc[2*j+1], all_anc[j]);
+			}
+		}
+	}
+	Store{
+		for (int i = 1; i <= ni; i++) {
+			int nj = N / (1 << i);
+			for (int j = 0; j < nj; j++) {
+				Toffoli(res[(1<<i)*j + (1<<(i-1))], all_anc[2*j+1], res[(1<<i)*j + (1<<i)]);
+			}
+		}
+		ni = LOG2N3; //(int) log2((double)(2*N / 3));
+		for (int i = ni; i >= 1; i--) {
+			int nj = (n - (1 << (i - 1))) / (1 << i);
+			for (int j = 1; j <= nj; j++) {
+				Toffoli(res[(1<<i)*j], all_anc[2*j], res[(1<<i)*j + (1<<(i-1))]);
+			}
+		}
+	}
+	ni = LOGN; //(int) log2 ((double) N);
+	Uncompute(res, N, all_anc, N, 31){
+		for (int i = ni-1; i >=1; i--) {
+			int nj = N / (1 << i);
+			for (int j = 1; j < nj; j++) {
+				Toffoli(all_anc[2*j], all_anc[2*j+1], all_anc[j]);
+			}
+		}
+	}Free(all_anc, N){}
+}
+
+void carryLookaheadAdder(qbit **a, qbit **b, qbit **res, int n) {
+	Toffoli(a[0], b[0], res[1]);
+	for (int i = 1; i < n; i++) {
+		Toffoli(a[i], b[i], res[i+1]);
+		CNOT(a[i], b[i]);
+	}
+	lookaheadHelper(a, b, res, n);
+	// reset b to initial value
+	for (int i = 0; i < n; i++) {
+		CNOT(b[i], res[i]);
+	}
+	CNOT(a[0], res[0]);
+	for (int i = 1; i < n; i++) {
+		CNOT(a[i], b[i]);
+	}
+
+}
+
+int index_xor_x[32] = {4, 8, 12, 0, 9, 13, 1, 5, 14, 2, 6, 10, 3, 7, 11, 15, 1, 2, 3, 0, 6, 7, 4, 5, 11, 8, 9, 10, 12, 13, 14, 15};
+
+int index_add_1[32] = {0, 4, 8, 12, 5, 9, 13, 1, 10, 14, 2, 6, 15, 3, 7, 11, 0, 1, 2, 3, 5, 6, 7, 4, 10, 11, 8, 9, 15, 12, 13, 14};
+
+int index_add_2[32] = {12, 0, 4, 8, 1, 5, 9, 13, 6, 10, 14, 2, 11, 15, 3, 7, 3, 0, 1, 2, 4, 5, 6, 7, 9, 10, 11, 8, 14, 15, 12, 13};
+
+int rotate_bits[4] = {7, 9, 13, 18};
+
+void salsa_helper(qbit** x, int idx_1, int idx_2, int idx_3, int rot){
+	qbit *temp[N+1];
+	acquire(N+1, temp, 32*16, x);
+
+	qbit *res[N];
+	qbit *a[N];
+	qbit *b[N];
+
+	for (int i = 0; i < N; i++){
+		res[i] = x[idx_1 + i];
+		a[i] = x[idx_2 + i];
+		b[i] = x[idx_3 + i];
+	}
+	Compute{
+		carryLookaheadAdder(a, b, temp, N);
+		rotate(temp, rot);
+	}
+	Store{
+		XOR(temp, res);
+
+	}
+	Uncompute(res, 32, temp, N+1, 4*N + 93){
+		_reverse_rotate(temp, rot);
+		_reverse_carryLookaheadAdder(a, b, temp, N);
+	} Free(temp, N+1){}
+
+
+}
+
+void salsa(qbit **x){
+	for (int i = 20; i > 0; i-=2){
+		for (int j = 0; j < 32; j++){
+			salsa_helper(x, index_xor_x[j], index_add_1[j], index_add_2[j], rotate_bits[j % 4]);
+		}
+	}
+}
+
+
+int main(){
+	qbit *new[16*N];
+
+	acquire(16*N, new, 0, NULL);
+	salsa(new);
+	return 0;
+}
+
+
+
