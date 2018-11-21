@@ -71,7 +71,7 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
+int allocPolicy = _CLOSEST_BLOCK;
 int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 1024; // perfect square number
@@ -650,6 +650,7 @@ vector<pair<int,int> > manhattan(qbit_t *src, qbit_t *dst){
 
 	int source = getPhysicalID(src);
 	int dest= getPhysicalID(dst);
+	//std::cout << "source: " << source << " dest: " << dest << "\n";
 	// Assume the 2-D grid is labelled as row major.
 	int sideLength = std::ceil(std::sqrt(systemSize));
 	int s_r = source / sideLength;
@@ -662,26 +663,29 @@ vector<pair<int,int> > manhattan(qbit_t *src, qbit_t *dst){
 	int abs_r = abs(delta_r);
 	int abs_c = abs(delta_c);
 	vector<int> path;
-	if (abs_r > 1 || abs_c > 1) {
-		path.push_back(source);
-		int sign_r = 1;
-		int sign_c = 1;
-		if (abs_r != 0) {
-			sign_r = delta_r/abs_r;
-		}
-		if (abs_c != 0) {
-			sign_c = delta_c/abs_c;
-		}
+	if (abs_r + abs_c > 1) {
+		//path.push_back(source);
+		int sign_r = (d_r >= s_r)? 1: -1;
+		int sign_c = (d_c >= s_c)? 1: -1;
+		//if (abs_r != 0) {
+		//	sign_r = delta_r/abs_r;
+		//}
+		//if (abs_c != 0) {
+		//	sign_c = delta_c/abs_c;
+		//}
 		int new_r = s_r;
-		for (int r = 0; r < abs_r; r++) {
-			new_r = s_r + sign_r * r;
-			path.push_back(new_r * sideLength + s_c);
-		}
-	
 		int new_c = s_c;
-		for (int c = 0; c < abs_c; c++) {
+		for (int r = 0; r <= abs_r; r++) {
+			new_r = s_r + sign_r * r;
+			if (!(new_r == d_r && new_c == d_c)) {
+				path.push_back(new_r * sideLength + s_c);
+			}
+		}
+		for (int c = 0; c <= abs_c; c++) {
 			new_c = s_c + sign_c * c;
-			path.push_back(new_r * sideLength + new_c);
+			if ((path.back() != new_r*sideLength+new_c) && (new_r != d_r || new_c != d_c)) {
+				path.push_back(new_r * sideLength + new_c);
+			}
 		}
 		if (new_c != d_c || new_r != d_r){
 			std::cout << "Error: manhattan path construction error.\n";
