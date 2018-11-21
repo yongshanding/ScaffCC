@@ -42,6 +42,9 @@
 #define _CLOSEST_BLOCK 3
 #define _CLOSEST_QUBIT 4
 
+#define _SWAP_CHAIN 0
+// _SWAP_CHAIN=0 means assuming manhattan path: works on linear or grid topology
+// _SWAP_CHAIN=1 means assuming shortest path: works on any topology, but slow
 
 #define _X 0
 #define _Y 1
@@ -71,7 +74,7 @@ using namespace std;
 int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
-int systemSize = 1000;
+int systemSize = 1024; // perfect square number
 
 // DEBUG switch
 bool trackGates = true;
@@ -591,12 +594,16 @@ vector<int> recoverPath(vector<int> prev, int dest){
 vector<pair<int,int> >buildSwaps(vector<int> path){
 	//vector<pair<qbit_t*,qbit_t*> > swaps;
 	vector<pair<int,int> > swaps;
-	//std::cerr << "path " << path.size() << "\n";
-	for (int i = 0; i < path.size()-1; i++){
+	//std::cerr << "path1 " << path.size() << "\n";
+	//if (path.size() == 0)
+	for (int i = 0; i+1 < path.size(); i++){
+
+		//std::cerr << "path2 " << path.size() << "\n";
 //		pair<qbit_t*, qbit_t*> new_swap = make_pair(getLogicalAddr(path[i]),getLogicalAddr(path[i+1]));
 		pair<int,int> new_swap = make_pair(path[i],path[i+1]);
 		swaps.push_back(new_swap);
 	}
+	//std::cerr << "path3 " << path.size() << "\n";
 	return swaps;
 }
 
@@ -636,6 +643,52 @@ vector<pair<int,int> > dijkstraSearch(qbit_t *src, qbit_t *dst){
 		path[j++] = path_reversed[i];
 	}
 	vector<pair<int,int> > swap_chain = buildSwaps(path);
+	return swap_chain;
+}
+
+vector<pair<int,int> > manhattan(qbit_t *src, qbit_t *dst){
+
+	int source = getPhysicalID(src);
+	int dest= getPhysicalID(dst);
+	// Assume the 2-D grid is labelled as row major.
+	int sideLength = std::ceil(std::sqrt(systemSize));
+	int s_r = source / sideLength;
+	int s_c = source % sideLength;
+	int d_r = dest / sideLength;
+	int d_c = dest % sideLength;
+	// X-Y routing: priorize on y direction, so move up/down first, then left/right
+	int delta_r = d_r - s_r; // +: down; -: up
+	int delta_c = d_c - s_c; // +: right; -: left
+	int abs_r = abs(delta_r);
+	int abs_c = abs(delta_c);
+	vector<int> path;
+	if (abs_r > 1 || abs_c > 1) {
+		path.push_back(source);
+		int sign_r = 1;
+		int sign_c = 1;
+		if (abs_r != 0) {
+			sign_r = delta_r/abs_r;
+		}
+		if (abs_c != 0) {
+			sign_c = delta_c/abs_c;
+		}
+		int new_r = s_r;
+		for (int r = 0; r < abs_r; r++) {
+			new_r = s_r + sign_r * r;
+			path.push_back(new_r * sideLength + s_c);
+		}
+	
+		int new_c = s_c;
+		for (int c = 0; c < abs_c; c++) {
+			new_c = s_c + sign_c * c;
+			path.push_back(new_r * sideLength + new_c);
+		}
+		if (new_c != d_c || new_r != d_r){
+			std::cout << "Error: manhattan path construction error.\n";
+		}
+	}
+	
+	vector<pair<int,int> > swap_chain = buildSwaps(path);
 
 	return swap_chain;
 }
@@ -650,8 +703,11 @@ vector<pair<int,int> > dijkstraSearch(qbit_t *src, qbit_t *dst){
 vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
 	vector<pair<int,int> > swaps;
 	//vector<pair<qbit_t *, qbit_t *> > swaps;
-	if (num_ops == 2){
+	if (num_ops == 2 && _SWAP_CHAIN == 1){
 		swaps = dijkstraSearch(operands[0],operands[1]);
+	}
+	if (num_ops == 2 && _SWAP_CHAIN == 0){
+		swaps = manhattan(operands[0],operands[1]);
 	}
 	return swaps;
 }
