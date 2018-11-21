@@ -80,6 +80,8 @@ namespace {
     Function* memHeapAlloc; 
     Function* getHeapIdx; 
     Function* memHeapFree; 
+		Function* computeNode;
+		Function* exitNode;
 		Function* freeOnOff;
     Function* checkAndSched; 
     //Function* memoize; 
@@ -276,6 +278,42 @@ namespace {
 			 vInstRemove.push_back((Instruction*)CI);
 	
 			//return onoff;
+		}
+
+		void translateCompNode(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume _computeModule()
+			if (total_narg != 0) {
+				errs() << "Invalid _computeModule() encountered: numArg = " << total_narg << " != 0.\n";
+			}
+			//vector<Value*> onoffArgs;
+			//onoffArgs.push_back(CI->getArgOperand(1)); //nout
+			//onoffArgs.push_back(CI->getArgOperand(3)); //nanc
+			//onoffArgs.push_back(CI->getArgOperand(4)); //ngate
+			//onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
+			CallInst *compNode= CallInst::Create(computeNode, "", CI);
+			CI->replaceAllUsesWith(compNode);
+		  //ReplaceInstWithInst(CI, onoff);
+			 vInstRemove.push_back((Instruction*)CI);
+	
+		}
+
+		void translateExitNode(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume _exitModule()
+			if (total_narg != 0) {
+				errs() << "Invalid _exitModule() encountered: numArg = " << total_narg << " != 0.\n";
+			}
+			//vector<Value*> onoffArgs;
+			//onoffArgs.push_back(CI->getArgOperand(1)); //nout
+			//onoffArgs.push_back(CI->getArgOperand(3)); //nanc
+			//onoffArgs.push_back(CI->getArgOperand(4)); //ngate
+			//onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
+			CallInst *eNode= CallInst::Create(exitNode, "", CI);
+			CI->replaceAllUsesWith(eNode);
+		  //ReplaceInstWithInst(CI, onoff);
+			 vInstRemove.push_back((Instruction*)CI);
+	
 		}
 
 		void release2memHeapFree(Function *CF, CallInst *CI, BasicBlock::iterator I, Instruction *Bterm) {
@@ -523,6 +561,16 @@ namespace {
     	    }
 					
 				}      
+				else if (CF->getName().find("_exitModule") != std::string::npos) {
+					//errs() << "Found _exitModule\n";
+					translateExitNode(CF, CI, I);//replace inst with exitNode
+					//errs() << "Complete _exitModule";
+				}
+				else if (CF->getName().find("_computeModule") != std::string::npos) {
+					//errs() << "Found _computeModule\n";
+					translateCompNode(CF, CI, I);//replace inst with computeNode
+					//errs() << "Complete _computeModule";
+				}
 				else if (CF->getName().find("_free_option") != std::string::npos) {
 					//errs() << "Found _free_option\n";
 					translateFree(CF, CI, I);//add a memHeapFree after the inst
@@ -761,7 +809,15 @@ namespace {
       freeArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
       Type* freeResType = Type::getInt32Ty(M.getContext());
 			memHeapFree = cast<Function>(M.getOrInsertFunction(getMangleName("memHeapFree", freeArgTypes), FunctionType::get(freeResType, ArrayRef<Type*>(freeArgTypes), false)));
-	
+
+			// void exitNode()
+      Type* exitNodeResType = Type::getVoidTy(M.getContext());
+      exitNode = cast<Function>(M.getOrInsertFunction(getMangleName("exitNode", esArgTypes), exitNodeResType, (Type*)0));      
+		
+			// void computeNode()
+      Type* compNodeResType = Type::getVoidTy(M.getContext());
+      computeNode  = cast<Function>(M.getOrInsertFunction(getMangleName("computeNode", esArgTypes), compNodeResType, (Type*)0));      
+		
 			// unsigned freeOnOff(unsigned, unsigned, qbit **)
 			vector <Type*> onoffArgTypes;
       onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));

@@ -8,6 +8,8 @@
 //{
 //#endif
 
+void _computeModule();
+void _exitModule();
 int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate);
 
 //#define Free(out,nout,anc,nanc,ngate) \
@@ -27,7 +29,8 @@ int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate);
 //}   // extern "C"
 //#endif
 
-#define Compute 
+#define Compute \
+	_computeModule();
 	
 
 #define Store 
@@ -40,8 +43,10 @@ int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate);
 
 #define Free(anc,nanc) \
 			declare_free(anc,nanc); \
+			_exitModule();\
 		}	else { \
 			printf("Nofree\n"); \
+			_exitModule();\
 		} \
 	}
 

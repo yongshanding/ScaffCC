@@ -221,6 +221,12 @@ void computeNode() {
 	}
 }
 
+void exitNote() {
+	if (current_node == NULL || current_node->parent == NULL) {
+		fprintf(stderr, "There is no parent to return to.\n");
+		exit(1);
+	}
+}
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
 typedef struct memHeap_str {
