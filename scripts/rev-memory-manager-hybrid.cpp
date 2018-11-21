@@ -138,10 +138,10 @@ std::vector<acquire_str*> pendingAcquires;
 
 /* Data structures for making freeOnOff decisions */
 int CURRENT_IDX = 0; // how many times I have called freeOnOff
-typedef struct callnode_head {
+int current_level = 0; // root is level 0
+typedef struct callnode_t {
 	int is_root; // indicate is main
 	int on_off; // decision for this node: -1: no value, 0: no uncomp, 1: uncomp
-	int current_child;
 	callnode_t *parent;
 	// A doublly linked list of the children calls, ordered in program order
 	callnode_t *children_start;  
@@ -151,11 +151,11 @@ typedef struct callnode_head {
 	callnode_t *prev;
 } callnode_t;
 
-callnode_t *current_nodei = NULL;
+callnode_t *current_node = NULL;
 
 callnode_t *callGraph = NULL;
 
-callgraph_t *callGraphNew() {
+callnode_t *callGraphNew() {
   callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
   if (newGraph == NULL) {
     fprintf(stderr, "Insufficient memory to initialize call graph.\n");
@@ -163,7 +163,7 @@ callgraph_t *callGraphNew() {
   }
 	newGraph->is_root = 1;
 	newGraph->on_off = -1;
-	newGraph->current_child= -1;
+	newGraph->child_current= NULL;
 	newGraph->parent = NULL;
 	newGraph->children_start = NULL;
 	newGraph->children_end = NULL;
@@ -172,7 +172,7 @@ callgraph_t *callGraphNew() {
 	return newGraph;
 }
 
-void callGraphDelete(callgraph_t *cg) {
+void callGraphDelete(callnode_t *cg) {
 	if (cg == NULL) {
 		fprintf(stderr, "Cannot delete a NULL call graph.\n");
 		exit(1);
@@ -194,23 +194,30 @@ void computeNode() {
 		current_node = newNode; // change global current pointer
 		newNode->is_root = 0;
 		newNode->on_off = -1;
-		newNode->current_child = NULL;
-		newNode->chidren_start = NULL;
-		callnode_t *cstart= newNode->parent->chidren_start;
-		callnode_t *cend = newNode->parent->chidren_end;
+		newNode->child_current = NULL;
+		newNode->children_start = NULL;
+		newNode->children_end = NULL;
+		callnode_t *cstart= newNode->parent->children_start;
+		callnode_t *cend = newNode->parent->children_end;
 		if (cend == NULL) {
 			newNode->prev = NULL;
 			newNode->next = NULL;
-			newNode->parent->chidren_start = newNode;
-			newNode->parent->chidren_end = newNode;
+			newNode->parent->children_start = newNode;
+			newNode->parent->children_end = newNode;
 		} else {
 			newNode->prev = cend;
 			cend->next = newNode;
-			newNode->next = cend;
-			newNode->parent->chidren_end = newNode;
+			newNode->next = NULL;
+			newNode->parent->children_end = newNode;
 		}
 	} else {
 		//TODO: walk to current child 
+		if (current_node->child_current == NULL){
+			current_node->child_current = current_node->children_end;
+		}
+		callnode_t *tmp = current_node->child_current;
+		current_node = current_node->child_current;
+		current_node->child_current = tmp->prev;
 	}
 }
 
