@@ -216,8 +216,8 @@ void computeNode() {
 			current_node->child_current = current_node->children_end;
 		}
 		callnode_t *tmp = current_node->child_current;
-		current_node = current_node->child_current;
 		current_node->child_current = tmp->prev;
+		current_node = tmp;
 	}
 }
 
@@ -226,6 +226,8 @@ void exitNote() {
 		fprintf(stderr, "There is no parent to return to.\n");
 		exit(1);
 	}
+
+	current_node = current_node->parent;
 }
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
@@ -1467,24 +1469,32 @@ int exhaustiveOnOff(int index){
  * identify the decision pairs.
  */
 int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
-	if (freePolicy == _EAGER) {
-		return 1;
-	} else if (freePolicy == _NOFREE) {
-		return 0;
-	} else if (freePolicy == _OPT) {
-		int weight_q = 1;
-		int weight_g = 1;
-		int total_q = AllQubits->N;
-		if (nOut > nAnc) {
-			return 0;
-		} else if (weight_q * (nAnc-nOut+total_q) < weight_g * nGate) {
-			return 0;
+	if (current_node == NULL){
+		fprintf(stderr, "Current node invalid when freeOnOff is called\n");
+		exit(1);
+	}
+
+	if (current_node->on_off == -1){
+		if (freePolicy == _EAGER) {
+			current_node->on_off = 1;
+		} else if (freePolicy == _NOFREE) {
+			current_node->on_off = 0;
+		} else if (freePolicy == _OPT) {
+			int weight_q = 1;
+			int weight_g = 1;
+			int total_q = AllQubits->N;
+			if (nOut > nAnc) {
+				current_node->on_off = 0;
+			} else if (weight_q * (nAnc-nOut+total_q) < weight_g * nGate) {
+				current_node->on_off = 0;
+			}
+			current_node->on_off = 1;
 		}
-		return 1;
+		else if (freePolicy == _EXT) {
+			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
+		}
 	}
-	else if (freePolicy == _EXT) {
-		return exhaustiveOnOff( CURRENT_IDX++ );
-	}
+	return current_node->on_off;
 }
 
 
