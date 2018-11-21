@@ -71,10 +71,10 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
+int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
-int systemSize = 1024; // perfect square number
+int systemSize = 21609; // perfect square number
 
 // DEBUG switch
 bool trackGates = true;
@@ -136,7 +136,84 @@ std::map<qbit_t*, bool> waitlist; // whether a qubit is being held to stall
 std::vector<gate_t*> pendingGates;
 std::vector<acquire_str*> pendingAcquires;
 
-int CURRENT_IDX = 0;
+/* Data structures for making freeOnOff decisions */
+int CURRENT_IDX = 0; // how many times I have called freeOnOff
+typedef struct callnode_head {
+	int is_root; // indicate is main
+	int on_off; // decision for this node: -1: no value, 0: no uncomp, 1: uncomp
+	int current_child;
+	callnode_t *parent;
+	// A doublly linked list of the children calls, ordered in program order
+	callnode_t *children_start;  
+	callnode_t *children_end; 
+	callnode_t *child_current;
+	callnode_t *next;
+	callnode_t *prev;
+} callnode_t;
+
+callnode_t *current_nodei = NULL;
+
+callnode_t *callGraph = NULL;
+
+callgraph_t *callGraphNew() {
+  callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
+  if (newGraph == NULL) {
+    fprintf(stderr, "Insufficient memory to initialize call graph.\n");
+    exit(1);
+  }
+	newGraph->is_root = 1;
+	newGraph->on_off = -1;
+	newGraph->current_child= -1;
+	newGraph->parent = NULL;
+	newGraph->children_start = NULL;
+	newGraph->children_end = NULL;
+	newGraph->prev = NULL; // siblings
+	newGraph->next = NULL; // siblings
+	return newGraph;
+}
+
+void callGraphDelete(callgraph_t *cg) {
+	if (cg == NULL) {
+		fprintf(stderr, "Cannot delete a NULL call graph.\n");
+		exit(1);
+	}
+	//TODO: free internal lists
+	free(cg);
+	
+}
+
+void computeNode() {
+	if (current_node == NULL) {
+		fprintf(stderr, "Call graph has not been initialize yet.\n");
+		exit(1);
+	}
+	if (current_node->on_off == -1) {
+		//TODO: create node
+		callnode_t *newNode = (callnode_t*)malloc(sizeof(callnode_t));
+		newNode->parent = current_node;
+		current_node = newNode; // change global current pointer
+		newNode->is_root = 0;
+		newNode->on_off = -1;
+		newNode->current_child = NULL;
+		newNode->chidren_start = NULL;
+		callnode_t *cstart= newNode->parent->chidren_start;
+		callnode_t *cend = newNode->parent->chidren_end;
+		if (cend == NULL) {
+			newNode->prev = NULL;
+			newNode->next = NULL;
+			newNode->parent->chidren_start = newNode;
+			newNode->parent->chidren_end = newNode;
+		} else {
+			newNode->prev = cend;
+			cend->next = newNode;
+			newNode->next = cend;
+			newNode->parent->chidren_end = newNode;
+		}
+	} else {
+		//TODO: walk to current child 
+	}
+}
+
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
 typedef struct memHeap_str {
@@ -1370,6 +1447,12 @@ int exhaustiveOnOff(int index){
 }
 
 /* freeOnOff: return 1 if uncompute, 0 otherwise*/
+/* In nested call structure, the freeOnOff decisions in compute-uncompute pair 
+ * should always be the same.
+ * Fact: program order will guarantee a DFS order in the call graph.
+ * So we can use a global call graph (constructed on the fly) to 
+ * identify the decision pairs.
+ */
 int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 	if (freePolicy == _EAGER) {
 		return 1;
@@ -1702,6 +1785,7 @@ void qasm_initialize ()
   //stackInit(_MAX_CALL_DEPTH);
 
   memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
+  callGraph = callGraphNew();
 	qubitsInit();
 	gatesInit();
 	
@@ -1762,6 +1846,7 @@ void qasm_resource_summary ()
 
 	printGateCounts();
 	memHeapDelete(memoryHeap);
+	callGraphDelete(callGraph);
 	// TODO clean AllQubits
 	free(AllGates);
 	//print_qubit_table();

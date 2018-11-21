@@ -2,7 +2,7 @@
 
 lines = []
 vols = []
-with open("sha2/sha2.results.out", "r") as f:
+with open("first/first.results.out", "r") as f:
     lines = f.readlines()
     linesplits = [x.split() for x in lines]
     #print(len(linesplits))

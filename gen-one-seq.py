@@ -8,7 +8,7 @@ import os, sys, getopt, math, random
 def gen_seqs(outf, n):
     # n is number of bits
     for i in range(n):
-        outf.write(str(random.randint(1,1)))
+        outf.write(str(random.randint(0,0)))
     outf.write("\n")
 
 def main():
