@@ -95,12 +95,12 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 	Store{
 		CNOT(t, ttemp);
 	}
-	Uncompute(&t, 1, &anc, 1, 4){
+	Uncompute(&ttemp, 1, anc, 1, 4){
 		CNOT(anc[0], t);
 		Toffoli(b,c,anc[0]);
 		Toffoli(a,c,anc[0]);
 		Toffoli(a,b,anc[0]);
-	}Free(&anc, 1){}
+	}Free(anc, 1){}
 }
 
 void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
@@ -124,11 +124,11 @@ void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
 			CNOT(t[i], h[i]);
 		}
 	}
-	Uncompute(h, 32, t, 32, 5*32){
+	Uncompute(h, 32, t, 33, 5*32){
 		for (int i = n - 1; i >= 0; i--){
 			toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
 		}
-	}Free(t, 32) {}
+	}Free(t, 33) {}
 
 }
 
