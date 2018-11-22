@@ -74,7 +74,8 @@ using namespace std;
 int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
-int systemSize = 21609; // perfect square number
+int systemSize = 1024; // perfect square number
+int systemType = 1; // 0: linear, 1: grid
 
 // DEBUG switch
 bool trackGates = true;
@@ -157,6 +158,7 @@ callnode_t *callGraph = NULL;
 
 callnode_t *callGraphNew() {
   callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
+	current_node  = newGraph;
   if (newGraph == NULL) {
     fprintf(stderr, "Insufficient memory to initialize call graph.\n");
     exit(1);
@@ -221,7 +223,7 @@ void computeNode() {
 	}
 }
 
-void exitNote() {
+void exitNode() {
 	if (current_node == NULL || current_node->parent == NULL) {
 		fprintf(stderr, "There is no parent to return to.\n");
 		exit(1);
@@ -642,6 +644,26 @@ void calculateDistances(){
 	//		}
 	//	}
 	//}
+	char fname[64];
+	if (systemType == 1) {
+		sprintf(fname, "Grid%d.txt", systemSize);
+  	ifstream in(fname);
+
+  	if (in) {
+
+			for (int i = 0; i < neighborSets.size(); i++){
+				for (int j = 0; j < neighborSets.size(); j++){
+      		in >> distanceMatrix[i][j];
+    		}	
+  		}
+			in >> CoM;
+			fprintf(stderr, "Distances read from file.\n"); 
+  		in.close();
+
+			return;
+		}
+	}
+
 	// All BFS
 	int min_dist = systemSize*systemSize;
 	int min_i = 0;
@@ -653,7 +675,26 @@ void calculateDistances(){
 		}
 	}
 	CoM = min_i;
-	
+	// Write distance file
+	if (systemType == 1) {
+		sprintf(fname, "Grid%d.txt", systemSize);
+  	ofstream out(fname);
+
+  	if (!out) {
+    	fprintf(stderr, "Cannot open file.\n");
+    	return;
+  	}
+
+		for (int i = 0; i < neighborSets.size(); i++){
+			for (int j = 0; j < neighborSets.size(); j++){
+     		out << distanceMatrix[i][j] << " ";
+    	}	
+  	}
+		out << CoM << " ";
+		fprintf(stderr, "Distances stored in file.\n"); 
+ 		out.close();
+		return;
+	}
 }
 
 /* find physical index of node in subgraph that's closest to center of mass of targets*/
