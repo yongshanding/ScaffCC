@@ -72,7 +72,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _LIFO;
-int freePolicy = _EXT; 
+int freePolicy = _OPT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 1024; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -82,6 +82,9 @@ bool trackGates = true;
 bool debugRevMemHybrid = true;
 bool swapflag = true;
 
+// output files
+string outfilename = "on_off_sequences_out.txt";
+std::ofstream outfile(outfilename.c_str());
 
 int num_gate_scheduled = 0;
 
@@ -1473,9 +1476,9 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 
 int exhaustiveOnOff(int index){
   string filename = "on_off_sequences.txt";
-  string outfilename = "on_off_sequences_temp.txt";
 	std::ifstream file(filename.c_str());
-	std::ofstream outfile(outfilename.c_str());
+  //string outfilename = "on_off_sequences_temp.txt";
+	//std::ofstream outfile(outfilename.c_str());
 	if( !(file) ){
 		std::cout << "Cannot find on_off_sequences.txt file\n";
 		exit(1);
@@ -1522,18 +1525,20 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 			current_node->on_off = 0;
 		} else if (freePolicy == _OPT) {
 			int weight_q = 1;
-			int weight_g = 1;
 			int total_q = AllQubits->N;
+			int weight_g = std::sqrt(total_q);
 			if (nOut > nAnc) {
 				current_node->on_off = 0;
-			} else if (weight_q * (nAnc-nOut+total_q) < weight_g * nGate) {
+			} else if (weight_q * (nAnc-nOut+total_q) > weight_g * nGate) {
 				current_node->on_off = 0;
+			} else {
+				current_node->on_off = 1;
 			}
-			current_node->on_off = 1;
 		}
 		else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
 		}
+		outfile << current_node->on_off;
 	}
 	return current_node->on_off;
 }
