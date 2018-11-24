@@ -170,7 +170,7 @@ void s0(qbit **a, qbit **h, int n){
 		}
 	}
 
-	Uncompute(h, 32, t, 32, 32*3+32+32*3, 32*3+32){
+	Uncompute(h, 0, t, 32, 32*3+32+32*3, 32*3+32){
 		for (int i = n - 1; i >= 0; i--){
 			CNOT(a22[i], t[i]);
 			CNOT(a13[i], t[i]);
@@ -206,7 +206,7 @@ void s1(qbit **a, qbit **h, int n){
 			CNOT(t[i], h[i]);
 		}
 	}
-	Uncompute(h, 32, t, 32, 32*3+32+32*3, 32*3+32){
+	Uncompute(h, 0, t, 32, 32*3+32+32*3, 32*3+32){
 		for (int i = n - 1; i >= 0; i--){
 			CNOT(a25[i], t[i]);
 			CNOT(a11[i], t[i]);
