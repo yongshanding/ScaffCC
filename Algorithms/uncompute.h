@@ -10,7 +10,7 @@
 
 void _computeModule();
 void _exitModule();
-int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate);
+int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate1, int ngate0);
 
 //#define Free(out,nout,anc,nanc,ngate) \
 //	{ \
@@ -36,9 +36,9 @@ int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate);
 #define Store 
 	
 
-#define Uncompute(out,nout,anc,nanc,ngate) \
+#define Uncompute(out,nout,anc,nanc,ngate1,ngate0) \
 	{ \
-		if (_free_option(out, nout, anc, nanc, ngate)) { \
+		if (_free_option(out, nout, anc, nanc, ngate1, ngate0)) { \
 			printf("Free %d, %d \n", nout, nanc); 
 
 #define Free(anc,nanc) \

@@ -73,7 +73,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _EXT; 
+int freePolicy = _OPTB; 
 bool swapAlloc = false; // not this flag
 int systemSize = 1024; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -147,6 +147,8 @@ int current_level = 0; // root is level 0
 typedef struct callnode_t {
 	int is_root; // indicate is main
 	int on_off; // decision for this node: -1: no value, 0: no uncomp, 1: uncomp
+	int ng1; // num of gates if uncompute (assuming children's decisions have been set)
+	int ng0; // num of gates if not uncompute (assuming children's decisions have been set)
 	callnode_t *parent;
 	// A doublly linked list of the children calls, ordered in program order
 	callnode_t *children_start;  
@@ -169,6 +171,8 @@ callnode_t *callGraphNew() {
   }
 	newGraph->is_root = 1;
 	newGraph->on_off = -1;
+	newGraph->ng1 = -1;
+	newGraph->ng0 = -1;
 	newGraph->child_current= NULL;
 	newGraph->parent = NULL;
 	newGraph->children_start = NULL;
@@ -200,6 +204,8 @@ void computeNode() {
 		current_node = newNode; // change global current pointer
 		newNode->is_root = 0;
 		newNode->on_off = -1;
+		newNode->ng1 = -1;
+		newNode->ng0 = -1;
 		newNode->child_current = NULL;
 		newNode->children_start = NULL;
 		newNode->children_end = NULL;
@@ -1550,13 +1556,34 @@ int exhaustiveOnOff(int index){
  * So we can use a global call graph (constructed on the fly) to 
  * identify the decision pairs.
  */
-int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
+int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 	if (current_node == NULL){
 		fprintf(stderr, "Current node invalid when freeOnOff is called\n");
 		exit(1);
 	}
 
 	if (current_node->on_off == -1){
+		// calculate num gates based on children's decisions
+		int nGate1 = ng1;
+		int nGate0 = ng0;
+		if (current_node->children_start != NULL) {
+			callnode_t *nd = current_node->children_start;
+			while (1) {
+				// its safe to assume children's decisions have been made
+				int c_ng1 = nd->ng1;
+				int c_ng0 = nd->ng0;
+				nGate1 += (nd->on_off == 1)? 2 * c_ng1 : 2 * c_ng0;
+				nGate0 += (nd->on_off == 1)? c_ng1 : c_ng0; 
+				if (nd == current_node->children_end) {
+					break;
+				}
+				nd = nd->next;
+			}
+		}
+		current_node->ng1 = nGate1;
+		current_node->ng0 = nGate0;
+
+
 		if (freePolicy == _EAGER) {
 			current_node->on_off = 1;
 		} else if (freePolicy == _NOFREE) {
@@ -1567,7 +1594,7 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 			int weight_g = std::sqrt(total_q);
 			if (nOut > nAnc) {
 				current_node->on_off = 0;
-			} else if (weight_q * (nAnc-nOut+total_q) > weight_g * nGate) {
+			} else if (weight_q * (nAnc-nOut+total_q) < weight_g * (nGate0+num_gate_scheduled)) {
 				current_node->on_off = 0;
 			} else {
 				current_node->on_off = 1;
@@ -1576,10 +1603,11 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 			int weight_q = 1;
 			int total_q = AllQubits->N;
 			int weight_g = std::sqrt(total_q);
-			cerr << "na: " <<  << "Q: " << total_q
+			cerr << "na: " << nAnc << " Q: " << total_q << "\n";
+			cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " G: " << num_gate_scheduled << "\n";
 			if (nOut > nAnc) {
 				current_node->on_off = 0;
-			} else if (weight_q * (nAnc+total_q) < weight_g * (nGate+num_gate_scheduled)) {
+			} else if (weight_q * (nAnc-nOut+total_q) * weight_g * (nGate1+num_gate_scheduled) > weight_q * (total_q) * weight_g * (nGate0+num_gate_scheduled)) {
 				current_node->on_off = 0;
 			} else {
 				current_node->on_off = 1;

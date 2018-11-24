@@ -263,14 +263,15 @@ namespace {
 
 		void translateFree(Function *CF, CallInst *CI, BasicBlock::iterator I) {
 			unsigned total_narg = CI->getNumArgOperands();
-			// assume _free_option(out, nout, anc, nAnc, ngate)
-			if (total_narg != 5) {
-				errs() << "Invalid Free() encountered: numArg = " << total_narg << " != 5.\n";
+			// assume _free_option(out, nout, anc, nAnc, ngate1, ngate0)
+			if (total_narg != 6) {
+				errs() << "Invalid Free() encountered: numArg = " << total_narg << " != 6.\n";
 			}
 			vector<Value*> onoffArgs;
 			onoffArgs.push_back(CI->getArgOperand(1)); //nout
 			onoffArgs.push_back(CI->getArgOperand(3)); //nanc
-			onoffArgs.push_back(CI->getArgOperand(4)); //ngate
+			onoffArgs.push_back(CI->getArgOperand(4)); //ngate1
+			onoffArgs.push_back(CI->getArgOperand(5)); //ngate0
 			onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
 			CallInst *onoff = CallInst::Create(freeOnOff, ArrayRef<Value*>(onoffArgs), "", CI);
 			CI->replaceAllUsesWith(onoff);
@@ -364,15 +365,18 @@ namespace {
 		BasicBlock::iterator release2Opt(Function *CF, CallInst *CI, BasicBlock::iterator I, BasicBlock *BB, Function *PF, BasicBlock *nextB) {
 			unsigned num_ancs = 0; // num of anc that's free
 			unsigned num_outs= 0; // num of out bits that's copied
-			unsigned num_gates= 0; // num of gates copied
+			unsigned num_gates1= 0; // num of gates copied
+			unsigned num_gates0= 0; // num of gates copied (TODO: Why 0?)
 			std::string origName = CF->getName(); 
 			//size_t pos_caller = getNumQubitsByName(origName, &num_outs, &num_ancs, &num_gates);
 			vector<Value*> onoffArgs;
 			onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_outs));
 			onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_ancs));
-			ConstantInt *n_gates = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_gates);
+			ConstantInt *n_gates1 = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_gates1);
+			ConstantInt *n_gates0 = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_gates0);
 			//onoffArgs.push_back(n_gates);
-			onoffArgs.push_back(n_gates);
+			onoffArgs.push_back(n_gates1);
+			onoffArgs.push_back(n_gates0);
 			onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),freePolicy));
 			CallInst *onoff = CallInst::Create(freeOnOff, ArrayRef<Value*>(onoffArgs), "", CI);
 			// create predicate
@@ -818,8 +822,9 @@ namespace {
       Type* compNodeResType = Type::getVoidTy(M.getContext());
       computeNode  = cast<Function>(M.getOrInsertFunction(getMangleName("computeNode", esArgTypes), compNodeResType, (Type*)0));      
 		
-			// unsigned freeOnOff(unsigned, unsigned, qbit **)
+			// unsigned freeOnOff(unsigned, unsigned, unsigned, unsigned, unsigned)
 			vector <Type*> onoffArgTypes;
+      onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       onoffArgTypes.push_back(Type::getInt32Ty(M.getContext()));
