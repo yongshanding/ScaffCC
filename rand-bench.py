@@ -101,7 +101,7 @@ def build_fun(i, all_calls, outf):
             writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
         untab()
         writeline(outf, "}")
-        writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng) + "){")
+        writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){")
         tab()
         for ins in reversed(all_ins):
             writeline(outf, ins)
@@ -140,7 +140,7 @@ def build_fun(i, all_calls, outf):
             writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
         untab()
         writeline(outf, "}")
-        writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng) + "){")
+        writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){")
         tab()
         for ins in reversed(all_ins):
             writeline(outf, ins)
