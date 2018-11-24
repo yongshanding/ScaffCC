@@ -32,9 +32,10 @@
 
 #define _EAGER 0
 #define _LAZY 1
-#define _OPT 2
-#define _NOFREE 3
-#define _EXT 4
+#define _NOFREE 2
+#define _EXT 3
+#define _OPTA 4
+#define _OPTB 5
 
 #define _LIFO 0
 #define _MINQ 1
@@ -71,8 +72,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _OPT; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 1024; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -224,6 +225,7 @@ void computeNode() {
 		current_node->child_current = tmp->prev;
 		current_node = tmp;
 	}
+	current_level += 1;
 }
 
 void exitNode() {
@@ -233,6 +235,7 @@ void exitNode() {
 	}
 
 	current_node = current_node->parent;
+	current_level -= 1;
 }
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
@@ -281,6 +284,7 @@ bool doStall(int num_qbits, int heap_idx) {
 	if (num_qbits <= 1) {
 		return false;
 	} else if (num_qbits + AllQubits->N - memoryHeap->numQubits <= systemSize) {
+		// Stall only if have to, (i.e. when constrained by systemSize)
 		return false;
 	} else {
 		if (debugRevMemHybrid) { 
@@ -355,6 +359,7 @@ int qubitsFind(qbit_t *newAddr) {
 		//printf("(%p)", newAddr);
 		//printf(" not found)");
 		std::cout << " (Warning: qubit [" << newAddr << "] not found) ";
+		std::cerr << " (Warning: qubit [" << newAddr << "] not found) ";
 		return AllQubits->N;
 	} else {
 		return it->second;
@@ -389,6 +394,7 @@ int tempQubitsFind(qbit_t *newAddr) {
 		//printf("(%p)", newAddr);
 		//printf(" not found)");
 		std::cout << " (Warning: qubit [" << newAddr << "] not found) ";
+		std::cerr << " (Warning: qubit [" << newAddr << "] not found) ";
 		return TempQubits->N;
 	} else {
 		return it->second;
@@ -667,17 +673,21 @@ void calculateDistances(){
 		}
 	}
 
-	// All BFS
-	int min_dist = systemSize*systemSize;
-	int min_i = 0;
-	for (int i = 0; i < neighborSets.size(); i++) {
-		int d = bfs(i);
-		if (d < min_dist) {
-			min_i = i;
-			min_dist = d;
+	if (systemType == 0 || systemType == 1) {
+		CoM = systemSize / 2;
+	} else {
+		// All BFS
+		int min_dist = systemSize*systemSize;
+		int min_i = 0;
+		for (int i = 0; i < neighborSets.size(); i++) {
+			int d = bfs(i);
+			if (d < min_dist) {
+				min_i = i;
+				min_dist = d;
+			}
 		}
+		CoM = min_i;
 	}
-	CoM = min_i;
 	// Write distance file
 	if (systemType == 1) {
 		sprintf(fname, "Grid%d.txt", systemSize);
@@ -921,6 +931,31 @@ vector<qbit_t*> findClosestFree(int center, qbitElement_t **free, int num, int f
 		allocated.push_back(sortedFree[i].second);
 		*sum_dist += sortedFree[i].first;
 	}
+	return allocated;
+}	
+
+template<class BidiIter >
+BidiIter vec_random_sample(BidiIter begin, BidiIter end, size_t num_random) {
+    size_t left = std::distance(begin, end);
+    while (num_random--) {
+        BidiIter r = begin;
+        std::advance(r, rand()%left);
+        std::swap(*begin, *r);
+        ++begin;
+        --left;
+    }
+    return begin;
+}
+
+vector<int> findRandomNew(int num){
+	int unusedQubits_size = unusedQubits.size();
+	if (num > unusedQubits_size) {
+    fprintf(stderr, "Insufficient qubit memory.\n");
+    exit(1);
+	}
+	std::vector<int> allocated(unusedQubits);
+	vec_random_sample(allocated.begin(), allocated.end(), num);
+
 	return allocated;
 }	
 
@@ -1246,7 +1281,10 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	// Track the new qubits in AllQubits and the mapping
   //printf("Obtain\n");  
   int sum_dist;
-	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
+	vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	// Note that if random, then the qubits that are allocated may not be contiguous
+	// however, the swap chain will still use those qubits along the way,
+	// and they may be denoted as 'q-1' in the output
   //printf("Obtained\n");  
   //std::cerr << physicalIDs.size() << "\n";
 	for (size_t i = 0; i < num_qbits; i++) {
@@ -1523,13 +1561,25 @@ int freeOnOff(int nOut, int nAnc, int nGate, int flag) {
 			current_node->on_off = 1;
 		} else if (freePolicy == _NOFREE) {
 			current_node->on_off = 0;
-		} else if (freePolicy == _OPT) {
+		} else if (freePolicy == _OPTA) {
 			int weight_q = 1;
 			int total_q = AllQubits->N;
 			int weight_g = std::sqrt(total_q);
 			if (nOut > nAnc) {
 				current_node->on_off = 0;
 			} else if (weight_q * (nAnc-nOut+total_q) > weight_g * nGate) {
+				current_node->on_off = 0;
+			} else {
+				current_node->on_off = 1;
+			}
+		} else if (freePolicy == _OPTB) {
+			int weight_q = 1;
+			int total_q = AllQubits->N;
+			int weight_g = std::sqrt(total_q);
+			cerr << "na: " <<  << "Q: " << total_q
+			if (nOut > nAnc) {
+				current_node->on_off = 0;
+			} else if (weight_q * (nAnc+total_q) < weight_g * (nGate+num_gate_scheduled)) {
 				current_node->on_off = 0;
 			} else {
 				current_node->on_off = 1;
@@ -1845,6 +1895,7 @@ void qasm_initialize ()
 	//bool auto_gen_graph = true;
   readDeviceDescription("DeviceDescription.json");
 	std::cerr << "Device reading complete.\n";
+
 	initializeDistances();
 	calculateDistances();
 	std::cerr << "Graph distances calculated.\n";

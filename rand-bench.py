@@ -299,14 +299,14 @@ def main():
     L = 0
     d = DEFAULT_MAX_DEGREE
     try:
-        opt, args = getopt.getopt(sys.argv[1:], "ho:q:a:g:L:d:", ["help", "output=", "qubits=", "ancilla=", "gates=", "levels=", "degree="])
+        opt, args = getopt.getopt(sys.argv[1:], "ho:q:a:g:L:d:s:", ["help", "output=", "qubits=", "ancilla=", "gates=", "levels=", "degree=", "seed="])
     except getopt.GetOptError as err:
         print(err)
-        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
+        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
         sys.exit(2)
     for o,a in opt:
         if o in ("-h", "--help"):
-            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
+            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
             sys.exit()
         elif o in ("-o", "--output"):
             outname = a
@@ -320,18 +320,23 @@ def main():
             L = int(a)
         elif o in ("-d", "--degree"):
             d = int(a)
+        elif o in ("-s", "--seed"):
+            s = int(a)
         else:
-            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
+            print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
             sys.exit()
     if (num_qubits > 0 and num_ancilla > 0 and num_gates > 0 and L > 0 and d > 0):
         if (not outname):
             print("Please specify valid output scaffold filename")
         else:
+            if (not s == -1):
+                global SEED
+                SEED = s
             with open(outname, 'w') as outfile:
                 rand_synth(outfile, num_qubits, num_ancilla,  num_gates, L, d)
     else:
         print("qubits, gates, or levels needs to be a positive integer")
-        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree>")
+        print("Usage: rand-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
  
 if __name__ == "__main__":
   main()
