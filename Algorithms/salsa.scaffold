@@ -59,7 +59,7 @@ void lookaheadHelper(qbit **a, qbit **b, qbit **res, int n) {
 		}
 	}
 	ni = LOGN; //(int) log2 ((double) N);
-	Uncompute(res, N, all_anc, N, 31){
+	Uncompute(res, 0, all_anc, N, 26+31+31+26, 26+31+31){
 		for (int i = ni-1; i >=1; i--) {
 			int nj = N / (1 << i);
 			for (int j = 1; j < nj; j++) {
@@ -85,7 +85,7 @@ void carryLookaheadAdder(qbit **a, qbit **b, qbit **res, int n) {
 		CNOT(a[i], b[i]);
 	}
 
-}
+}//total gates: 31 * 2+ 0 + 32 + 1 + 31 = 126
 
 int index_xor_x[32] = {4, 8, 12, 0, 9, 13, 1, 5, 14, 2, 6, 10, 3, 7, 11, 15, 1, 2, 3, 0, 6, 7, 4, 5, 11, 8, 9, 10, 12, 13, 14, 15};
 
@@ -116,7 +116,7 @@ void salsa_helper(qbit** x, int idx_1, int idx_2, int idx_3, int rot){
 		XOR(temp, res);
 
 	}
-	Uncompute(res, 32, temp, N+1, 4*N + 93){
+	Uncompute(res, 0, temp, N+1, 126 + 1 + 126, 126 + 1){
 		_reverse_rotate(temp, rot);
 		_reverse_carryLookaheadAdder(a, b, temp, N);
 	} Free(temp, N+1){}
