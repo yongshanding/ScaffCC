@@ -73,9 +73,9 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _LIFO;
-int freePolicy = _OPTB; 
+int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
-int systemSize = 1024; // perfect square number
+int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
 
 // DEBUG switch
@@ -150,7 +150,8 @@ typedef struct callnode_t {
 	int ng1; // num of gates if uncompute (assuming children's decisions have been set)
 	int ng0; // num of gates if not uncompute (assuming children's decisions have been set)
 	int num_to_parent;
-	vector<qbit_t*> from_children;
+	vector<qbit_t*> from_children; // qbits needed to free onbehalf of children
+	vector<qbit_t*> qbits_owned; // qbits allocated in comp
 	callnode_t *parent;
 	// A doublly linked list of the children calls, ordered in program order
 	callnode_t *children_start;  
@@ -179,6 +180,8 @@ callnode_t *callGraphNew() {
 	newGraph->num_to_parent = 0;
 	vector<qbit_t*> new_vec;
 	newGraph->from_children = new_vec;
+	vector<qbit_t*> new_vec2;
+	newGraph->qbits_owned = new_vec2;
 	newGraph->child_current= NULL;
 	newGraph->parent = NULL;
 	newGraph->children_start = NULL;
@@ -216,6 +219,8 @@ void computeNode() {
 		newNode->num_to_parent = 0;
 		vector<qbit_t*> new_vec; 
 		newNode->from_children = new_vec;
+		vector<qbit_t*> new_vec2; 
+		newNode->qbits_owned= new_vec2;
 		newNode->child_current = NULL;
 		newNode->children_start = NULL;
 		newNode->children_end = NULL;
@@ -1377,6 +1382,26 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 	//	std::cerr << inter[0] << "\n";
 	//}
 	//std::cerr << "memHeapAlloc " << num_qbits << "\n";
+	if (current_node == NULL) {
+		fprintf(stderr, "Call graph has not been initialized when memHeapAlloc.\n");
+		exit(1);
+	}
+	int num_owned = current_node->qbits_owned.size();
+	if (num_owned > 0) {
+		cout << "Found allocation pair in uncomputation. Reusing compute qubtis.\n";
+		// This allocation must belong to an uncomputation (since comp-uncomp always pair up)
+		if (num_owned != num_qbits) {
+			fprintf(stderr, "Allocations in compute (%d) vs uncompute (%d) do not match.\n", num_owned, num_qbits);
+			exit(1);
+		}
+		// Read from qbits_owned
+		for (int i = 0; i < num_owned; i++) {
+			result[i] = current_node->qbits_owned[i];
+		}
+		current_node->qbits_owned.clear();
+		return num_owned;
+	}
+	// Need to allocate
 	if (doStall(num_qbits, heap_idx)) {
 		//std::cerr << "stall here?\n";
 		qbitElement_t temp_res[num_qbits];
@@ -1396,6 +1421,10 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			//temp_acq->temp_addrs.push_back(temp_res[i].addr);
 		}
 		//pendingAcquires.push_back(temp_acq);
+		// Write to qbits_owned
+		for (int i = 0; i < num_qbits; i++) {
+			current_node->qbits_owned.push_back(result[i]);
+		}
 		return num_qbits;
 	} else {
 		//std::cerr << "Allocating " << num_qbits << " qubits.\n";
@@ -1424,6 +1453,10 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 					//}
 					//std::cerr << "hihi\n";
 				}
+				// Write to qbits_owned
+				for (int i = 0; i < num_qbits; i++) {
+					current_node->qbits_owned.push_back(result[i]);
+				}
 				return num_qbits;
 
 			} else if (allocPolicy == _CLOSEST_BLOCK) {
@@ -1440,6 +1473,10 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 					//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 				}
 				//std::cerr << "hihi\n";
+				// Write to qbits_owned
+				for (int i = 0; i < num_qbits; i++) {
+					current_node->qbits_owned.push_back(result[i]);
+				}
 				return num_qbits;
 
 			} else {
@@ -1464,6 +1501,10 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 			}
 			//std::cerr << "hihi\n";
+			// Write to qbits_owned
+			for (int i = 0; i < num_qbits; i++) {
+				current_node->qbits_owned.push_back(result[i]);
+			}
 			return num_qbits;
 
 		} else {
@@ -1492,7 +1533,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		exit(1);
 	}
 	vector<qbit_t*> toPush = current_node->from_children;
-	//cerr << "Freeing " << toPush.size() << " qubits from children, and " << num_qbits << " from self.\n";
+	cout << "Freeing " << toPush.size() << " qubits from children, and " << num_qbits << " from self.\n";
 	bool checkTemp = false;
 	int qIdx;
 	// first check if we can find them in permanent pool
@@ -1541,6 +1582,13 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 			if (heap_idx == 0) {
 				// push on to global memoryHeap
 				memHeapPush(toFree, memoryHeap);
+				// Clear the qbits_owned vector (only need to clear current_node, no need for children)
+				if (current_node->qbits_owned.size() == 0 || num_qbits == current_node->qbits_owned.size()) {
+					current_node->qbits_owned.clear();
+				} else {
+					fprintf(stderr, "Free qubits count (%d) and owned qubits count (%ld) do not match.\n", num_qbits, current_node->qbits_owned.size());
+					exit(1);
+				}
 			} else {
 				// hierarchical heap
 				fprintf(stderr, "Not implemented yet!\n");
@@ -1574,8 +1622,8 @@ int memHeapTransfer(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		return num_qbits;
 	} else {
 		int to_transfer = num_qbits + current_node->from_children.size();
-		//cerr << "Transfering " << to_transfer << " qubits.\n";
-		//cerr << "parent has: " << current_node->parent->from_children.size() << " qubits.\n";
+		cout << "Transfering " << to_transfer << " qubits.\n";
+		cout << "parent has: " << current_node->parent->from_children.size() << " qubits.\n";
 		for (int i = 0; i < num_qbits; i++) {
 			current_node->parent->from_children.push_back(ancilla[i]);
 		}
