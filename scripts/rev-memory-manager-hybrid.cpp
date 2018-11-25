@@ -72,7 +72,7 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
+int allocPolicy = _LIFO;
 int freePolicy = _OPTB; 
 bool swapAlloc = false; // not this flag
 int systemSize = 1024; // perfect square number
@@ -149,6 +149,8 @@ typedef struct callnode_t {
 	int on_off; // decision for this node: -1: no value, 0: no uncomp, 1: uncomp
 	int ng1; // num of gates if uncompute (assuming children's decisions have been set)
 	int ng0; // num of gates if not uncompute (assuming children's decisions have been set)
+	int num_to_parent;
+	vector<qbit_t*> from_children;
 	callnode_t *parent;
 	// A doublly linked list of the children calls, ordered in program order
 	callnode_t *children_start;  
@@ -163,7 +165,8 @@ callnode_t *current_node = NULL;
 callnode_t *callGraph = NULL;
 
 callnode_t *callGraphNew() {
-  callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
+  //callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
+  callnode_t *newGraph = new callnode_t; // use new s.t. vector is init'ed
 	current_node  = newGraph;
   if (newGraph == NULL) {
     fprintf(stderr, "Insufficient memory to initialize call graph.\n");
@@ -173,6 +176,9 @@ callnode_t *callGraphNew() {
 	newGraph->on_off = -1;
 	newGraph->ng1 = -1;
 	newGraph->ng0 = -1;
+	newGraph->num_to_parent = 0;
+	vector<qbit_t*> new_vec;
+	newGraph->from_children = new_vec;
 	newGraph->child_current= NULL;
 	newGraph->parent = NULL;
 	newGraph->children_start = NULL;
@@ -199,13 +205,17 @@ void computeNode() {
 	}
 	if (current_node->on_off == -1) {
 		//TODO: create node
-		callnode_t *newNode = (callnode_t*)malloc(sizeof(callnode_t));
+		//callnode_t *newNode = (callnode_t*)malloc(sizeof(callnode_t));
+		callnode_t *newNode = new callnode_t; // use new s.t. vector is init'ed
 		newNode->parent = current_node;
 		current_node = newNode; // change global current pointer
 		newNode->is_root = 0;
 		newNode->on_off = -1;
 		newNode->ng1 = -1;
 		newNode->ng0 = -1;
+		newNode->num_to_parent = 0;
+		vector<qbit_t*> new_vec; 
+		newNode->from_children = new_vec;
 		newNode->child_current = NULL;
 		newNode->children_start = NULL;
 		newNode->children_end = NULL;
@@ -679,21 +689,17 @@ void calculateDistances(){
 		}
 	}
 
-	if (systemType == 0 || systemType == 1) {
-		CoM = systemSize / 2;
-	} else {
-		// All BFS
-		int min_dist = systemSize*systemSize;
-		int min_i = 0;
-		for (int i = 0; i < neighborSets.size(); i++) {
-			int d = bfs(i);
-			if (d < min_dist) {
-				min_i = i;
-				min_dist = d;
-			}
+	// All BFS
+	int min_dist = systemSize*systemSize;
+	int min_i = 0;
+	for (int i = 0; i < neighborSets.size(); i++) {
+		int d = bfs(i);
+		if (d < min_dist) {
+			min_i = i;
+			min_dist = d;
 		}
-		CoM = min_i;
 	}
+	CoM = min_i;
 	// Write distance file
 	if (systemType == 1) {
 		sprintf(fname, "Grid%d.txt", systemSize);
@@ -1287,7 +1293,8 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	// Track the new qubits in AllQubits and the mapping
   //printf("Obtain\n");  
   int sum_dist;
-	vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	//vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
 	// Note that if random, then the qubits that are allocated may not be contiguous
 	// however, the swap chain will still use those qubits along the way,
 	// and they may be denoted as 'q-1' in the output
@@ -1475,47 +1482,112 @@ int getHeapIdx() {
 
 int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	// Find the qubit element corresponding to ancilla, and push them to heap
+	// Also check if there are any ancilla transfered from children
 	if (ancilla == NULL) {
 		fprintf(stderr, "Cannot free up NULL set of ancilla.\n");
 		exit(1);
 	}
-	for (size_t i = 0; i < num_qbits; i++) {
-		int qIdx = qubitsFind(ancilla[i]);
+	if (current_node == NULL) {
+		fprintf(stderr, "Call graph has not been sync'ed up with memHeapFree.\n");
+		exit(1);
+	}
+	vector<qbit_t*> toPush = current_node->from_children;
+	//cerr << "Freeing " << toPush.size() << " qubits from children, and " << num_qbits << " from self.\n";
+	bool checkTemp = false;
+	int qIdx;
+	// first check if we can find them in permanent pool
+	for (size_t i = 0; i < toPush.size(); i++) {
+		qIdx = qubitsFind(toPush[i]);
 		if (qIdx == AllQubits->N) {
-			qIdx = tempQubitsFind(ancilla[i]);
+			checkTemp = true;
+		}
+	}
+	// at the same time add all ancilla 
+	for (size_t i = 0; i < num_qbits; i++) {
+		qIdx = qubitsFind(ancilla[i]);
+		if (qIdx == AllQubits->N) {
+			checkTemp = true;
+		}
+		toPush.push_back(ancilla[i]);
+	}
+	//cerr << "checkTemp: " << checkTemp << "\n";
+	// TODO: do i need to let go those can be found in qubitsFind?
+	if (checkTemp) {
+		gate_t *free_gate = new gate_t();
+		free_gate->gate_name = "free";
+		free_gate->gate_id = _FREE;
+		vector<qbit_t*> ops;
+		for (int j = 0; j < toPush.size(); j++) {
+			qIdx = tempQubitsFind(toPush[j]);
 			if (qIdx == TempQubits->N) {
-				fprintf(stderr, "Cannot free qubit %p that has not been recorded.\n", ancilla[i]);
+				fprintf(stderr, "Cannot free qubit %p that has not been recorded.\n", toPush[j]);
 				exit(1);
 			} else {
-				// found temp qubits
-				gate_t *free_gate = new gate_t();
-				free_gate->gate_name = "free";
-				free_gate->gate_id = _FREE;
-				vector<qbit_t*> ops;
-				for (int j = 0; j < num_qbits; j++) {
-					ops.push_back(ancilla[j]);
-				}
-				free_gate->operands = ops;
-				free_gate->num_operands = num_qbits;
-				pendingGates.push_back(free_gate);
+				ops.push_back(toPush[j]);
 			}
 		}
-		qbitElement_t *toFree = (qbitElement_t *)malloc(sizeof(qbitElement_t));
-		qbitElement_t qe = AllQubits->Qubits[qIdx];
-		toFree->idx = qe.idx;
-		toFree->addr = qe.addr;
-		if (heap_idx == 0) {
-			// push on to global memoryHeap
-			memHeapPush(toFree, memoryHeap);
-		} else {
-			// hierarchical heap
-			fprintf(stderr, "Not implemented yet!\n");
-			exit(1);
+		free_gate->operands = ops;
+		free_gate->num_operands = num_qbits;
+		pendingGates.push_back(free_gate);
+	} else {
+		// all qIdx found in qubitsFind()	
+		//cerr << "pushing " << toPush.size() << " qubits. Self: " << num_qbits << "\n";
+		for (int i = 0; i < toPush.size(); i++) {
+			qIdx = qubitsFind(toPush[i]);
+			qbitElement_t *toFree = (qbitElement_t *)malloc(sizeof(qbitElement_t));
+			qbitElement_t qe = AllQubits->Qubits[qIdx];
+			toFree->idx = qe.idx;
+			toFree->addr = qe.addr;
+			if (heap_idx == 0) {
+				// push on to global memoryHeap
+				memHeapPush(toFree, memoryHeap);
+			} else {
+				// hierarchical heap
+				fprintf(stderr, "Not implemented yet!\n");
+				exit(1);
+			}
 		}
 	}
   if (debugRevMemHybrid)
-  	printf("Freeing up %u qubits.\n", num_qbits);  
+  	printf("Freeing up %lu qubits.\n", toPush.size());  
 	return num_qbits;	
+}
+
+/* Transfer the ancilla qubits to parent, will be called if freeOnOff==0 */
+int memHeapTransfer(int num_qbits, int heap_idx, qbit_t **ancilla) {
+	if (current_node == NULL) {
+		fprintf(stderr, "Call graph has not been properly initialized.\n");
+		exit(1);
+	}
+	if (ancilla == NULL) {
+		fprintf(stderr, "Invalid ancilla input array.\n");
+		exit(1);
+	}
+	if (current_node->parent == NULL) {
+		fprintf(stderr, "No parent to transfer ancilla qubits to.\n");
+		// No parent to transfer ancilla qubits to.
+		return num_qbits;
+	}
+	if (current_node->num_to_parent > 0) {
+		//fprintf(stderr, "Already transferred to parent.\n");
+		// already transferred to parents
+		return num_qbits;
+	} else {
+		int to_transfer = num_qbits + current_node->from_children.size();
+		//cerr << "Transfering " << to_transfer << " qubits.\n";
+		//cerr << "parent has: " << current_node->parent->from_children.size() << " qubits.\n";
+		for (int i = 0; i < num_qbits; i++) {
+			current_node->parent->from_children.push_back(ancilla[i]);
+		}
+		vector<qbit_t*> v = current_node->from_children;
+		for(vector<qbit_t*>::iterator it = v.begin(); it != v.end(); ++it) {
+			current_node->parent->from_children.push_back((*it));
+		}
+		current_node->num_to_parent = to_transfer;
+		
+		return to_transfer;
+	}
+	
 }
 
 int exhaustiveOnOff(int index){
@@ -1603,15 +1675,16 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			int weight_q = 1;
 			int total_q = AllQubits->N;
 			int weight_g = std::sqrt(total_q);
-			cerr << "na: " << nAnc << " Q: " << total_q << "\n";
+			cerr << "nout: " << nOut << " na: " << nAnc << " Q: " << total_q << "\n";
 			cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " G: " << num_gate_scheduled << "\n";
 			if (nOut > nAnc) {
 				current_node->on_off = 0;
-			} else if (weight_q * (nAnc-nOut+total_q) * weight_g * (nGate1+num_gate_scheduled) > weight_q * (total_q) * weight_g * (nGate0+num_gate_scheduled)) {
+			} else if (weight_q * (nOut+total_q) * weight_g * (nGate1+num_gate_scheduled) > weight_q * (nAnc+total_q) * weight_g * (nGate0+num_gate_scheduled)) {
 				current_node->on_off = 0;
 			} else {
 				current_node->on_off = 1;
 			}
+			cerr << "on_off: " << current_node->on_off << "\n";
 		}
 		else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );

@@ -42,10 +42,11 @@ int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate1, int nga
 			printf("Free %d, %d \n", nout, nanc); 
 
 #define Free(anc,nanc) \
-			_exitModule();\
 			declare_free(anc,nanc); \
+			_exitModule();\
 		}	else { \
 			printf("Nofree\n"); \
+			promote_free(anc,nanc); \
 			_exitModule();\
 		} \
 	}

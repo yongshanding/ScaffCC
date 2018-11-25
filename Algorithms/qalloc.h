@@ -22,5 +22,11 @@ void declare_free(qbit **anc, int nanc) {
 	}
 }
 
+void promote_free(qbit **anc, int nanc) {
+	if (nanc <= 0 || anc == NULL || anc[0] == NULL) {
+		printf("Invalid call to promote_free.\n");
+	}
+}
+
 #endif
 

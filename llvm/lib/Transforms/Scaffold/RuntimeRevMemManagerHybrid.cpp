@@ -80,6 +80,7 @@ namespace {
     Function* memHeapAlloc; 
     Function* getHeapIdx; 
     Function* memHeapFree; 
+    Function* memHeapTransfer; 
 		Function* computeNode;
 		Function* exitNode;
 		Function* freeOnOff;
@@ -261,6 +262,48 @@ namespace {
 
 		}
 
+		void promote2memHeapTransfer(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned num_qbits = 0; // num of anc that's free
+			unsigned num_outs= 0; // num of out bits that's copied
+			unsigned num_gates= 0; // num of gates copied
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume declare_free(anc, nAnc)
+			if (total_narg != 2) {
+				errs() << "Invalid promote_free function encountered: numArg = " << total_narg << " != 2.\n";
+			}
+			unsigned nAnc_idx = 1;
+			ConstantInt *nQ = dyn_cast<ConstantInt>(CI->getArgOperand(nAnc_idx));
+			//if (nQ == NULL) {
+			//	// nAnc is undef
+			//	if(debugRTRevMemHyb)
+			//		errs() << "\tRelease instruction: " << *CI << "\n";
+			//	std::string origName = CF->getName(); 
+			//	getNumQubitsByName(origName, &num_outs, &num_qbits, &num_gates);
+			//  nQ = ConstantInt::get(Type::getInt32Ty(getGlobalContext()),num_qbits);
+			//} else {
+			//	num_qbits = nQ->getZExtValue(); // number of qubits to free
+			//}
+			num_qbits = nQ->getZExtValue(); // number of qubits to free
+			if(debugRTRevMemHyb)
+			  errs() << "\tPotential transfer: " << num_qbits << " qubits.\n";
+			// Get the heap idx
+			CallInst *hidx = CallInst::Create(getHeapIdx, "", CI);
+			//CallInst *hidx = CallInst::Create(getHeapIdx, "", (Instruction *)CI);
+			// Get the stack array for results
+			Value *res = CI->getArgOperand(nAnc_idx-1);
+			// Create the memHeapTransfer call
+			vector<Value*> freeArgs;
+			freeArgs.push_back(nQ);
+			freeArgs.push_back(hidx);
+			freeArgs.push_back(res);
+			CallInst::Create(memHeapTransfer, ArrayRef<Value*>(freeArgs), "", CI);
+		
+			errs() << "\tPotential transfer: " << num_qbits << " qubits.\n";
+			//if(delAfterInst)
+			//  vInstRemove.push_back((Instruction*)CI);
+
+		}
+
 		void translateFree(Function *CF, CallInst *CI, BasicBlock::iterator I) {
 			unsigned total_narg = CI->getNumArgOperands();
 			// assume _free_option(out, nout, anc, nAnc, ngate1, ngate0)
@@ -396,6 +439,7 @@ namespace {
 			BasicBlock::iterator bi(termInst);
 			return bi;
 			//return 0;
+			// TODO: add else block with memHeapTransfer
 		}
 
 		void release2Eager(Function *CF, CallInst *CI, BasicBlock::iterator I, BasicBlock *BB) {
@@ -577,12 +621,16 @@ namespace {
 				}
 				else if (CF->getName().find("_free_option") != std::string::npos) {
 					//errs() << "Found _free_option\n";
-					translateFree(CF, CI, I);//add a memHeapFree after the inst
+					translateFree(CF, CI, I);
 					//errs() << "Complete _free_option\n";
 				}
 				else if (CF->getName().find("declare_free") != std::string::npos) {
 					//errs() << "Found declare_free\n";
 					declare2memHeapFree(CF, CI, I);//add a memHeapFree after the inst
+				}
+				else if (CF->getName().find("promote_free") != std::string::npos) {
+					//errs() << "Found promote_free\n";
+					promote2memHeapTransfer(CF, CI, I);//add a memHeapTransfer after the inst
 				}
     	  else if (!CF->isDeclaration() && isQuantumModuleCall){
 					//errs() << "no declare  visit\n";
@@ -813,6 +861,14 @@ namespace {
       freeArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
       Type* freeResType = Type::getInt32Ty(M.getContext());
 			memHeapFree = cast<Function>(M.getOrInsertFunction(getMangleName("memHeapFree", freeArgTypes), FunctionType::get(freeResType, ArrayRef<Type*>(freeArgTypes), false)));
+
+			// unsigned memHeapTransfer(unsigned, unsigned, qbit **)
+			vector <Type*> transArgTypes;
+      transArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      transArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      transArgTypes.push_back(Type::getInt16Ty(M.getContext())->getPointerTo()->getPointerTo());
+      Type* transResType = Type::getInt32Ty(M.getContext());
+			memHeapTransfer = cast<Function>(M.getOrInsertFunction(getMangleName("memHeapTransfer", transArgTypes), FunctionType::get(transResType, ArrayRef<Type*>(transArgTypes), false)));
 
 			// void exitNode()
       Type* exitNodeResType = Type::getVoidTy(M.getContext());
