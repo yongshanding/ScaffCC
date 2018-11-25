@@ -72,8 +72,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _EXT; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _OPTB; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -910,6 +910,14 @@ void printDistances(){
 	}
 }
 
+bool cmp_new(pair<int, int> i, pair<int, int> j) {
+	if (i.first == j.first) {
+		return (i.second < j.second);
+	} else {
+		return (i.first < j.first);
+	}
+}
+
 vector<int> findClosestNew(int center, int num, int *sum_dist){
 	std::vector<std::pair<int,int> > sortedFree;// dist,physicalID
 	int unusedQubits_size = unusedQubits.size();
@@ -920,17 +928,29 @@ vector<int> findClosestNew(int center, int num, int *sum_dist){
 		
 		sortedFree.push_back(make_pair(dist,unusedQubits[i]));	
 	}	
-	std::sort(sortedFree.begin(),sortedFree.end());
+	std::sort(sortedFree.begin(),sortedFree.end(), cmp_new);
 	std::vector<int> allocated;
 	//std::cerr << "\nallocated\n";
+	//fprintf(stderr, "Allocated new: ");
 	for (int i = 0; i < num; i++){
 		//std::cerr << sortedFree[i].second << "\t"; 
 		allocated.push_back(sortedFree[i].second);
+		//fprintf(stderr, "%d ", sortedFree[i].second);
 		*sum_dist += sortedFree[i].first;
 	}
+	//fprintf(stderr, "\n");
 	//std::cerr << "\n";
 	return allocated;
 }	
+
+
+bool cmp_free(pair<int, qbit_t*> i, pair<int, qbit_t*> j) {
+	if (i.first == j.first) {
+		return (getPhysicalID(i.second) < getPhysicalID(j.second));
+	} else {
+		return (i.first < j.first);
+	}
+}
 
 vector<qbit_t*> findClosestFree(int center, qbitElement_t **free, int num, int free_size, int targets_size, int *sum_dist){
 	std::vector<std::pair<int,qbit_t*> > sortedFree;
@@ -942,12 +962,15 @@ vector<qbit_t*> findClosestFree(int center, qbitElement_t **free, int num, int f
 		int dist = distanceMatrix[center][getPhysicalID(free[i]->addr)];
 		sortedFree.push_back(make_pair(dist,free[i]->addr));	
 	}	
-	std::sort(sortedFree.begin(),sortedFree.end());
+	std::sort(sortedFree.begin(),sortedFree.end(), cmp_free);
 	std::vector<qbit_t *> allocated;
+	//fprintf(stderr, "Allocated free: ");
 	for (int i = 0; i < num; i++){
 		allocated.push_back(sortedFree[i].second);
+		//fprintf(stderr, "%d ", getPhysicalID(sortedFree[i].second));
 		*sum_dist += sortedFree[i].first;
 	}
+	//fprintf(stderr, "\n");
 	return allocated;
 }	
 
