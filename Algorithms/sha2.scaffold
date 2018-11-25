@@ -17,27 +17,33 @@ void addMod(qbit **a, qbit **b, int n) {
 		d[32+i] = b[i];
 	}
 	qbit *c[1];
-	acquire(1, c, 64, d);
 
-	CNOT(a[0], b[0]);
-	CNOT(a[0], c[0]);
-	Toffoli(c[0], b[0], a[0]);
-	for (int i = 1; i < n-1; i++) {
-		CNOT(a[i],b[i]);
-		CNOT(a[i],a[i-1]);
-		Toffoli(a[i-1],b[i],a[i]);
+	Compute{
+		acquire(1, c, 64, d);
+	
+		CNOT(a[0], b[0]);
+		CNOT(a[0], c[0]);
+		Toffoli(c[0], b[0], a[0]);
+		for (int i = 1; i < n-1; i++) {
+			CNOT(a[i],b[i]);
+			CNOT(a[i],a[i-1]);
+			Toffoli(a[i-1],b[i],a[i]);
+		}
 	}
-	CNOT(a[n-1], b[n-1]);
-	CNOT(a[n-2], b[n-1]);
-
-	for (int i = 2; i < n; i++) {
-		Toffoli(a[n-i-1],b[n-i],a[n-i]);
-		CNOT(a[n-i],a[n-i-1]);
-		CNOT(b[n-i],a[n-i-1]);
+	Store{
+		CNOT(a[n-1], b[n-1]);
+		CNOT(a[n-2], b[n-1]);
 	}
-	Toffoli(c[0], b[0], a[0]);
-	CNOT(a[0], c[0]);
-	CNOT(c[0], b[0]);
+	Uncompute(b, 0, c, 1, 30*3+2+30*3, 30*3+2){
+		for (int i = 2; i < n; i++) {
+			Toffoli(a[n-i-1],b[n-i],a[n-i]);
+			CNOT(a[n-i],a[n-i-1]);
+			CNOT(b[n-i],a[n-i-1]);
+		}
+		Toffoli(c[0], b[0], a[0]);
+		CNOT(a[0], c[0]);
+		CNOT(c[0], b[0]);
+	}Free(c, 1){}
 	//release(b, 32, c, 1, NULL);
 }
 
@@ -49,10 +55,10 @@ void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
 		d[64+i] = g[i];
 	}
 	qbit *anc[2*n];
-	acquire(64, anc, 96, d);
 	qbit **t = &anc[32];
 
 	Compute{
+		acquire(64, anc, 96, d);
 		for (int i = 0; i < n; i++){
 			Toffoli(e[i], f[i], anc[i]);
 			Toffoli(anc[i], g[i], t[i]);
@@ -85,8 +91,8 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 	d[2] = c;
 	d[3] = t;
 	qbit *anc[1];
-	acquire(1, anc, 4, d);
 	Compute{
+		acquire(1, anc, 4, d);
 		Toffoli(a,b,anc[0]);
 		Toffoli(a,c,anc[0]);
 		Toffoli(b,c,anc[0]);
@@ -111,10 +117,10 @@ void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
 		d[64+i] = c[i];
 	}
 	qbit *t[33];
-	acquire(33,t, 96, d);
-	qbit **ttemp = &t[32];
-
+	qbit **ttemp;
 	Compute{
+		acquire(33,t, 96, d);
+		ttemp = &t[32];
 		for (int i = 0; i < n; i++){
 			toffLoopHelper(a[i],b[i],c[i], t[i], ttemp[0]);	
 		}
@@ -146,13 +152,13 @@ void rot(qbit **a, qbit **b, int n, int shift){
 
 void s0(qbit **a, qbit **h, int n){
 	qbit *t[32];
-	acquire(32,t, 32, a);
 
 	qbit *a2[32];
 	qbit *a13[32];
 	qbit *a22[32];
 
 	Compute{
+		acquire(32,t, 32, a);
 		rot(a, a2, n, 2);
 		rot(a, a13, n, 13);
 		rot(a, a22, n, 22);
@@ -183,13 +189,11 @@ void s0(qbit **a, qbit **h, int n){
 }
 void s1(qbit **a, qbit **h, int n){
 	qbit *t[32];
-	acquire(32,t, 32, a);
 	qbit *a6[32];
 	qbit *a11[32];
 	qbit *a25[32];
 	Compute{
-
-
+		acquire(32,t, 32, a);
 		rot(a, a6, n, 6);
 		rot(a, a11, n, 11);
 		rot(a, a25, n, 25);

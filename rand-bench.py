@@ -63,8 +63,6 @@ def build_fun(i, all_calls, outf):
     # Identify the output bits
     for (j, x) in enumerate(outs):
         writeline(outf, "res["+str(j)+"] = q["+str(x)+"];")
-    # Now ready to allocate the ancilla
-    writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
     # Start computations
     all_ins = []
     for ops in all_ops:
@@ -82,6 +80,8 @@ def build_fun(i, all_calls, outf):
         writeline(outf, "// Leaf function")
         writeline(outf, "Compute {")
         tab()
+        # Now ready to allocate the ancilla
+        writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
         for ins in all_ins:
             writeline(outf, ins)
         untab()
@@ -121,6 +121,8 @@ def build_fun(i, all_calls, outf):
         random.shuffle(all_ins)
         writeline(outf, "Compute {")
         tab()
+        # Now ready to allocate the ancilla
+        writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
         for ins in all_ins:
             writeline(outf, ins)
         untab()
