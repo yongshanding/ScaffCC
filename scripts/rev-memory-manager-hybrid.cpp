@@ -1768,9 +1768,7 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			int c_nAnc = current_node->from_children.size();
                         cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Q: " << total_q << "\n";
                         cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
-                        if (nOut > nAnc) {
-                                current_node->on_off = 0;
-                        } else if (weight_q * (nOut+total_q) * ((weight_g * nGate1) + time_step_scheduled) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 + time_step_scheduled)) {
+                        if (weight_q * total_q * (weight_g * nGate1 / (c_nAnc + nAnc)) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 / nAnc)) {
                                 current_node->on_off = 0;
                         } else {
                                 current_node->on_off = 1;
