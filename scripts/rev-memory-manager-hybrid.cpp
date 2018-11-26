@@ -166,13 +166,13 @@ callnode_t *current_node = NULL;
 callnode_t *callGraph = NULL;
 
 callnode_t *callGraphNew() {
-  //callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
-  callnode_t *newGraph = new callnode_t; // use new s.t. vector is init'ed
+	//callnode_t *newGraph = (callnode_t*)malloc(sizeof(callnode_t));
+	callnode_t *newGraph = new callnode_t; // use new s.t. vector is init'ed
 	current_node  = newGraph;
-  if (newGraph == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize call graph.\n");
-    exit(1);
-  }
+	if (newGraph == NULL) {
+		fprintf(stderr, "Insufficient memory to initialize call graph.\n");
+		exit(1);
+	}
 	newGraph->is_root = 1;
 	newGraph->on_off = -1;
 	newGraph->ng1 = -1;
@@ -198,7 +198,7 @@ void callGraphDelete(callnode_t *cg) {
 	}
 	//TODO: free internal lists
 	free(cg);
-	
+
 }
 
 void computeNode() {
@@ -261,9 +261,9 @@ void exitNode() {
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
 typedef struct memHeap_str {
-  size_t maxSize; // capacity of this heap
-  size_t numQubits; // number of free qubits in this heap
-  qbitElement_t **contents;
+	size_t maxSize; // capacity of this heap
+	size_t numQubits; // number of free qubits in this heap
+	qbitElement_t **contents;
 	size_t numPredecessors;
 	struct memHeap_str **predecessors;
 	size_t numSuccessors;
@@ -389,18 +389,18 @@ int qubitsFind(qbit_t *newAddr) {
 
 void qubitsAdd(qbit_t *newAddr) {
 	//if (qubitsFind(newAddr) == AllQubits->N) {
-		int newIdx = AllQubits->N;
-		(AllQubits->Qubits[AllQubits->N]).addr = newAddr;
-		(AllQubits->Qubits[AllQubits->N]).idx = AllQubits->N;
-		AllQubits->N++;
-		//q_entry_t *s = malloc(sizeof(q_entry_t));
-		//s->addr = newAddr; // set the pointer key
-		//s->idx = newIdx;
-  	// HASH_ADD (hh_name, head, keyfield_name, key_len, item_ptr)
-		//HASH_ADD(hh, AllQubitsHash, addr, sizeof(qbit_t *), s);
-		//HASH_ADD_PTR(AllQubitsHash, addr, s);
-		AllQubitsHash[newAddr] = newIdx;
-		qubitUsage.insert(std::make_pair(newAddr, 0)); // fresh qubit
+	int newIdx = AllQubits->N;
+	(AllQubits->Qubits[AllQubits->N]).addr = newAddr;
+	(AllQubits->Qubits[AllQubits->N]).idx = AllQubits->N;
+	AllQubits->N++;
+	//q_entry_t *s = malloc(sizeof(q_entry_t));
+	//s->addr = newAddr; // set the pointer key
+	//s->idx = newIdx;
+	// HASH_ADD (hh_name, head, keyfield_name, key_len, item_ptr)
+	//HASH_ADD(hh, AllQubitsHash, addr, sizeof(qbit_t *), s);
+	//HASH_ADD_PTR(AllQubitsHash, addr, s);
+	AllQubitsHash[newAddr] = newIdx;
+	qubitUsage.insert(std::make_pair(newAddr, 0)); // fresh qubit
 	//}
 }
 
@@ -424,40 +424,40 @@ int tempQubitsFind(qbit_t *newAddr) {
 
 void tempQubitsAdd(qbit_t *newAddr) {
 	//if (qubitsFind(newAddr) == TempQubits->N) {
-		int newIdx = TempQubits->N;
-		(TempQubits->Qubits[TempQubits->N]).addr = newAddr;
-		(TempQubits->Qubits[TempQubits->N]).idx = TempQubits->N;
-		TempQubits->N++;
+	int newIdx = TempQubits->N;
+	(TempQubits->Qubits[TempQubits->N]).addr = newAddr;
+	(TempQubits->Qubits[TempQubits->N]).idx = TempQubits->N;
+	TempQubits->N++;
 
-		TempQubitsHash[newAddr] = newIdx;
-		tempQubitUsage.insert(std::make_pair(newAddr, 0)); // fresh temp qubit
+	TempQubitsHash[newAddr] = newIdx;
+	tempQubitUsage.insert(std::make_pair(newAddr, 0)); // fresh temp qubit
 	//}
 }
 
 
 
 /* infinite looping!
-void print_qubit_table() {
-  printf("<<<---------------------------------------\n");  
-  printf("current qubit table:\n");
-  int i;
-  q_entry_t *qubit;
-  for (qubit=AllQubitsHash; qubit != NULL; qubit=AllQubitsHash->hh.next) {
-    printf("%p -- ", qubit->addr);
-    printf("%u -- ", qubit->idx);
-    //for (i=0; i<_MAX_INT_PARAMS; i++)
-    // printf("%d ", memo->int_params[i]); 
-    //printf("-- ");
-    //for (i=0; i<_MAX_DOUBLE_PARAMS; i++)
-    // printf("%f ", memo->double_params[i]);   
-    //printf("-- ");       
-    //for (i=0; i<3; i++)
-    // printf("%llu ", memo->resources[i]);   
-    printf("\n"); 
-  }
-  printf("--------------------------------------->>>\n");  
+   void print_qubit_table() {
+   printf("<<<---------------------------------------\n");  
+   printf("current qubit table:\n");
+   int i;
+   q_entry_t *qubit;
+   for (qubit=AllQubitsHash; qubit != NULL; qubit=AllQubitsHash->hh.next) {
+   printf("%p -- ", qubit->addr);
+   printf("%u -- ", qubit->idx);
+//for (i=0; i<_MAX_INT_PARAMS; i++)
+// printf("%d ", memo->int_params[i]); 
+//printf("-- ");
+//for (i=0; i<_MAX_DOUBLE_PARAMS; i++)
+// printf("%f ", memo->double_params[i]);   
+//printf("-- ");       
+//for (i=0; i<3; i++)
+// printf("%llu ", memo->resources[i]);   
+printf("\n"); 
 }
-*/
+printf("--------------------------------------->>>\n");  
+}
+ */
 
 size_t *AllGates = NULL;
 
@@ -500,48 +500,48 @@ void printSchedLength() {
 	}
 	printf("==================================\n");
 	printf("Total number of time steps: %d. \n", maxT);
-	
+
 }
 
 
 /*****************************
-* Physical Connectivity Graph 
-******************************/
+ * Physical Connectivity Graph 
+ ******************************/
 
 void initializeConnections(int num){
-  for (int i = 0; i < num; i++){
-    neighborSets.push_back(std::vector<int>());
+	for (int i = 0; i < num; i++){
+		neighborSets.push_back(std::vector<int>());
 		unusedQubits.push_back(i);
-  }
+	}
 }
 
 void printConnectivityGraph(){
 	std::cout << "Connectivity Graph: \n";
-  for (int i = 0; i < neighborSets.size(); i++){
+	for (int i = 0; i < neighborSets.size(); i++){
 		std::cout << "Qubit: " << i << " | ";
-    for (int j = 0; j < neighborSets[i].size(); j++){
+		for (int j = 0; j < neighborSets[i].size(); j++){
 			if (j == neighborSets[i].size()-1) std::cout << neighborSets[i][j];
 			else std::cout << neighborSets[i][j] << ","; 
-    }
+		}
 		std::cout << "\n";
- 	}
+	}
 }
 
 void generateSquareGrid(int num){
 	int gridLength = std::ceil(std::sqrt(num));
 	int length = gridLength;
 	initializeConnections(length*length);
-  for (int i = 0; i < length*length; i++){
-			//unusedQubits.push_back(i);
-      if (((i+1)%length) > 0)
-      neighborSets[i].push_back(i+1);
-	if ((i)%length > 0)
-      neighborSets[i].push_back(i-1);
-	if (i+length < length*length)
-      neighborSets[i].push_back(i+length);
-	if (i-length >= 0)
-      neighborSets[i].push_back(i-length);
-  }
+	for (int i = 0; i < length*length; i++){
+		//unusedQubits.push_back(i);
+		if (((i+1)%length) > 0)
+			neighborSets[i].push_back(i+1);
+		if ((i)%length > 0)
+			neighborSets[i].push_back(i-1);
+		if (i+length < length*length)
+			neighborSets[i].push_back(i+length);
+		if (i-length >= 0)
+			neighborSets[i].push_back(i-length);
+	}
 }
 
 void readDeviceDescription(std::string deviceName){
@@ -557,14 +557,14 @@ void readDeviceDescription(std::string deviceName){
 	}
 	rapidjson::Document doc;
 	string document( (std::istreambuf_iterator<char>(file)),
-				   (std::istreambuf_iterator<char>())	);
+			(std::istreambuf_iterator<char>())	);
 	doc.Parse(document.c_str());
 	const rapidjson::Value& layout = doc["QubitLayout"];
 	const rapidjson::Value& topology = doc["QubitConnectivity"];
 	if(layout.IsArray()){
 		for(rapidjson::SizeType i=0; i < layout.Size(); i++){
 			const rapidjson::Value& entry = layout[i];
-            unusedQubits.push_back(entry.GetInt());
+			unusedQubits.push_back(entry.GetInt());
 		}
 		systemSize = unusedQubits.size();
 	}
@@ -574,7 +574,7 @@ void readDeviceDescription(std::string deviceName){
 		exit(1);
 	}
 	if(debugRevMemHybrid) 
-			std::cout << "Completed Layout Description Import\n";
+		std::cout << "Completed Layout Description Import\n";
 	int numQubits = topology["NumQbits"].GetInt();
 	initializeConnections(numQubits);
 	rapidjson::Value::ConstMemberIterator itr = topology.MemberBegin();
@@ -584,7 +584,7 @@ void readDeviceDescription(std::string deviceName){
 		const rapidjson::Value& list = itr->value;
 		if (list.IsArray()){
 			for(rapidjson::Value::ConstValueIterator it2 = list.Begin(); 
-				   it2 != list.End(); ++it2){
+					it2 != list.End(); ++it2){
 				int neighbor = it2->GetInt();
 				if (neighbor >= numQubits){
 					std::cout << "Out of bounds qubit specification provided\n";
@@ -618,15 +618,15 @@ int bfs(int src) {
 	bool *visited = new bool[V];
 	for(int i = 0; i < V; i++)
 		visited[i] = false;
-	
+
 	queue<pair<int,int> > queue;
-	
+
 	visited[src] = true;
 	distanceMatrix[src][src] = 0;
 	queue.push(make_pair(src, 0));
-	
+
 	int i;
-	
+
 	while(!queue.empty())
 	{
 		pair<int, int> p = queue.front();
@@ -634,7 +634,7 @@ int bfs(int src) {
 		int d = p.second;
 		//cout << s << " ";
 		queue.pop();
-		
+
 		for (i = 0; i < neighborSets[s].size(); i++)
 		{
 			int j = neighborSets[s][i];
@@ -677,18 +677,18 @@ void calculateDistances(){
 	char fname[64];
 	if (systemType == 1) {
 		sprintf(fname, "Grid%d.txt", systemSize);
-  	ifstream in(fname);
+		ifstream in(fname);
 
-  	if (in) {
+		if (in) {
 
 			for (int i = 0; i < neighborSets.size(); i++){
 				for (int j = 0; j < neighborSets.size(); j++){
-      		in >> distanceMatrix[i][j];
-    		}	
-  		}
+					in >> distanceMatrix[i][j];
+				}	
+			}
 			in >> CoM;
 			fprintf(stderr, "Distances read from file.\n"); 
-  		in.close();
+			in.close();
 
 			return;
 		}
@@ -708,21 +708,21 @@ void calculateDistances(){
 	// Write distance file
 	if (systemType == 1) {
 		sprintf(fname, "Grid%d.txt", systemSize);
-  	ofstream out(fname);
+		ofstream out(fname);
 
-  	if (!out) {
-    	fprintf(stderr, "Cannot open file.\n");
-    	return;
-  	}
+		if (!out) {
+			fprintf(stderr, "Cannot open file.\n");
+			return;
+		}
 
 		for (int i = 0; i < neighborSets.size(); i++){
 			for (int j = 0; j < neighborSets.size(); j++){
-     		out << distanceMatrix[i][j] << " ";
-    	}	
-  	}
+				out << distanceMatrix[i][j] << " ";
+			}	
+		}
 		out << CoM << " ";
 		fprintf(stderr, "Distances stored in file.\n"); 
- 		out.close();
+		out.close();
 		return;
 	}
 }
@@ -762,7 +762,7 @@ vector<pair<int,int> >buildSwaps(vector<int> path){
 	for (int i = 0; i+1 < path.size(); i++){
 
 		//std::cerr << "path2 " << path.size() << "\n";
-//		pair<qbit_t*, qbit_t*> new_swap = make_pair(getLogicalAddr(path[i]),getLogicalAddr(path[i+1]));
+		//		pair<qbit_t*, qbit_t*> new_swap = make_pair(getLogicalAddr(path[i]),getLogicalAddr(path[i+1]));
 		pair<int,int> new_swap = make_pair(path[i],path[i+1]);
 		swaps.push_back(new_swap);
 	}
@@ -771,7 +771,7 @@ vector<pair<int,int> >buildSwaps(vector<int> path){
 }
 
 vector<pair<int,int> > dijkstraSearch(qbit_t *src, qbit_t *dst){
-//vector<pair<qbit_t *, qbit_t *> > dijkstraSearch(qbit_t *src, qbit_t *dst){
+	//vector<pair<qbit_t *, qbit_t *> > dijkstraSearch(qbit_t *src, qbit_t *dst){
 	int source = getPhysicalID(src);
 	int dest = getPhysicalID(dst);
 	//std::cerr << "resolve src: " << source << " dst: " << dest << "\n";
@@ -854,7 +854,7 @@ vector<pair<int,int> > manhattan(qbit_t *src, qbit_t *dst){
 			std::cout << "Error: manhattan path construction error.\n";
 		}
 	}
-	
+
 	vector<pair<int,int> > swap_chain = buildSwaps(path);
 
 	return swap_chain;
@@ -925,7 +925,7 @@ vector<int> findClosestNew(int center, int num, int *sum_dist){
 	for (int i = 0; i < unusedQubits_size; i++){
 		//std::cerr << unusedQubits[i] << "\t";
 		int dist = distanceMatrix[center][unusedQubits[i]];
-		
+
 		sortedFree.push_back(make_pair(dist,unusedQubits[i]));	
 	}	
 	std::sort(sortedFree.begin(),sortedFree.end(), cmp_new);
@@ -976,22 +976,22 @@ vector<qbit_t*> findClosestFree(int center, qbitElement_t **free, int num, int f
 
 template<class BidiIter >
 BidiIter vec_random_sample(BidiIter begin, BidiIter end, size_t num_random) {
-    size_t left = std::distance(begin, end);
-    while (num_random--) {
-        BidiIter r = begin;
-        std::advance(r, rand()%left);
-        std::swap(*begin, *r);
-        ++begin;
-        --left;
-    }
-    return begin;
+	size_t left = std::distance(begin, end);
+	while (num_random--) {
+		BidiIter r = begin;
+		std::advance(r, rand()%left);
+		std::swap(*begin, *r);
+		++begin;
+		--left;
+	}
+	return begin;
 }
 
 vector<int> findRandomNew(int num){
 	int unusedQubits_size = unusedQubits.size();
 	if (num > unusedQubits_size) {
-    fprintf(stderr, "Insufficient qubit memory.\n");
-    exit(1);
+		fprintf(stderr, "Insufficient qubit memory.\n");
+		exit(1);
 	}
 	std::vector<int> allocated(unusedQubits);
 	vec_random_sample(allocated.begin(), allocated.end(), num);
@@ -1001,28 +1001,28 @@ vector<int> findRandomNew(int num){
 
 
 /***********************
-* Memory Heap Definition  
-***********************/
+ * Memory Heap Definition  
+ ***********************/
 
 /* memHeapInit: initialize an empty heap for main */
 memHeap_t *memHeapNew(size_t maxSize) {
-  memHeap_t *newHeap = (memHeap_t*)malloc(sizeof(memHeap_t));
-  if (newHeap == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize qubit memory heap.\n");
-    exit(1);
-  }
-  qbitElement_t **newContents;
-  newContents = (qbitElement_t**)malloc( sizeof(qbitElement_t*) * maxSize );
-  if (newContents == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize qubit memmory heap.\n");
-    exit(1);
-  }
-  newHeap->maxSize = maxSize;
-  newHeap->numQubits = 0;
+	memHeap_t *newHeap = (memHeap_t*)malloc(sizeof(memHeap_t));
+	if (newHeap == NULL) {
+		fprintf(stderr, "Insufficient memory to initialize qubit memory heap.\n");
+		exit(1);
+	}
+	qbitElement_t **newContents;
+	newContents = (qbitElement_t**)malloc( sizeof(qbitElement_t*) * maxSize );
+	if (newContents == NULL) {
+		fprintf(stderr, "Insufficient memory to initialize qubit memmory heap.\n");
+		exit(1);
+	}
+	newHeap->maxSize = maxSize;
+	newHeap->numQubits = 0;
 	newHeap->contents = newContents;
-  newHeap->numPredecessors = 0; /* for main */ 
+	newHeap->numPredecessors = 0; /* for main */ 
 	newHeap->predecessors= NULL;
-  newHeap->numSuccessors = 0; 
+	newHeap->numSuccessors = 0; 
 	newHeap->successors = NULL;
 	return newHeap;
 }
@@ -1061,7 +1061,7 @@ void removePredecessorFrom(memHeap_t *M, memHeap_t *from) {
 	size_t np = from->numPredecessors;
 	size_t idx = memHeapFind(M, from->predecessors, np);
 	if (idx < np) memHeapRemoveFromArray(idx, from->predecessors, &(from->numPredecessors));
-	
+
 }
 
 void memHeapDelete(memHeap_t *M) {
@@ -1073,7 +1073,7 @@ void memHeapDelete(memHeap_t *M) {
 		for (size_t i = 0; i < M->numQubits; i++) {
 			if (M->contents[i] != NULL) free(M->contents[i]);
 		}
-  	free(M->contents);
+		free(M->contents);
 	}
 	if (M->predecessors != NULL) {
 		size_t sp = M->numPredecessors;
@@ -1091,32 +1091,32 @@ void memHeapDelete(memHeap_t *M) {
 		}
 		free(M->successors);
 	}
-  free(M);
+	free(M);
 }
 
 // Remember to malloc newElement before calling push
 void memHeapPush (qbitElement_t *newElement, memHeap_t *M) {
-  if (debugRevMemHybrid)
-    printf("Pushing on to heap\n");  
-  if (M->numQubits >= M->maxSize) {
-    fprintf (stderr, "Can't push element on heap: heap is full.\n");
-    exit(1);
-  }
-  // insert element at the END and update numQubits
-  M->contents[M->numQubits] = newElement;
+	if (debugRevMemHybrid)
+		printf("Pushing on to heap\n");  
+	if (M->numQubits >= M->maxSize) {
+		fprintf (stderr, "Can't push element on heap: heap is full.\n");
+		exit(1);
+	}
+	// insert element at the END and update numQubits
+	M->contents[M->numQubits] = newElement;
 	M->numQubits += 1;
 }
 
 // Remember to free result after use
 qbitElement_t *memHeapPop (memHeap_t *M) {
-  if (debugRevMemHybrid)
-    printf("Popping from heap\n");  
-  if (M->numQubits <= 0) {
-    fprintf (stderr, "Can't pop element from heap: heap is empty.\n");
-    exit(1);    
-  }
-  //update numQubits
-  M->numQubits--;
+	if (debugRevMemHybrid)
+		printf("Popping from heap\n");  
+	if (M->numQubits <= 0) {
+		fprintf (stderr, "Can't pop element from heap: heap is empty.\n");
+		exit(1);    
+	}
+	//update numQubits
+	M->numQubits--;
 	return M->contents[M->numQubits];
 }
 
@@ -1178,8 +1178,8 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	vector<int> closestNewSet = findClosestNew(CoM_inter, num_qbits, &new_dist);
 
 	if (num_qbits <= available) {
-  	if (debugRevMemHybrid) {
-    	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
+		if (debugRevMemHybrid) {
+			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
 		int free_dist = 0;
 		vector<qbit_t *> closestFreeSet = findClosestFree(CoM_inter, M->contents, num_qbits, available, targets_size, &free_dist);
@@ -1200,14 +1200,14 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 		} else {
 			//std::cerr << "choosing new\n";
 			vector<int> physicalIDs = closestNewSet;
-		  if (debugRevMemHybrid)
-		  	printf("Obtaining %u new qubits.\n", num_qbits);  
+			if (debugRevMemHybrid)
+				printf("Obtaining %u new qubits.\n", num_qbits);  
 			// malloc new qubits!
 			qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
 			if (newt == NULL) {
-		    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
-		    exit(1);
-		  }
+				fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+				exit(1);
+			}
 			for (size_t i = 0; i < num_qbits; i++) {
 				unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
 				res[i].addr = &newt[i];
@@ -1222,14 +1222,14 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 
 	} else {
 		vector<int> physicalIDs = closestNewSet;
-	  if (debugRevMemHybrid)
-	  	printf("Obtaining %u new qubits.\n", num_qbits);  
+		if (debugRevMemHybrid)
+			printf("Obtaining %u new qubits.\n", num_qbits);  
 		// malloc new qubits!
 		qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
 		if (newt == NULL) {
-	    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
-	    exit(1);
-	  }
+			fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+			exit(1);
+		}
 		for (size_t i = 0; i < num_qbits; i++) {
 			unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
 			res[i].addr = &newt[i];
@@ -1258,8 +1258,8 @@ int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **i
 	size_t available = M->numQubits;
 	vector<qbit_t *> closestSet;
 	if (num_qbits <= available) {
-  	if (debugRevMemHybrid) {
-    	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
+		if (debugRevMemHybrid) {
+			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
 		if (allocPolicy != _LIFO) {
 			int free_dist = 0;
@@ -1289,8 +1289,8 @@ int memHeapGetQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t **i
 		}
 		return num_qbits;
 	} else {
-  	if (debugRevMemHybrid) {
-    	printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
+		if (debugRevMemHybrid) {
+			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
 		for (size_t i = 0; i < available; i++) {
 			qbitElement_t *qq = memHeapPop(M);
@@ -1310,24 +1310,24 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 		fprintf(stderr, "Cannot allocate more than %d total qubits.\n", _MAX_NUM_QUBITS);
 		exit(1);
 	}
-  if (debugRevMemHybrid)
-  	printf("Obtaining %u new qubits.\n", num_qbits);  
+	if (debugRevMemHybrid)
+		printf("Obtaining %u new qubits.\n", num_qbits);  
 	// malloc new qubits!
 	qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
 	if (newt == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
-    exit(1);
-  }
+		fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+		exit(1);
+	}
 	// Track the new qubits in AllQubits and the mapping
-  //printf("Obtain\n");  
-  int sum_dist;
+	//printf("Obtain\n");  
+	int sum_dist;
 	//vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
 	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
 	// Note that if random, then the qubits that are allocated may not be contiguous
 	// however, the swap chain will still use those qubits along the way,
 	// and they may be denoted as 'q-1' in the output
-  //printf("Obtained\n");  
-  //std::cerr << physicalIDs.size() << "\n";
+	//printf("Obtained\n");  
+	//std::cerr << physicalIDs.size() << "\n";
 	for (size_t i = 0; i < num_qbits; i++) {
 		unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
 		res[i].addr = &newt[i];
@@ -1349,14 +1349,14 @@ int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
 		fprintf(stderr, "Cannot allocate more than %d total qubits.\n", _MAX_NUM_QUBITS);
 		exit(1);
 	}
-  if (debugRevMemHybrid)
-  	printf("Obtaining %u new temporary qubits.\n", num_qbits);  
+	if (debugRevMemHybrid)
+		printf("Obtaining %u new temporary qubits.\n", num_qbits);  
 	// malloc new qubits!
 	qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
 	if (newt == NULL) {
-    fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
-    exit(1);
-  }
+		fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+		exit(1);
+	}
 	// Track the new qubits in AllQubits
 	for (size_t i = 0; i < num_qbits; i++) {
 		res[i].addr = &newt[i];
@@ -1376,8 +1376,8 @@ int memHeapNewTempQubits(int num_qbits, qbitElement_t *res) {
 
 
 /*****************************
-* Functions to be instrumented
-******************************/
+ * Functions to be instrumented
+ ******************************/
 // 1. memory heap with mirroring shape: node contains heap pointer
 // 2. optimize for uncompute choices
 
@@ -1471,8 +1471,8 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 					// Store the addresses into result
 					//for (size_t i = 0; i < num_qbits; i++) {
 					result[j] = res[j].addr;
-						//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
-						//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
+					//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
+					//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 					//}
 					//std::cerr << "hihi\n";
 				}
@@ -1619,8 +1619,8 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 			}
 		}
 	}
-  if (debugRevMemHybrid)
-  	printf("Freeing up %lu qubits.\n", toPush.size());  
+	if (debugRevMemHybrid)
+		printf("Freeing up %lu qubits.\n", toPush.size());  
 	return num_qbits;	
 }
 
@@ -1655,16 +1655,16 @@ int memHeapTransfer(int num_qbits, int heap_idx, qbit_t **ancilla) {
 			current_node->parent->from_children.push_back((*it));
 		}
 		current_node->num_to_parent = to_transfer;
-		
+
 		return to_transfer;
 	}
-	
+
 }
 
 int exhaustiveOnOff(int index){
-  string filename = "on_off_sequences.txt";
+	string filename = "on_off_sequences.txt";
 	std::ifstream file(filename.c_str());
-  //string outfilename = "on_off_sequences_temp.txt";
+	//string outfilename = "on_off_sequences_temp.txt";
 	//std::ofstream outfile(outfilename.c_str());
 	if( !(file) ){
 		std::cout << "Cannot find on_off_sequences.txt file\n";
@@ -1675,17 +1675,17 @@ int exhaustiveOnOff(int index){
 	string current_seq;
 	int iter = 0;
 	getline(file,current_seq);
-//	while (getline(file, seq)) {
-//			if (iter > 1) outfile << seq;
-//			else current_seq = seq;
-//	}
-	
-  if (debugRevMemHybrid) {
+	//	while (getline(file, seq)) {
+	//			if (iter > 1) outfile << seq;
+	//			else current_seq = seq;
+	//	}
+
+	if (debugRevMemHybrid) {
 		std::cout << " Controlled Uncompute Index: " << index << " ";
 		std::cout << current_seq[index] << "\n";
 	}
-//	std::remove(filename);
-//	std::rename(outfilename,filename);
+	//	std::remove(filename);
+	//	std::rename(outfilename,filename);
 	int val = int(current_seq[index] - '0');
 
 
@@ -1917,7 +1917,7 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 	new_gate->gate_id = gateID;
 	new_gate->operands = ops;
 	new_gate->num_operands = numOp;
-		
+
 	//vector<pair<qbit_t*,qbit_t*> > swaps = resolveInteraction(operands, numOp);
 	vector<pair<int,int> > swaps;
 	if (swapflag) {
@@ -1926,7 +1926,7 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 	//std::cerr << "building gate\n";
 	//updateMaps(swaps);
 	//printSwapChain(swaps);
-	
+
 	vector<gate_t*> resolvedGates;
 	if (!swaps.empty()) {
 		gate_t *swap_gate = new gate_t();
@@ -1970,74 +1970,74 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 /* memoize: memoization function */
 /* A call to this function ensures that the relevant entry */
 /* in the hash table has been created 
-int memoize ( char *function_name, 
-               int *int_params, int num_ints,
-               double *double_params, int num_doubles,
-               int repeat
-                              ) {
-	// TODO: in here we add entry to function hashtable: func_idx -> {}
+   int memoize ( char *function_name, 
+   int *int_params, int num_ints,
+   double *double_params, int num_doubles,
+   int repeat
+   ) {
+// TODO: in here we add entry to function hashtable: func_idx -> {}
 
-  static int long long total_call_count = 0;
-  total_call_count++;
-  //printf("Total Call Count = %d", total_call_count);
+static int long long total_call_count = 0;
+total_call_count++;
+//printf("Total Call Count = %d", total_call_count);
 
-	//printf("%s \n", function_name);
-  if (debugRevMemHybrid) {
-    printf("memoize called on %s !\n", function_name);
-    printf("repeat value = %d !\n", repeat);
-  }
-
-  hash_entry_t *memo;
-  memo = find_memo(function_name, int_params, num_ints, double_params, num_doubles);
-
-  if (memo == NULL) {
-    if (debugRevMemHybrid)
-      printf("NOT memoized before :(\n");
-    // create entry with zero resources
-    // the function call in LLVM IR will be called and will populate
-    int long long *resources = calloc (3, sizeof(int long long));
-    resources[0] = repeat;  // invocation count
-    resources[1] = num_ints; // number of int args
-    resources[2] = num_doubles; // number of double args
-
-    // multiply by the frequency of all parents before this module, then add to memos table
-    int it;
-    int long long accumulative_mult = 1;
-    for (it = resourcesStack->top; it > 0; it--)
-      accumulative_mult *= resourcesStack->contents[it];
-
-    resources[0] *= accumulative_mult;
-
-    add_memo(function_name, int_params, num_ints, double_params, num_doubles, resources);
-
-    // push this function versions resources to the top of stack
-    // will use the frequency of it to multiply all children frequencies hereafter by that frequency
-    if (debugRevMemHybrid)
-      printf("pushing to stack: %s\n", function_name);
-  }
-
-  else {
-    if (debugRevMemHybrid)
-      printf("Memoized already! :)\n");
-    // add to the frequency of execution (repeat times)
-    int it;
-    int long long accumulative_mult = 1;
-    for (it = resourcesStack->top; it > 0; it--)
-      accumulative_mult *= resourcesStack->contents[it];
-
-    memo->resources[0] += repeat*accumulative_mult;
-  }
-
-  // put on the stack the individual frequency of this module
-  stackPush(repeat); 
-  
-  // print updated hash table
-  if (debugRevMemHybrid)
-    print_hash_table();
-
-  return 0;
+//printf("%s \n", function_name);
+if (debugRevMemHybrid) {
+printf("memoize called on %s !\n", function_name);
+printf("repeat value = %d !\n", repeat);
 }
-*/
+
+hash_entry_t *memo;
+memo = find_memo(function_name, int_params, num_ints, double_params, num_doubles);
+
+if (memo == NULL) {
+if (debugRevMemHybrid)
+printf("NOT memoized before :(\n");
+// create entry with zero resources
+// the function call in LLVM IR will be called and will populate
+int long long *resources = calloc (3, sizeof(int long long));
+resources[0] = repeat;  // invocation count
+resources[1] = num_ints; // number of int args
+resources[2] = num_doubles; // number of double args
+
+// multiply by the frequency of all parents before this module, then add to memos table
+int it;
+int long long accumulative_mult = 1;
+for (it = resourcesStack->top; it > 0; it--)
+accumulative_mult *= resourcesStack->contents[it];
+
+resources[0] *= accumulative_mult;
+
+add_memo(function_name, int_params, num_ints, double_params, num_doubles, resources);
+
+// push this function versions resources to the top of stack
+// will use the frequency of it to multiply all children frequencies hereafter by that frequency
+if (debugRevMemHybrid)
+printf("pushing to stack: %s\n", function_name);
+}
+
+else {
+if (debugRevMemHybrid)
+printf("Memoized already! :)\n");
+// add to the frequency of execution (repeat times)
+int it;
+int long long accumulative_mult = 1;
+for (it = resourcesStack->top; it > 0; it--)
+accumulative_mult *= resourcesStack->contents[it];
+
+memo->resources[0] += repeat*accumulative_mult;
+}
+
+// put on the stack the individual frequency of this module
+stackPush(repeat); 
+
+// print updated hash table
+if (debugRevMemHybrid)
+print_hash_table();
+
+return 0;
+}
+ */
 
 /* exit_scope: resource transfer function*/
 /* A call to this function occurs after the module has been entered into the hash table*/
@@ -2047,11 +2047,11 @@ void exit_scope ()
 	//if (fullStack.empty()) {
 	//	std::cerr << "Error: stack is empty. Cannot pop from empty stack.\n";
 	//}
-  if (debugRevMemHybrid)
-    std::cout << "exiting scope... " << "\n";//<< fullStack.top()->func_name << "\n";
-  
-  //stackPop();
-  //fullStack.pop();
+	if (debugRevMemHybrid)
+		std::cout << "exiting scope... " << "\n";//<< fullStack.top()->func_name << "\n";
+
+	//stackPop();
+	//fullStack.pop();
 }
 
 //void qasm_gate () {
@@ -2059,66 +2059,66 @@ void exit_scope ()
 
 void qasm_initialize ()
 {
-  if (debugRevMemHybrid)
-    printf("initializing stack....\n");
+	if (debugRevMemHybrid)
+		printf("initializing stack....\n");
 
-  // initialize with maximum possible levels of calling depth
-  //stackInit(_MAX_CALL_DEPTH);
+	// initialize with maximum possible levels of calling depth
+	//stackInit(_MAX_CALL_DEPTH);
 	//bool auto_gen_graph = true;
-  readDeviceDescription("DeviceDescription.json");
+	readDeviceDescription("DeviceDescription.json");
 	std::cerr << "Device reading complete.\n";
 
 	initializeDistances();
 	calculateDistances();
 	std::cerr << "Graph distances calculated.\n";
-	
+
 	//printConnectivityGraph();
 	//printDistances();
-  //stackInit(_MAX_CALL_DEPTH);
+	//stackInit(_MAX_CALL_DEPTH);
 
-  memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
-  callGraph = callGraphNew();
+	memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
+	callGraph = callGraphNew();
 	qubitsInit();
 	gatesInit();
-	
+
 	//qubitUsage = new map<qbit_t*, int>();
-  // put "main" in the first row of both the hash table and the stack
-  //int main_int_params[_MAX_INT_PARAMS] = {0};
-  //int *main_int_params = (int*)calloc (_MAX_INT_PARAMS, sizeof(int));
-  //double main_double_params[_MAX_DOUBLE_PARAMS] = {0.0};
-  //double *main_double_params = calloc (_MAX_DOUBLE_PARAMS, sizeof(double));
-  //int long long main_resources[3] = {0};
-  //int long long *main_resources = calloc (3, sizeof(int long long));
-  // main is executed once
-  //main_resources[0] = 1;
+	// put "main" in the first row of both the hash table and the stack
+	//int main_int_params[_MAX_INT_PARAMS] = {0};
+	//int *main_int_params = (int*)calloc (_MAX_INT_PARAMS, sizeof(int));
+	//double main_double_params[_MAX_DOUBLE_PARAMS] = {0.0};
+	//double *main_double_params = calloc (_MAX_DOUBLE_PARAMS, sizeof(double));
+	//int long long main_resources[3] = {0};
+	//int long long *main_resources = calloc (3, sizeof(int long long));
+	// main is executed once
+	//main_resources[0] = 1;
 
 	//add_memo("main                           ", main_int_params, 0, main_double_params, 0, main_resources);
 
-  //stackPush(1); 
-  //stackElement_t *se = new stackElement_t();
+	//stackPush(1); 
+	//stackElement_t *se = new stackElement_t();
 	//se->func_name = "main";
 	//se->nInput = 0;
 	//se->nAncilla = 0;
-  //fullStack.push(se); //push main on to stack: other fields populated in module pass
+	//fullStack.push(se); //push main on to stack: other fields populated in module pass
 }
 
 void qasm_resource_summary ()
 {
-  // Profiling info: Total Gates, Execution Frequency, Number of Int Params, Number of Double Params
- 
-  int i;
-  //hash_entry_t *memo;
-  //for (memo=memos; memo != NULL; memo=memo->hh.next) {
-  //  printf("%s ", memo->function_name);
-  //  for (i=0; i<_MAX_INT_PARAMS; i++) {
-  //    printf("%2d ", memo->int_params[i]); 
-  //  }
-  //  for (i=0; i<_MAX_DOUBLE_PARAMS; i++) {
-  //    printf("%12f ", floorf(memo->double_params[i] * 10000 + 0.5) / 10000);   
-  //  }
-  //  printf("%8llu %8llu %8llu \n", memo->resources[0], memo->resources[1], memo->resources[2]);   
-  //   
-  //}
+	// Profiling info: Total Gates, Execution Frequency, Number of Int Params, Number of Double Params
+
+	int i;
+	//hash_entry_t *memo;
+	//for (memo=memos; memo != NULL; memo=memo->hh.next) {
+	//  printf("%s ", memo->function_name);
+	//  for (i=0; i<_MAX_INT_PARAMS; i++) {
+	//    printf("%2d ", memo->int_params[i]); 
+	//  }
+	//  for (i=0; i<_MAX_DOUBLE_PARAMS; i++) {
+	//    printf("%12f ", floorf(memo->double_params[i] * 10000 + 0.5) / 10000);   
+	//  }
+	//  printf("%8llu %8llu %8llu \n", memo->resources[0], memo->resources[1], memo->resources[2]);   
+	//   
+	//}
 
 	if (!pendingGates.empty()) {
 		std::cout << " Stall has reached the end of program, \n start scheduling all pending gates...\n";
@@ -2143,51 +2143,51 @@ void qasm_resource_summary ()
 	free(AllGates);
 	//print_qubit_table();
 
-  // free allocated memory for the "stack"
-  //stackDestroy();
+	// free allocated memory for the "stack"
+	//stackDestroy();
 
-  // free allocated memory for the "memos" table
-  //delete_all_memos();
-  //HASH_CLEAR(hh,memos);
+	// free allocated memory for the "memos" table
+	//delete_all_memos();
+	//HASH_CLEAR(hh,memos);
 }
 
 /*
-int main () {
-  
-  qasm_initialize();
+   int main () {
+
+   qasm_initialize();
 
 
-  // create an entry
-  char *function_name = "random_func                    ";
-  int int_params [3] = {1, 6, -2};
-  double double_params [1] = {-3.14};
-  int long long resources [3] = {1,3,1};
+// create an entry
+char *function_name = "random_func                    ";
+int int_params [3] = {1, 6, -2};
+double double_params [1] = {-3.14};
+int long long resources [3] = {1,3,1};
 
 
-  printf("*** main *** : memos->function_name = %s \n", memos->function_name);
-  
-  // insert entry
-  memoize (function_name, int_params, 3, double_params, 1, 1);
+printf("*** main *** : memos->function_name = %s \n", memos->function_name);
 
-  printf("*** main *** : memos->function_name = %s \n", memos->function_name);
+// insert entry
+memoize (function_name, int_params, 3, double_params, 1, 1);
+
+printf("*** main *** : memos->function_name = %s \n", memos->function_name);
 
 
-  // find entry
-  hash_entry_t *memo;
-  memo = find_memo (function_name, int_params, 3, double_params, 1);
-  
-  if (memo == NULL)
-  { printf("*** Entry not found *** \n"); return -1; }
+// find entry
+hash_entry_t *memo;
+memo = find_memo (function_name, int_params, 3, double_params, 1);
 
-  printf("Resources for this function: \n");
-  int i;
-  for (i=0; i<3; i++)
-    printf("%llu, ", memo->resources[i]);
-  printf("\n");
+if (memo == NULL)
+{ printf("*** Entry not found *** \n"); return -1; }
 
-  memoize(function_name, int_params, 3, double_params, 1, 4);
-  qasm_resource_summary();
+printf("Resources for this function: \n");
+int i;
+for (i=0; i<3; i++)
+printf("%llu, ", memo->resources[i]);
+printf("\n");
 
-  return 0;
+memoize(function_name, int_params, 3, double_params, 1, 4);
+qasm_resource_summary();
+
+return 0;
 }
-*/
+ */
