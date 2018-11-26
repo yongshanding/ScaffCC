@@ -36,6 +36,7 @@
 #define _EXT 3
 #define _OPTA 4
 #define _OPTB 5
+#define _OPTC 6
 
 #define _LIFO 0
 #define _MINQ 1
@@ -73,7 +74,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPTB; 
+int freePolicy = _OPTC; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -88,6 +89,7 @@ string outfilename = "on_off_sequences_out.txt";
 std::ofstream outfile(outfilename.c_str());
 
 int num_gate_scheduled = 0;
+int time_step_scheduled = 0;
 
 typedef int16_t qbit_t;
 
@@ -1385,6 +1387,9 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 	AllGates[gateID]++;
 	if (trackGates) {
 		std::cout << t << ": " << gate_str[gateID] << " ";
+		if (t > time_step_scheduled){
+			time_step_scheduled = t;
+		}
 		for (size_t i = 0; i < numOp; i++) {
 			//printf("q%u (%p)", qubitsFind(operands[i]), operands[i]);
 			//std::cout << "q" << qubitsFind(operands[i]) << " ";
@@ -1756,7 +1761,22 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 				current_node->on_off = 1;
 			}
 			cerr << "on_off: " << current_node->on_off << "\n";
-		}
+		} else if (freePolicy == _OPTC) {
+                        int weight_q = 1;
+                        int total_q = AllQubits->N;
+                        int weight_g = std::sqrt(total_q);
+			int c_nAnc = current_node->from_children.size();
+                        cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Q: " << total_q << "\n";
+                        cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+                        if (nOut > nAnc) {
+                                current_node->on_off = 0;
+                        } else if (weight_q * (nOut+total_q) * ((weight_g * nGate1) + time_step_scheduled) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 + time_step_scheduled)) {
+                                current_node->on_off = 0;
+                        } else {
+                                current_node->on_off = 1;
+                        }
+                        cerr << "on_off: " << current_node->on_off << "\n";
+                }
 		else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
 		}
