@@ -38,6 +38,7 @@
 #define _OPTB 5
 #define _OPTC 6
 #define _OPTD 7
+#define _OPTE 8
 
 #define _LIFO 0
 #define _MINQ 1
@@ -74,8 +75,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPTD; 
+int allocPolicy = _LIFO;
+int freePolicy = _OPTE; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -138,6 +139,7 @@ std::map<qbit_t *, int> TempQubitsHash; // temporary
 
 std::map<qbit_t*, int> qubitUsage; // latest usage of qubits
 std::map<qbit_t*, int> tempQubitUsage; // latest usage of temporary qubits
+std::map<qbit_t*, map<int, int> > activeTime; // {active_time, free_flag, start_time}
 
 std::map<qbit_t*, bool> waitlist; // whether a qubit is being held to stall
 
@@ -405,6 +407,9 @@ void qubitsAdd(qbit_t *newAddr) {
 	AllQubitsHash[newAddr] = newIdx;
 	qubitUsage.insert(std::make_pair(newAddr, 0)); // fresh qubit
 	//}
+	activeTime[newAddr][0] = 0;
+	activeTime[newAddr][1] = 1; // free flag
+	activeTime[newAddr][2] = 0;
 }
 
 /* return the index of addr, or AllQubits->N if not found */
@@ -505,7 +510,15 @@ void printSchedLength() {
 	printf("Total number of time steps: %d. \n", maxT);
 
 }
+void printActiveVol() {
+        int sumV = 0;
+        for (std::map<qbit_t*, map<int, int> >::iterator it= activeTime.begin(); it != activeTime.end(); ++it) {
+                sumV += it->second[0];
+        }
+        printf("==================================\n");
+        printf("Total active Volume: %d. \n", sumV);
 
+}
 
 /*****************************
  * Physical Connectivity Graph 
@@ -1788,6 +1801,24 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
                                 current_node->on_off = 1;
                         }
                         cerr << "on_off: " << current_node->on_off << "\n";
+                } else if (freePolicy == _OPTE) {
+                        int weight_q = 1;
+                        int total_q = AllQubits->N;
+			int q_in_use = total_q - memoryHeap->numQubits;
+			int anc_penalty = 1;
+                        int weight_g = std::sqrt(q_in_use);
+                        int c_nAnc = current_node->from_children.size();
+                        cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
+                        cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+			if (nAnc + c_nAnc > memoryHeap->numQubits){
+				anc_penalty = std::sqrt(nAnc + c_nAnc - memoryHeap->numQubits);
+			}
+                        if ((q_in_use) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (q_in_use + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc + std::sqrt(nAnc + c_nAnc))) {
+                                current_node->on_off = 0;
+                        } else {
+                                current_node->on_off = 1;
+                        }
+                        cerr << "on_off: " << current_node->on_off << "\n";
                 }
 		else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
@@ -1809,10 +1840,6 @@ void schedule(gate_t *new_gate) {
 	//std::cerr << "Scheduling " << gate_name << "\n";
 
 
-	if (gate_name == "free") {
-		memHeapFree(numOp, 0, &operands[0]);;
-	}
-
 	int Tmax = 0;
 	for (int i = 0; i < numOp; i++) {
 		int T = qubitUsage[operands[i]];
@@ -1820,6 +1847,16 @@ void schedule(gate_t *new_gate) {
 			Tmax = T;
 		}
 	}
+
+        if (gate_name == "free") {
+                memHeapFree(numOp, 0, &operands[0]);;
+		for (int i = 0; i < numOp; i++) {
+			activeTime[operands[i]][1] = 1;
+			activeTime[operands[i]][0] = activeTime[operands[i]][0] + Tmax - activeTime[operands[i]][2];
+		}
+
+        }
+
 
 	if (gate_name == "swap_chain") {
 		for (int i = 0; i < numOp; i++) {
@@ -1838,6 +1875,10 @@ void schedule(gate_t *new_gate) {
 	else {
 		for (int i = 0; i < numOp; i++) {
 			qubitUsage[operands[i]] = Tmax+1; //modify usage in place
+			if (activeTime[operands[i]][1] == 1){ //start recording active time
+				activeTime[operands[i]][1] = 0;
+				activeTime[operands[i]][2] = Tmax+1;
+			}
 		}
 		qbit_t *op_arrs[numOp];
 		for (int i = 0; i < numOp; i++){
@@ -2165,6 +2206,7 @@ void qasm_resource_summary ()
 	printf("Total number of qubits used: %u. \n", AllQubits->N);
 
 	printSchedLength();
+	printActiveVol();
 
 	printf("==================================\n");
 
