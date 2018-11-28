@@ -37,6 +37,7 @@
 #define _OPTA 4
 #define _OPTB 5
 #define _OPTC 6
+#define _OPTD 7
 
 #define _LIFO 0
 #define _MINQ 1
@@ -73,8 +74,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _EXT; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _OPTD; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -1869,9 +1870,20 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			int c_nAnc = current_node->from_children.size();
                         cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Q: " << total_q << "\n";
                         cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
-                        if (nOut > nAnc) {
+                        if (weight_q * total_q * (weight_g * nGate1 / (c_nAnc + nAnc)) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 / nAnc)) {
                                 current_node->on_off = 0;
-                        } else if (weight_q * (nOut+total_q) * ((weight_g * nGate1) + time_step_scheduled) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 + time_step_scheduled)) {
+                        } else {
+                                current_node->on_off = 1;
+                        }
+                        cerr << "on_off: " << current_node->on_off << "\n";
+                } else if (freePolicy == _OPTD) {
+                        int weight_q = 1;
+                        int total_q = AllQubits->N;
+                        int weight_g = std::sqrt(total_q);
+                        int c_nAnc = current_node->from_children.size();
+                        cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
+                        cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+                        if ((total_q - memoryHeap->numQubits) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (total_q - memoryHeap->numQubits + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc)) {
                                 current_node->on_off = 0;
                         } else {
                                 current_node->on_off = 1;
