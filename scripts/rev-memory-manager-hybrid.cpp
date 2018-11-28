@@ -76,7 +76,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _LIFO;
-int freePolicy = _EXT; 
+int freePolicy = _OPTD; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -1517,6 +1517,26 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 	}
 }
 
+void setQubitActive(int num_qbits, qbit_t **result){
+	int Tmax;
+	for (int i = 0; i < num_qbits; i++) {
+                int T = qubitUsage[result[i]];
+                if (T > Tmax) {
+                        Tmax = T;
+                }
+        }
+	for (int i = 0; i < num_qbits; i++) {
+		if (activeTime[result[i]][1] == 1){ //start recording active time
+			activeTime[result[i]][1] = 0;
+			activeTime[result[i]][2] = Tmax+1;
+			cout <<"allocate ID: q" << getPhysicalID(result[i]) << endl;
+		} else {
+			cout << "error: try to allocate non-free qubit " << getPhysicalID(result[i]) << endl;
+		}
+	}
+}
+
+
 /* memHeapAlloc: memory allocation when qubits are requested */
 /* every function should have a heap index? for now always a global root heap*/
 int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, int ninter) {
@@ -1570,6 +1590,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 		for (int i = 0; i < num_qbits; i++) {
 			current_node->qbits_owned.push_back(result[i]);
 		}
+		setQubitActive(num_qbits, result);
 		return num_qbits;
 	} else {
 		//std::cerr << "Allocating " << num_qbits << " qubits.\n";
@@ -1602,6 +1623,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				for (int i = 0; i < num_qbits; i++) {
 					current_node->qbits_owned.push_back(result[i]);
 				}
+				setQubitActive(num_qbits, result);
 				return num_qbits;
 
 			} else if (allocPolicy == _CLOSEST_BLOCK) {
@@ -1622,6 +1644,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				for (int i = 0; i < num_qbits; i++) {
 					current_node->qbits_owned.push_back(result[i]);
 				}
+				setQubitActive(num_qbits, result);
 				return num_qbits;
 
 			} else {
@@ -1650,6 +1673,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			for (int i = 0; i < num_qbits; i++) {
 				current_node->qbits_owned.push_back(result[i]);
 			}
+			setQubitActive(num_qbits, result);
 			return num_qbits;
 
 		} else {
@@ -1679,6 +1703,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	}
 	vector<qbit_t*> toPush = current_node->from_children;
 	cout << "Freeing " << toPush.size() << " qubits from children, and " << num_qbits << " from self.\n";
+
 	bool checkTemp = false;
 	int qIdx;
 	// first check if we can find them in permanent pool
@@ -1696,6 +1721,13 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		}
 		toPush.push_back(ancilla[i]);
 	}
+
+	cout << "free physical ID: ";
+	for (int i = 0; i < toPush.size(); i++){
+		cout << getPhysicalID(toPush[i]) << " ";
+	}
+	cout << endl;
+
 	//cerr << "checkTemp: " << checkTemp << "\n";
 	// TODO: do i need to let go those can be found in qubitsFind?
 	if (checkTemp) {
@@ -1733,10 +1765,11 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 				if (activeTime[toFree->addr][1] == 0){
 					activeTime[toFree->addr][1] = 1;
 					activeTime[toFree->addr][0] = activeTime[toFree->addr][0] + qubitUsage[toFree->addr] - activeTime[toFree->addr][2];
+					cout << "free ID: q" << getPhysicalID(toFree->addr) << endl;
 				} else {
-					cout << "error: " << toFree->idx << endl;
+					cout << "error: " << getPhysicalID(toFree->addr) << endl;
 				}
-				
+
 				if (current_node->qbits_owned.size() == 0 || num_qbits == current_node->qbits_owned.size()) {
 					current_node->qbits_owned.clear();
 				} else {
@@ -1986,10 +2019,6 @@ void schedule(gate_t *new_gate) {
 	else {
 		for (int i = 0; i < numOp; i++) {
 			qubitUsage[operands[i]] = Tmax+1; //modify usage in place
-			if (activeTime[operands[i]][1] == 1){ //start recording active time
-				activeTime[operands[i]][1] = 0;
-				activeTime[operands[i]][2] = Tmax+1;
-			}
 		}
 		qbit_t *op_arrs[numOp];
 		for (int i = 0; i < numOp; i++){
