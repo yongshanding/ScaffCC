@@ -11,6 +11,8 @@
 void _computeModule();
 void _exitModule();
 int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate1, int ngate0);
+void _incr_walk();
+void _decr_walk();
 
 //#define Free(out,nout,anc,nanc,ngate) \
 //	{ \
@@ -39,9 +41,37 @@ int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate1, int nga
 #define Uncompute(out,nout,anc,nanc,ngate1,ngate0) \
 	{ \
 		if (_free_option(out, nout, anc, nanc, ngate1, ngate0)) { \
-			printf("Free %d, %d \n", nout, nanc); 
+			printf("Free %d, %d \n", nout, nanc); \
+			_incr_walk();
 
 #define Free(anc,nanc) \
+			declare_free(anc,nanc); \
+			_decr_walk(); \
+			_exitModule();\
+		}	else { \
+			printf("Nofree\n"); \
+			promote_free(anc,nanc); \
+			_exitModule();\
+		} \
+	}
+
+
+#define Recompute(out,nout,anc,nanc,ngate1,ngate0) \
+	{ \
+		int c = _free_option(out, nout, anc, nanc, ngate1, ngate0); \
+		if (c) { \
+			printf("Free %d, %d \n", nout, nanc); \
+			_incr_walk();
+
+
+#define Restore \
+			_decr_walk(); \
+		}
+
+#define Unrecompute 
+		
+#define Refree(anc,nanc) \
+		if (c) { \
 			declare_free(anc,nanc); \
 			_exitModule();\
 		}	else { \
@@ -50,5 +80,7 @@ int _free_option(qbit **out, int nout, qbit **anc, int nanc, int ngate1, int nga
 			_exitModule();\
 		} \
 	}
+
+
 
 #endif // _UNCOMPUTE_H
