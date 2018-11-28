@@ -83,6 +83,8 @@ namespace {
     Function* memHeapTransfer; 
 		Function* computeNode;
 		Function* exitNode;
+		Function* incrWalk;
+		Function* decrWalk;
 		Function* freeOnOff;
     Function* checkAndSched; 
     //Function* memoize; 
@@ -342,6 +344,40 @@ namespace {
 	
 		}
 
+		void translateIncrWalk(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume _exitModule()
+			if (total_narg != 0) {
+				errs() << "Invalid _incr_walk() encountered: numArg = " << total_narg << " != 0.\n";
+			}
+			//vector<Value*> onoffArgs;
+			//onoffArgs.push_back(CI->getArgOperand(1)); //nout
+			//onoffArgs.push_back(CI->getArgOperand(3)); //nanc
+			//onoffArgs.push_back(CI->getArgOperand(4)); //ngate
+			//onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
+			CallInst *eNode= CallInst::Create(incrWalk, "", CI);
+			CI->replaceAllUsesWith(eNode);
+		  //ReplaceInstWithInst(CI, onoff);
+			 vInstRemove.push_back((Instruction*)CI);
+	
+		}
+		void translateDecrWalk(Function *CF, CallInst *CI, BasicBlock::iterator I) {
+			unsigned total_narg = CI->getNumArgOperands();
+			// assume _exitModule()
+			if (total_narg != 0) {
+				errs() << "Invalid _decr_walk() encountered: numArg = " << total_narg << " != 0.\n";
+			}
+			//vector<Value*> onoffArgs;
+			//onoffArgs.push_back(CI->getArgOperand(1)); //nout
+			//onoffArgs.push_back(CI->getArgOperand(3)); //nanc
+			//onoffArgs.push_back(CI->getArgOperand(4)); //ngate
+			//onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
+			CallInst *eNode= CallInst::Create(decrWalk, "", CI);
+			CI->replaceAllUsesWith(eNode);
+		  //ReplaceInstWithInst(CI, onoff);
+			 vInstRemove.push_back((Instruction*)CI);
+	
+		}
 		void translateExitNode(Function *CF, CallInst *CI, BasicBlock::iterator I) {
 			unsigned total_narg = CI->getNumArgOperands();
 			// assume _exitModule()
@@ -609,6 +645,12 @@ namespace {
     	    }
 					
 				}      
+				else if (CF->getName().find("_incr_walk") != std::string::npos) {
+					translateIncrWalk(CF, CI, I);//replace inst with incrWalk
+				}
+				else if (CF->getName().find("_decr_walk") != std::string::npos) {
+					translateDecrWalk(CF, CI, I);//replace inst with decrWalk
+				}
 				else if (CF->getName().find("_exitModule") != std::string::npos) {
 					//errs() << "Found _exitModule\n";
 					translateExitNode(CF, CI, I);//replace inst with exitNode
@@ -877,6 +919,14 @@ namespace {
 			// void computeNode()
       Type* compNodeResType = Type::getVoidTy(M.getContext());
       computeNode  = cast<Function>(M.getOrInsertFunction(getMangleName("computeNode", esArgTypes), compNodeResType, (Type*)0));      
+		
+			// void incrWalk()
+      Type* incrWalkResType = Type::getVoidTy(M.getContext());
+      incrWalk = cast<Function>(M.getOrInsertFunction(getMangleName("increment_walk", esArgTypes), incrWalkResType, (Type*)0));      
+		
+			// void decrWalk()
+      Type* decrWalkResType = Type::getVoidTy(M.getContext());
+      decrWalk  = cast<Function>(M.getOrInsertFunction(getMangleName("decrement_walk", esArgTypes), decrWalkResType, (Type*)0));      
 		
 			// unsigned freeOnOff(unsigned, unsigned, unsigned, unsigned, unsigned)
 			vector <Type*> onoffArgTypes;

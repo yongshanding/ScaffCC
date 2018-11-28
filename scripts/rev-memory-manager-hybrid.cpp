@@ -73,8 +73,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPTC; 
+int allocPolicy = _LIFO;
+int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -146,12 +146,19 @@ std::vector<acquire_str*> pendingAcquires;
 /* Data structures for making freeOnOff decisions */
 int CURRENT_IDX = 0; // how many times I have called freeOnOff
 int current_level = 0; // root is level 0
+int reverse_flag = 0; // indicating walking children forward/reverse order. 0:forward, 1:reverse
+int walk = 0; // if walk >= 1 do not create node, b/c reverse function does not need new node
+int id = 0; 
 typedef struct callnode_t {
+	int id;
 	int is_root; // indicate is main
 	int on_off; // decision for this node: -1: no value, 0: no uncomp, 1: uncomp
 	int ng1; // num of gates if uncompute (assuming children's decisions have been set)
 	int ng0; // num of gates if not uncompute (assuming children's decisions have been set)
 	int num_to_parent;
+	int reverse_flag;
+	int num_children;
+	int children_walked;
 	vector<qbit_t*> from_children; // qbits needed to free onbehalf of children
 	vector<qbit_t*> qbits_owned; // qbits allocated in comp
 	callnode_t *parent;
@@ -176,10 +183,14 @@ callnode_t *callGraphNew() {
 		exit(1);
 	}
 	newGraph->is_root = 1;
+	newGraph->id = id++;
 	newGraph->on_off = -1;
 	newGraph->ng1 = -1;
 	newGraph->ng0 = -1;
 	newGraph->num_to_parent = 0;
+	newGraph->reverse_flag= 0;
+	newGraph->num_children= 0;
+	newGraph->children_walked= 0;
 	vector<qbit_t*> new_vec;
 	newGraph->from_children = new_vec;
 	vector<qbit_t*> new_vec2;
@@ -204,21 +215,29 @@ void callGraphDelete(callnode_t *cg) {
 }
 
 void computeNode() {
+	// called when seeing "Compute" in children
 	if (current_node == NULL) {
 		fprintf(stderr, "Call graph has not been initialize yet.\n");
 		exit(1);
 	}
-	if (current_node->on_off == -1) {
+	//fprintf(stdout, "walk: %d\n", walk);
+	//cout << flush;
+	if (current_node->on_off == -1 && walk == 0) {
 		//TODO: create node
 		//callnode_t *newNode = (callnode_t*)malloc(sizeof(callnode_t));
 		callnode_t *newNode = new callnode_t; // use new s.t. vector is init'ed
 		newNode->parent = current_node;
+		newNode->parent->num_children += 1;
 		current_node = newNode; // change global current pointer
 		newNode->is_root = 0;
+		newNode->id = id++;
 		newNode->on_off = -1;
 		newNode->ng1 = -1;
 		newNode->ng0 = -1;
 		newNode->num_to_parent = 0;
+		newNode->num_children = 0;
+		newNode->children_walked = 0;
+		newNode->reverse_flag= 0;
 		vector<qbit_t*> new_vec; 
 		newNode->from_children = new_vec;
 		vector<qbit_t*> new_vec2; 
@@ -239,27 +258,108 @@ void computeNode() {
 			newNode->next = NULL;
 			newNode->parent->children_end = newNode;
 		}
+		//fprintf(stdout, ">>> parent id: %d, ", newNode->parent->id);
+		//fprintf(stdout, ">>> current id: %d \n", newNode->id);
+		//cout << flush;
+
 	} else {
 		//TODO: walk to current child 
-		if (current_node->child_current == NULL){
-			current_node->child_current = current_node->children_end;
+
+		//fprintf(stdout, "child current %d\n", current_node->child_current == NULL);
+		//fprintf(stdout, "current on off %d\n", current_node->on_off);
+		//fprintf(stdout, "num children %d\n", current_node->num_children);
+		//fprintf(stdout, "children walked %d\n", current_node->children_walked);
+		//cout << "<<< walk from: " << current_node->id << " \n" << flush;
+		if (current_node->on_off == 1 && current_node->children_walked == 0){
+			// means walking down this level for the first time
+			current_node->reverse_flag = 1 - current_node->parent->reverse_flag;
+			
+			//cout << "on off = 1, down first time\n" << flush;
+		} else if (current_node->on_off == 0 && current_node->children_walked == 0) {
+			current_node->reverse_flag = current_node->parent->reverse_flag;
+			//cout << "on off = 0, down first time\n" << flush;
+		} else if (current_node->children_walked != 0 && current_node->children_walked % current_node->num_children == 0) {
+			// means walking at this level multiple times
+			current_node->reverse_flag = 1 - current_node->reverse_flag;
+			//cout << "on off = 0, walked \% num = 0\n" << flush;
 		}
-		callnode_t *tmp = current_node->child_current;
-		current_node->child_current = tmp->prev;
-		current_node = tmp;
+		//fprintf(stdout, "reverse_flag: %d\n", current_node->parent->reverse_flag);
+		//cout << flush;
+		current_node->children_walked += 1;
+		//fprintf(stdout, "1\n");
+		//cout << flush;
+		if (current_node->reverse_flag) {
+			//fprintf(stdout, "2\n");
+			//cout << flush;
+			if (current_node->child_current == NULL){
+				current_node->child_current = current_node->children_end;
+			}
+			callnode_t *tmp = current_node->child_current;
+			current_node->child_current = tmp->prev;
+			current_node = tmp;
+			//fprintf(stdout, "2.5\n");
+			//cout << flush;
+
+
+		} else {
+			//fprintf(stdout, "3\n");
+			//cout << flush;
+			if (current_node->child_current == NULL){
+				//fprintf(stdout, "3.1\n");
+				//cout << flush;
+				current_node->child_current = current_node->children_start;
+				//fprintf(stdout, "new cc still null? %d\n", current_node->child_current == NULL);
+				//cout << flush;
+			}
+			//fprintf(stdout, "3.2\n");
+			//cout << flush;
+			callnode_t *tmp = current_node->child_current;
+			//fprintf(stdout, "3.3\n");
+			//cout << flush;
+			current_node->child_current = tmp->next;
+			//fprintf(stdout, "3.4\n");
+			//cout << flush;
+			current_node = tmp;
+			//if (current_node->child_current == NULL){
+			//	reverse_flag = 1 - reverse_flag;
+			//}
+			//fprintf(stdout, "3.5\n");
+			//cout << flush;
+		}
 	}
+
+	//cout << "<<< walk to: " << current_node->id << " \n" << flush;
 	current_level += 1;
+	//fprintf(stdout, "enter level: %d\n", current_level);
+	//cout << flush;
 }
 
 void exitNode() {
+	//fprintf(stdout, "exit level: %d\n", current_level);
+	//cout << flush;
 	if (current_node == NULL || current_node->parent == NULL) {
 		fprintf(stderr, "There is no parent to return to.\n");
 		exit(1);
 	}
 
+	current_node->children_walked = 0; // reset children walked
 	current_node = current_node->parent;
 	current_level -= 1;
+	//if (current_node->child_current == NULL){
+	//	reverse_flag = 1 - reverse_flag;
+	//}
+	//fprintf(stdout, "exit level: %d\n", current_level);
+	//cout << flush;
 }
+
+void increment_walk() {
+	walk += 1;
+}
+
+void decrement_walk() {
+	walk -= 1;
+}
+
 
 // defining a structure to act as heap for pointer values to resources that must be updated                    
 typedef struct memHeap_str {
@@ -1416,7 +1516,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 	}
 	int num_owned = current_node->qbits_owned.size();
 	if (num_owned > 0) {
-		cout << "Found allocation pair in uncomputation. Reusing compute qubtis.\n";
+		cout << "Found allocation pair in uncomputation. Reusing compute qubits.\n";
 		// This allocation must belong to an uncomputation (since comp-uncomp always pair up)
 		if (num_owned != num_qbits) {
 			fprintf(stderr, "Allocations in compute (%d) vs uncompute (%d) do not match.\n", num_owned, num_qbits);
@@ -1710,6 +1810,7 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 		exit(1);
 	}
 
+	//cout << "freeOnOff in " << current_node->id << "\n"; 
 	if (current_node->on_off == -1){
 		// calculate num gates based on children's decisions
 		int nGate1 = ng1;

@@ -10,6 +10,8 @@ SEED = 15859211
 DEFAULT_MAX_DEGREE = 3
 TL = 0 # tab level
 
+builtR = []
+
 def tab():
     global TL
     TL += 1
@@ -31,6 +33,8 @@ def sample_gates(ng, nq, na):
         res.append(ops)
     return res
    
+    buff += "\t"*TL +  + "\n"
+    buff_r += "\t"*TL +  + "\n"
 
 def build_fun(i, all_calls, outf):
     # all_calls[i]: (i, callees, [nq,na,ng])
@@ -38,55 +42,100 @@ def build_fun(i, all_calls, outf):
     nq = all_calls[i][2][0]
     na = all_calls[i][2][1]
     ng = all_calls[i][2][2]
+    buff = ""
+    buff_r = ""
     # Write a function with branching degree b
-    writeline(outf, "// Function " + str(i) + " with degree " + str(len(callees)))
-    writeline(outf, "// nq: " + str(nq) + ", na: " + str(na) + ", ng: " + str(ng))
-    writeline(outf, "void func" + str(i) + "(qbit **q, int n) {")
+    ##writeline(outf, "// Function " + str(i) + " with degree " + str(len(callees)))
+    buff += "\t"*TL + "// Function " + str(i) + " with degree " + str(len(callees)) + "\n"
+    buff_r += "\t"*TL + "// Function " + str(i) + " with degree " + str(len(callees)) + "\n"
+    ##writeline(outf, "// nq: " + str(nq) + ", na: " + str(na) + ", ng: " + str(ng))
+    buff += "\t"*TL + "// nq: " + str(nq) + ", na: " + str(na) + ", ng: " + str(ng) + "\n"
+    buff_r += "\t"*TL + "// nq: " + str(nq) + ", na: " + str(na) + ", ng: " + str(ng) + "\n"
+    #if (rev == 0):
+    #    #writeline(outf, "void func" + str(i) + "(qbit **q, int n) {")
+    #else:
+    #    #writeline(outf, "void func" + str(i) + "R(qbit **q, int n) {")
+    buff += "\t"*TL + "void func" + str(i) + "(qbit **q, int n) {" + "\n"
+    buff += "\t"*TL + "printf(\"func" + str(i) + "\\n\");" + "\n"
+    buff += "\t"*TL + "fflush(stderr);" + "\n"
+    buff_r += "\t"*TL + "void func" + str(i) + "R(qbit **q, int n) {" + "\n"
+    buff_r += "\t"*TL + "printf(\"func" + str(i) + "R\\n\");" + "\n"
+    buff_r += "\t"*TL + "fflush(stderr);" + "\n"
+
     tab()
     all_ops = sample_gates(ng, nq, na)
     interqs = [x for ops in all_ops for x in ops if x < nq] # TODO? remove duplicates
-    writeline(outf, "qbit *anc[" + str(na) + "]; // ancilla")
-    writeline(outf, "qbit *nb[" + str(len(interqs)) + "]; // interacting bits")
+    #writeline(outf, "qbit *anc[" + str(na) + "]; // ancilla")
+    buff += "\t"*TL + "qbit *anc[" + str(na) + "]; // ancilla" + "\n"
+    buff_r += "\t"*TL + "qbit *anc[" + str(na) + "]; // ancilla" + "\n"
+    #writeline(outf, "qbit *nb[" + str(len(interqs)) + "]; // interacting bits")
+    buff += "\t"*TL + "qbit *nb[" + str(len(interqs)) + "]; // interacting bits" + "\n"
+    buff_r += "\t"*TL + "qbit *nb[" + str(len(interqs)) + "]; // interacting bits" + "\n"
     num_out = random.randint(1, nq)
     outs = random.sample(range(nq), num_out)
-    writeline(outf, "qbit *res["+str(num_out)+"];") # rename the outputs
+    #writeline(outf, "qbit *res["+str(num_out)+"];") # rename the outputs
+    buff += "\t"*TL + "qbit *res["+str(num_out)+"];" + "\n"
+    buff_r += "\t"*TL + "qbit *res["+str(num_out)+"];" + "\n"
     callees_nq = []
     for j in range(len(callees)):
         # num_q = random.randint(3, nq+na)
         # need to sample the same number of qubits that callee needs
         num_q = all_calls[callees[j]][2][0]
         callees_nq.append(num_q)
-        writeline(outf, "qbit *nq"+str(j)+"["+str(num_q)+"];") # rename callee inputs
+        #writeline(outf, "qbit *nq"+str(j)+"["+str(num_q)+"];") # rename callee inputs
+        buff += "\t"*TL + "qbit *nq"+str(j)+"["+str(num_q)+"];" + "\n"
+        buff_r += "\t"*TL + "qbit *nq"+str(j)+"["+str(num_q)+"];" + "\n"
     # Building the interaction set (distinct qubits or weighted by appearances?)
     for (j, x) in enumerate(interqs):
-        writeline(outf, "nb["+str(j)+"] = q["+str(x)+"];")
+        #writeline(outf, "nb["+str(j)+"] = q["+str(x)+"];")
+        buff += "\t"*TL + "nb["+str(j)+"] = q["+str(x)+"];" + "\n"
+        buff_r += "\t"*TL + "nb["+str(j)+"] = q["+str(x)+"];" + "\n"
     # Identify the output bits
     for (j, x) in enumerate(outs):
-        writeline(outf, "res["+str(j)+"] = q["+str(x)+"];")
+        #writeline(outf, "res["+str(j)+"] = q["+str(x)+"];")
+        buff += "\t"*TL + "res["+str(j)+"] = q["+str(x)+"];" + "\n"
+        buff_r += "\t"*TL + "res["+str(j)+"] = q["+str(x)+"];" + "\n"
     # Start computations
     all_ins = []
+    all_ins_r = []
     for ops in all_ops:
         if (len(ops) == 2):
             op0 = "q["+str(ops[0])+"]" if (ops[0]<nq) else "anc["+str(ops[0]-nq)+"]"
             op1 = "q["+str(ops[1])+"]" if (ops[1]<nq) else "anc["+str(ops[1]-nq)+"]"
             all_ins.append("CNOT( " + op0 + ", " + op1 + " );")
+            all_ins_r.append("CNOT( " + op0 + ", " + op1 + " );")
         else:
             op0 = "q["+str(ops[0])+"]" if (ops[0]<nq) else "anc["+str(ops[0]-nq)+"]"
             op1 = "q["+str(ops[1])+"]" if (ops[1]<nq) else "anc["+str(ops[1]-nq)+"]"
             op2 = "q["+str(ops[2])+"]" if (ops[2]<nq) else "anc["+str(ops[2]-nq)+"]"
             all_ins.append("Toffoli( " + op0 + ", " + op1 + ", " + op2 + " );")
+            all_ins_r.append("Toffoli( " + op0 + ", " + op1 + ", " + op2 + " );")
 
     if (len(callees) == 0):
-        writeline(outf, "// Leaf function")
-        writeline(outf, "Compute {")
+        #writeline(outf, "// Leaf function")
+        buff += "\t"*TL + "// Leaf function" + "\n"
+        buff_r += "\t"*TL + "// Leaf function" + "\n"
+        #writeline(outf, "Compute {")
+        buff += "\t"*TL + "Compute {" + "\n"
+        buff_r += "\t"*TL + "_computeModule();" + "\n"
+        buff_r += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
+        buff_r += "\t"*TL + "Recompute (res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
         tab()
         # Now ready to allocate the ancilla
-        writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
+        #writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
+        buff += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
         for ins in all_ins:
-            writeline(outf, ins)
+            #writeline(outf, ins)
+            buff += "\t"*TL + ins + "\n"
+        for ins in reversed(all_ins):
+            buff_r += "\t"*TL + ins + "\n"
         untab()
-        writeline(outf, "}")
-        writeline(outf, "Store {")
+        #writeline(outf, "}")
+        buff += "\t"*TL + "}" + "\n"
+        buff_r += "\t"*TL + "}" + "\n"
+        #writeline(outf, "Store {")
+        buff += "\t"*TL + "Store {" + "\n"
+        buff_r += "\t"*TL + "Restore {" + "\n"
         tab()
         temp_bits = random.sample(range(nq+na), num_out) 
         for j in range(num_out):
@@ -98,36 +147,72 @@ def build_fun(i, all_calls, outf):
                     temp_op = "q["+str(temp_bits[j])+"]" 
             else:
                 temp_op = "anc["+str(temp_bits[j]-nq)+"]"
-            writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
+            #writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
+            buff += "\t"*TL + "CNOT( " + temp_op + ", res[" + str(j) + "] );" + "\n"
+            buff_r += "\t"*TL + "CNOT( " + temp_op + ", res[" + str(j) + "] );" + "\n"
         untab()
-        writeline(outf, "}")
-        writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){")
+        #writeline(outf, "}")
+        buff += "\t"*TL + "}" + "\n"
+        buff_r += "\t"*TL + "}" + "\n"
+        #writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){")
+        buff += "\t"*TL + "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
+        buff_r += "\t"*TL + "Unrecompute {" + "\n"
         tab()
         for ins in reversed(all_ins):
-            writeline(outf, ins)
+            #writeline(outf, ins)
+            buff += "\t"*TL + ins + "\n"
+        for ins in all_ins:
+            buff_r += "\t"*TL + ins + "\n"
         untab()
-        writeline(outf, "} Free(anc, " + str(na) +") {}")
+        #writeline(outf, "} Free(anc, " + str(na) +") {}")
+        buff += "\t"*TL + "} Free(anc, " + str(na) +") {}" + "\n"
+        buff_r += "\t"*TL + "} Refree(anc, " + str(na) +") {}" + "\n"
 
     else:
-        writeline(outf, "// Non-leaf function")
+        #writeline(outf, "// Non-leaf function")
+        buff += "\t"*TL + "// Non-leaf function" + "\n"
+        buff_r += "\t"*TL + "// Non-leaf function" + "\n"
         # Interleaving function calls among gates
         for (j, c) in enumerate(callees):
             num_q = callees_nq[j]
             callee_q = random.sample(range(nq+na), num_q)
             for (k,cq) in enumerate(callee_q):
                 cq_op = "q["+str(cq)+"]" if (cq<nq) else "anc["+str(cq-nq)+"]"
-                writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
+                #writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
+                buff += "\t"*TL + "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";" + "\n"
+                buff_r += "\t"*TL + "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";" + "\n"
             all_ins.append("func" + str(c) + "(nq"+str(j)+", "+str(num_q)+");")
-        random.shuffle(all_ins)
-        writeline(outf, "Compute {")
+            all_ins_r.append("func" + str(c) + "R(nq"+str(j)+", "+str(num_q)+");")
+        indices = range(len(all_ins))
+        random.shuffle(indices)
+        shuffle_ins = [all_ins[i] for i in indices]
+        shuffle_ins_r = [all_ins_r[i] for i in indices]
+        #writeline(outf, "Compute {")
+        buff += "\t"*TL + "Compute {" + "\n"
+        buff_r += "\t"*TL + "_computeModule();" + "\n"
+        buff_r += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
+        buff_r += "\t"*TL + "Recompute"+ "(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
         tab()
         # Now ready to allocate the ancilla
-        writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
-        for ins in all_ins:
-            writeline(outf, ins)
+        #writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
+        buff += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
+        # In-place reverse if building reverse version of function
+        shuffle_ins_r.reverse()
+        #for ins in reversed(shuffle_ins_r):
+        #    #writeline(outf, ins)
+        #    buff_r += "\t"*TL + ins + "\n"
+        for ins in shuffle_ins:
+            #writeline(outf, ins)
+            buff += "\t"*TL + ins + "\n"
+            buff_r += "\t"*TL + ins + "\n"
+
         untab()
-        writeline(outf, "}")
-        writeline(outf, "Store {")
+        #writeline(outf, "}")
+        buff += "\t"*TL + "}" + "\n"
+        buff_r += "\t"*TL + "}" + "\n"
+        #writeline(outf, "Store {")
+        buff += "\t"*TL + "Store {" + "\n"
+        buff_r += "\t"*TL + "Restore {" + "\n"
         tab()
         temp_bits = random.sample(range(nq+na), num_out) 
         for j in range(num_out):
@@ -139,18 +224,36 @@ def build_fun(i, all_calls, outf):
                     temp_op = "q["+str(temp_bits[j])+"]" 
             else:
                 temp_op = "anc["+str(temp_bits[j]-nq)+"]"
-            writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
+            #writeline(outf, "CNOT( " + temp_op + ", res[" + str(j) + "] );")
+            buff += "\t"*TL + "CNOT( " + temp_op + ", res[" + str(j) + "] );" + "\n"
+            buff_r += "\t"*TL + "CNOT( " + temp_op + ", res[" + str(j) + "] );" + "\n"
         untab()
-        writeline(outf, "}")
-        writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){")
+        #writeline(outf, "}")
+        buff += "\t"*TL + "}" + "\n"
+        buff_r += "\t"*TL + "}" + "\n"
+        #writeline(outf, "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){")
+        buff += "\t"*TL + "Uncompute(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
+        buff_r += "\t"*TL + "Unrecompute {" + "\n"
         tab()
-        for ins in reversed(all_ins):
-            writeline(outf, ins)
+        #for ins in reversed(shuffle_ins):
+        #    #writeline(outf, ins)
+        #    buff_r += "\t"*TL + ins + "\n"
+        for ins in shuffle_ins_r:
+            #writeline(outf, ins)
+            buff += "\t"*TL + ins + "\n"
+            buff_r += "\t"*TL + ins + "\n"
+
         untab()
-        writeline(outf, "} Free(anc, " + str(na) +") {}")
-    #writeline(outf, "return;")
+        #writeline(outf, "} Free(anc, " + str(na) +") {}")
+        buff += "\t"*TL + "} Free(anc, " + str(na) +") {}" + "\n"
+        buff_r += "\t"*TL + "} Refree(anc, " + str(na) +") {}" + "\n"
     untab()
-    writeline(outf, "}")
+    #writeline(outf, "}")
+    buff += "\t"*TL + "}" + "\n"
+    buff_r += "\t"*TL + "}" + "\n"
+
+    outf.write(buff)
+    outf.write(buff_r)
 
 def build_main(callees, all_calls, outf, nq, na, ng):
     if (len(callees) == 0):
@@ -279,6 +382,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
             all_calls[c] = (c, callees, [subq, suba, subg])
             #all_subs.append([subq, suba, subg])
             
+    builtR = [0 for _ in range(len(all_calls))]
     for (c, _, _) in reversed(all_calls[1:]):
         build_fun(c, all_calls, outf)
 
