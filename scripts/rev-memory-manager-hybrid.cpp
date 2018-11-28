@@ -276,7 +276,7 @@ void computeNode() {
 		if (current_node->on_off == 1 && current_node->children_walked == 0){
 			// means walking down this level for the first time
 			current_node->reverse_flag = 1 - current_node->parent->reverse_flag;
-			
+
 			//cout << "on off = 1, down first time\n" << flush;
 		} else if (current_node->on_off == 0 && current_node->children_walked == 0) {
 			current_node->reverse_flag = current_node->parent->reverse_flag;
@@ -599,8 +599,9 @@ void printGateCounts() {
 }
 
 
-void printSchedLength() {
+void printVolume() {
 	int maxT = 0;
+	long long sumV = 0;
 	for (std::map<qbit_t*, int>::iterator it= qubitUsage.begin(); it != qubitUsage.end(); ++it) {
 		if (it->second > maxT) {
 			maxT = it->second;
@@ -609,16 +610,18 @@ void printSchedLength() {
 	printf("==================================\n");
 	printf("Total number of time steps: %d. \n", maxT);
 
-}
-void printActiveVol() {
-        int sumV = 0;
-        for (std::map<qbit_t*, map<int, int> >::iterator it= activeTime.begin(); it != activeTime.end(); ++it) {
-                sumV += it->second[0];
-        }
-        printf("==================================\n");
-        printf("Total active Volume: %d. \n", sumV);
+
+	for (std::map<qbit_t*, map<int, int> >::iterator it= activeTime.begin(); it != activeTime.end(); ++it) {
+		if (it->second[1] == 0){
+			it->second[0] += (maxT - it->second[2]);
+		}
+		sumV += it->second[0];
+	}
+	printf("==================================\n");
+	printf("Total active Volume: %lld. \n", sumV);
 
 }
+
 
 /*****************************
  * Physical Connectivity Graph 
@@ -1740,6 +1743,12 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	}
 	if (debugRevMemHybrid)
 		printf("Freeing up %lu qubits.\n", toPush.size());  
+	for (int i = 0; i < num_qbits; i++) {
+		cout << activeTime[ancilla[i]][0] << "before" << endl;
+		activeTime[ancilla[i]][1] = 1;
+		activeTime[ancilla[i]][0] = activeTime[ancilla[i]][0] + qubitUsage[ancilla[i]] - activeTime[ancilla[i]][2];
+		cout << activeTime[ancilla[i]][0] << "end" << endl;
+	}
 	return num_qbits;	
 }
 
@@ -1877,50 +1886,50 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			}
 			cerr << "on_off: " << current_node->on_off << "\n";
 		} else if (freePolicy == _OPTC) {
-                        int weight_q = 1;
-                        int total_q = AllQubits->N;
-                        int weight_g = std::sqrt(total_q);
+			int weight_q = 1;
+			int total_q = AllQubits->N;
+			int weight_g = std::sqrt(total_q);
 			int c_nAnc = current_node->from_children.size();
-                        cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Q: " << total_q << "\n";
-                        cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
-                        if (weight_q * total_q * (weight_g * nGate1 / (c_nAnc + nAnc)) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 / nAnc)) {
-                                current_node->on_off = 0;
-                        } else {
-                                current_node->on_off = 1;
-                        }
-                        cerr << "on_off: " << current_node->on_off << "\n";
-                } else if (freePolicy == _OPTD) {
-                        int weight_q = 1;
-                        int total_q = AllQubits->N;
-                        int weight_g = std::sqrt(total_q);
-                        int c_nAnc = current_node->from_children.size();
-                        cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
-                        cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
-                        if ((total_q - memoryHeap->numQubits) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (total_q - memoryHeap->numQubits + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc)) {
-                                current_node->on_off = 0;
-                        } else {
-                                current_node->on_off = 1;
-                        }
-                        cerr << "on_off: " << current_node->on_off << "\n";
-                } else if (freePolicy == _OPTE) {
-                        int weight_q = 1;
-                        int total_q = AllQubits->N;
+			cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Q: " << total_q << "\n";
+			cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+			if (weight_q * total_q * (weight_g * nGate1 / (c_nAnc + nAnc)) > weight_q * (nAnc + c_nAnc + total_q) * (weight_g * nGate0 / nAnc)) {
+				current_node->on_off = 0;
+			} else {
+				current_node->on_off = 1;
+			}
+			cerr << "on_off: " << current_node->on_off << "\n";
+		} else if (freePolicy == _OPTD) {
+			int weight_q = 1;
+			int total_q = AllQubits->N;
+			int weight_g = std::sqrt(total_q);
+			int c_nAnc = current_node->from_children.size();
+			cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
+			cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+			if ((total_q - memoryHeap->numQubits) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (total_q - memoryHeap->numQubits + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc)) {
+				current_node->on_off = 0;
+			} else {
+				current_node->on_off = 1;
+			}
+			cerr << "on_off: " << current_node->on_off << "\n";
+		} else if (freePolicy == _OPTE) {
+			int weight_q = 1;
+			int total_q = AllQubits->N;
 			int q_in_use = total_q - memoryHeap->numQubits;
 			int anc_penalty = 1;
-                        int weight_g = std::sqrt(q_in_use);
-                        int c_nAnc = current_node->from_children.size();
-                        cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
-                        cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+			int weight_g = std::sqrt(q_in_use);
+			int c_nAnc = current_node->from_children.size();
+			cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
+			cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
 			if (nAnc + c_nAnc > memoryHeap->numQubits){
 				anc_penalty = std::sqrt(nAnc + c_nAnc - memoryHeap->numQubits);
 			}
-                        if ((q_in_use) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (q_in_use + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc + std::sqrt(nAnc + c_nAnc))) {
-                                current_node->on_off = 0;
-                        } else {
-                                current_node->on_off = 1;
-                        }
-                        cerr << "on_off: " << current_node->on_off << "\n";
-                }
+			if ((q_in_use) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (q_in_use + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc + std::sqrt(nAnc + c_nAnc))) {
+				current_node->on_off = 0;
+			} else {
+				current_node->on_off = 1;
+			}
+			cerr << "on_off: " << current_node->on_off << "\n";
+		}
 		else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
 		}
@@ -1949,14 +1958,9 @@ void schedule(gate_t *new_gate) {
 		}
 	}
 
-        if (gate_name == "free") {
-                memHeapFree(numOp, 0, &operands[0]);;
-		for (int i = 0; i < numOp; i++) {
-			activeTime[operands[i]][1] = 1;
-			activeTime[operands[i]][0] = activeTime[operands[i]][0] + Tmax - activeTime[operands[i]][2];
-		}
-
-        }
+	if (gate_name == "free") {
+		memHeapFree(numOp, 0, &operands[0]);;
+	}
 
 
 	if (gate_name == "swap_chain") {
@@ -2306,8 +2310,7 @@ void qasm_resource_summary ()
 	printf("==================================\n");
 	printf("Total number of qubits used: %u. \n", AllQubits->N);
 
-	printSchedLength();
-	printActiveVol();
+	printVolume();
 
 	printf("==================================\n");
 
