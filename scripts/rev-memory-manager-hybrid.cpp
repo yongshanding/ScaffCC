@@ -76,7 +76,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _LIFO;
-int freePolicy = _OPTE; 
+int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -1728,6 +1728,15 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 				// push on to global memoryHeap
 				memHeapPush(toFree, memoryHeap);
 				// Clear the qbits_owned vector (only need to clear current_node, no need for children)
+
+				// Calculate active quantum volume: 1: set the qubit free, 2: add active time
+				if (activeTime[toFree->addr][1] == 0){
+					activeTime[toFree->addr][1] = 1;
+					activeTime[toFree->addr][0] = activeTime[toFree->addr][0] + qubitUsage[toFree->addr] - activeTime[toFree->addr][2];
+				} else {
+					cout << "error: " << toFree->idx << endl;
+				}
+				
 				if (current_node->qbits_owned.size() == 0 || num_qbits == current_node->qbits_owned.size()) {
 					current_node->qbits_owned.clear();
 				} else {
@@ -1743,12 +1752,6 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	}
 	if (debugRevMemHybrid)
 		printf("Freeing up %lu qubits.\n", toPush.size());  
-	for (int i = 0; i < num_qbits; i++) {
-		cout << activeTime[ancilla[i]][0] << "before" << endl;
-		activeTime[ancilla[i]][1] = 1;
-		activeTime[ancilla[i]][0] = activeTime[ancilla[i]][0] + qubitUsage[ancilla[i]] - activeTime[ancilla[i]][2];
-		cout << activeTime[ancilla[i]][0] << "end" << endl;
-	}
 	return num_qbits;	
 }
 
@@ -1965,7 +1968,10 @@ void schedule(gate_t *new_gate) {
 
 	if (gate_name == "swap_chain") {
 		for (int i = 0; i < numOp; i++) {
-			qubitUsage[operands[i]] = Tmax+numOp-1; //modify usage in place
+			map<qbit_t*, int>::iterator it = qubitUsage.find(operands[i]);
+			if (operands[i] != NULL && it != qubitUsage.end()){
+				qubitUsage[operands[i]] = Tmax+numOp-1; //modify usage in place
+			}
 		}
 		vector<pair<int,int> > swaps;
 		for (int i = 0; i < numOp-1; i++) {
