@@ -329,15 +329,18 @@ namespace {
 		void translateCompNode(Function *CF, CallInst *CI, BasicBlock::iterator I) {
 			unsigned total_narg = CI->getNumArgOperands();
 			// assume _computeModule()
-			if (total_narg != 0) {
-				errs() << "Invalid _computeModule() encountered: numArg = " << total_narg << " != 0.\n";
+			if (total_narg != 7) {
+				errs() << "Invalid _computeModule() encountered: numArg = " << total_narg << " != 7.\n";
 			}
-			//vector<Value*> onoffArgs;
-			//onoffArgs.push_back(CI->getArgOperand(1)); //nout
-			//onoffArgs.push_back(CI->getArgOperand(3)); //nanc
-			//onoffArgs.push_back(CI->getArgOperand(4)); //ngate
-			//onoffArgs.push_back(ConstantInt::get(Type::getInt32Ty(getGlobalContext()),0));// flag
-			CallInst *compNode= CallInst::Create(computeNode, "", CI);
+			vector<Value*> compNodeArgs;
+			compNodeArgs.push_back(CI->getArgOperand(0)); //nout
+			compNodeArgs.push_back(CI->getArgOperand(1)); //nanc
+			compNodeArgs.push_back(CI->getArgOperand(2)); //ngate1
+			compNodeArgs.push_back(CI->getArgOperand(3)); //ngate0
+			compNodeArgs.push_back(CI->getArgOperand(4)); //degree
+			compNodeArgs.push_back(CI->getArgOperand(5)); //r1
+			compNodeArgs.push_back(CI->getArgOperand(6)); //r2
+			CallInst *compNode= CallInst::Create(computeNode, ArrayRef<Value*>(compNodeArgs), "", CI);
 			CI->replaceAllUsesWith(compNode);
 		  //ReplaceInstWithInst(CI, onoff);
 			 vInstRemove.push_back((Instruction*)CI);
@@ -916,9 +919,17 @@ namespace {
       Type* exitNodeResType = Type::getVoidTy(M.getContext());
       exitNode = cast<Function>(M.getOrInsertFunction(getMangleName("exitNode", esArgTypes), exitNodeResType, (Type*)0));      
 		
-			// void computeNode()
+			// void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int r1, int r2)
+			vector <Type*> compNodeArgTypes;
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
+      compNodeArgTypes.push_back(Type::getInt32Ty(M.getContext()));
       Type* compNodeResType = Type::getVoidTy(M.getContext());
-      computeNode  = cast<Function>(M.getOrInsertFunction(getMangleName("computeNode", esArgTypes), compNodeResType, (Type*)0));      
+      computeNode  = cast<Function>(M.getOrInsertFunction(getMangleName("computeNode", compNodeArgTypes), FunctionType::get(compNodeResType, ArrayRef<Type*>(compNodeArgTypes), false)));      
 		
 			// void incrWalk()
       Type* incrWalkResType = Type::getVoidTy(M.getContext());
