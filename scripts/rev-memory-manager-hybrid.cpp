@@ -75,8 +75,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _OPTD; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -85,6 +85,7 @@ int systemType = 1; // 0: linear, 1: grid
 bool trackGates = true;
 bool debugRevMemHybrid = true;
 bool swapflag = true;
+
 
 // output files
 string outfilename = "on_off_sequences_out.txt";
@@ -139,7 +140,7 @@ std::map<qbit_t *, int> TempQubitsHash; // temporary
 
 std::map<qbit_t*, int> qubitUsage; // latest usage of qubits
 std::map<qbit_t*, int> tempQubitUsage; // latest usage of temporary qubits
-std::map<qbit_t*, map<int, int> > activeTime; // {active_time, free_flag, start_time}
+std::map<qbit_t*, map<int, long long> > activeTime; // {active_time, free_flag, start_time}
 
 std::map<qbit_t*, bool> waitlist; // whether a qubit is being held to stall
 
@@ -223,8 +224,10 @@ void computeNode() {
 		fprintf(stderr, "Call graph has not been initialize yet.\n");
 		exit(1);
 	}
-	//fprintf(stdout, "walk: %d\n", walk);
-	//cout << flush;
+	//if (debugRevMemHybrid) {
+	//	fprintf(stdout, "walk: %d\n", walk);
+	//	cout << flush;
+	//}
 	if (current_node->on_off == -1 && walk == 0) {
 		//TODO: create node
 		//callnode_t *newNode = (callnode_t*)malloc(sizeof(callnode_t));
@@ -261,18 +264,22 @@ void computeNode() {
 			newNode->next = NULL;
 			newNode->parent->children_end = newNode;
 		}
-		//fprintf(stdout, ">>> parent id: %d, ", newNode->parent->id);
-		//fprintf(stdout, ">>> current id: %d \n", newNode->id);
-		//cout << flush;
+		//if (debugRevMemHybrid) {
+		//	fprintf(stdout, ">>> parent id: %d, ", newNode->parent->id);
+		//	fprintf(stdout, ">>> current id: %d \n", newNode->id);
+		//	cout << flush;
+		//}
 
 	} else {
 		//TODO: walk to current child 
 
-		//fprintf(stdout, "child current %d\n", current_node->child_current == NULL);
-		//fprintf(stdout, "current on off %d\n", current_node->on_off);
-		//fprintf(stdout, "num children %d\n", current_node->num_children);
-		//fprintf(stdout, "children walked %d\n", current_node->children_walked);
-		//cout << "<<< walk from: " << current_node->id << " \n" << flush;
+		if (debugRevMemHybrid) {
+			//fprintf(stdout, "child current %d\n", current_node->child_current == NULL);
+			//fprintf(stdout, "current on off %d\n", current_node->on_off);
+			//fprintf(stdout, "num children %d\n", current_node->num_children);
+			//fprintf(stdout, "children walked %d\n", current_node->children_walked);
+			//cout << "<<< walk from: " << current_node->id << " \n" << flush;
+		}
 		if (current_node->on_off == 1 && current_node->children_walked == 0){
 			// means walking down this level for the first time
 			current_node->reverse_flag = 1 - current_node->parent->reverse_flag;
@@ -289,49 +296,31 @@ void computeNode() {
 		//fprintf(stdout, "reverse_flag: %d\n", current_node->parent->reverse_flag);
 		//cout << flush;
 		current_node->children_walked += 1;
-		//fprintf(stdout, "1\n");
-		//cout << flush;
 		if (current_node->reverse_flag) {
-			//fprintf(stdout, "2\n");
-			//cout << flush;
 			if (current_node->child_current == NULL){
 				current_node->child_current = current_node->children_end;
 			}
 			callnode_t *tmp = current_node->child_current;
 			current_node->child_current = tmp->prev;
 			current_node = tmp;
-			//fprintf(stdout, "2.5\n");
-			//cout << flush;
 
 
 		} else {
-			//fprintf(stdout, "3\n");
-			//cout << flush;
 			if (current_node->child_current == NULL){
-				//fprintf(stdout, "3.1\n");
-				//cout << flush;
 				current_node->child_current = current_node->children_start;
-				//fprintf(stdout, "new cc still null? %d\n", current_node->child_current == NULL);
-				//cout << flush;
 			}
-			//fprintf(stdout, "3.2\n");
-			//cout << flush;
 			callnode_t *tmp = current_node->child_current;
-			//fprintf(stdout, "3.3\n");
-			//cout << flush;
 			current_node->child_current = tmp->next;
-			//fprintf(stdout, "3.4\n");
-			//cout << flush;
 			current_node = tmp;
-			//if (current_node->child_current == NULL){
-			//	reverse_flag = 1 - reverse_flag;
-			//}
-			//fprintf(stdout, "3.5\n");
-			//cout << flush;
+			if (current_node->child_current == NULL){
+				reverse_flag = 1 - reverse_flag;
+			}
 		}
 	}
 
-	//cout << "<<< walk to: " << current_node->id << " \n" << flush;
+	//if (debugRevMemHybrid) {
+	//	cout << "<<< walk to: " << current_node->id << " \n" << flush;
+	//}
 	current_level += 1;
 	//fprintf(stdout, "enter level: %d\n", current_level);
 	//cout << flush;
@@ -351,8 +340,6 @@ void exitNode() {
 	//if (current_node->child_current == NULL){
 	//	reverse_flag = 1 - reverse_flag;
 	//}
-	//fprintf(stdout, "exit level: %d\n", current_level);
-	//cout << flush;
 }
 
 void increment_walk() {
@@ -459,9 +446,16 @@ void qubitsInit() {
 }
 
 int getPhysicalID(qbit_t *addr){
+	if (addr == NULL) {
+		return -2;
+	}
 	std::map<qbit_t *, int>::iterator it = logicalPhysicalMap.find(addr);
-	if (it != logicalPhysicalMap.end()) return it->second;
-	else return -1;
+	if (it != logicalPhysicalMap.end()) {
+		return it->second;
+	} else {
+		cout << "Unknown qubit address: " << addr << ".\n" << flush;
+		return -1;
+	}
 }
 
 qbit_t * getLogicalAddr(int qb){
@@ -507,6 +501,12 @@ void qubitsAdd(qbit_t *newAddr) {
 	AllQubitsHash[newAddr] = newIdx;
 	qubitUsage.insert(std::make_pair(newAddr, 0)); // fresh qubit
 	//}
+	//map<int, long long> new_active;
+	//new_active.insert(std::make_pair(0, 0));
+	//new_active.insert(std::make_pair(1, 1));
+	//new_active.insert(std::make_pair(2, 0));
+	//activeTime.insert(std::make_pair(newAddr, new_active));
+
 	activeTime[newAddr][0] = 0;
 	activeTime[newAddr][1] = 1; // free flag
 	activeTime[newAddr][2] = 0;
@@ -611,11 +611,19 @@ void printVolume() {
 	printf("Total number of time steps: %d. \n", maxT);
 
 
-	for (std::map<qbit_t*, map<int, int> >::iterator it= activeTime.begin(); it != activeTime.end(); ++it) {
+	for (std::map<qbit_t*, map<int, long long> >::iterator it= activeTime.begin(); it != activeTime.end(); ++it) {
 		if (it->second[1] == 0){
 			it->second[0] += (maxT - it->second[2]);
 		}
-		sumV += it->second[0];
+		if (getPhysicalID(it->first) >= 0) {
+			if (it->second[0] < 0) {
+				cerr << "invalid id: " << getPhysicalID(it->first) << " time: " << it->second[0] << " \n" <<flush;
+			}
+			sumV += it->second[0];
+		}
+		else {
+			cerr << "error: try to sum invalid qubit: " << it->second[0] << endl << flush;
+		}
 	}
 	printf("==================================\n");
 	printf("Total active Volume: %lld. \n", sumV);
@@ -853,6 +861,11 @@ int findCoM(vector<int> targets, vector<int> subgraph) {
 	for (vector<int>::iterator sit = subgraph.begin(); sit != subgraph.end(); ++sit) {
 		int sum_d = 0;
 		for (vector<int>::iterator tit = targets.begin(); tit != targets.end(); ++tit) {
+			//cout << "dist between " << (*sit) << " and  " << (*tit) << endl << flush;
+			if ((*sit) == -1 || (*tit) == -1) {
+				fprintf(stderr, "Error: trying to check distance on qubits: %d and %d.\n", (*sit), (*tit));
+				exit(1);
+			}
 			sum_d += distanceMatrix[*sit][*tit];
 		}
 		if (sum_d <= min_d) {
@@ -989,6 +1002,9 @@ vector<pair<int,int> > manhattan(qbit_t *src, qbit_t *dst){
 vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
 	vector<pair<int,int> > swaps;
 	//vector<pair<qbit_t *, qbit_t *> > swaps;
+	if (operands[0] == NULL || operands[1] == NULL) {
+		cout << "Error: cannot resolve interaction between NULL operands.\n";
+	}
 	if (num_ops == 2 && _SWAP_CHAIN == 1){
 		swaps = dijkstraSearch(operands[0],operands[1]);
 	}
@@ -1245,7 +1261,7 @@ int memHeapFindQubit (memHeap_t *M, qbit_t *addr) {
 			return i;
 		}
 	}
-	return -1;
+	return -3;
 }
 
 qbitElement_t *memHeapRemoveQubit (memHeap_t *M, qbit_t *addr) {
@@ -1275,6 +1291,8 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	if (num_qbits == 0) {
 		return 0;
 	}
+	
+	//std::cout << "memHeapClosestQubits: " << num_qbits << "\n" << flush;
 	size_t available = M->numQubits;
 	vector<qbit_t *> closestSet;
 
@@ -1284,16 +1302,29 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	for (int i = 0; i < subsize; i++) {
 		int heapsize = M->numQubits;
 		if (i < heapsize) {
-			subgraph.push_back(getPhysicalID(M->contents[i]->addr));
+			int a_id = getPhysicalID(M->contents[i]->addr);
+			//cout << "a: " << a_id << "\n" << flush;
+			if (a_id >= 0) {
+				subgraph.push_back(a_id);
+			}
 		} else {
-			subgraph.push_back(unusedQubits[i - heapsize]);
+			int b_id = unusedQubits[i - heapsize];
+			//cout << "b: " << b_id << "\n" << flush;
+			if (b_id >= 0) {
+				subgraph.push_back(b_id);
+			}
 		}
 	}
 	vector<int> targets;
 	for (int i = 0; i < targets_size; i++) {
-		targets.push_back(getPhysicalID(inter[i]));
+		int inter_id = getPhysicalID(inter[i]);
+		//cout << "t: " << inter_id << "\n" << flush;
+		if (inter_id >= 0) {
+			targets.push_back(getPhysicalID(inter[i]));
+		}
 	}
 	int CoM_inter = findCoM(targets, subgraph);
+	//std::cout << "calling findClosestNew." << "\n" << flush;
 	vector<int> closestNewSet = findClosestNew(CoM_inter, num_qbits, &new_dist);
 
 	if (num_qbits <= available) {
@@ -1301,10 +1332,11 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
 		int free_dist = 0;
+		//std::cout << "calling findClosestFree." << "\n" << flush;
 		vector<qbit_t *> closestFreeSet = findClosestFree(CoM_inter, M->contents, num_qbits, available, targets_size, &free_dist);
-		//std::cerr << "free dist: " << free_dist << " new dist: " << new_dist << "\n";
+		//std::cout << "free dist: " << free_dist << " new dist: " << new_dist << "\n";
 		if (free_dist <= new_dist) {
-			//std::cerr << "choosing free\n";
+			//std::cout << "choosing free\n" << flush;
 			closestSet = closestFreeSet;
 			for (size_t i = 0; i < num_qbits; i++) {
 				qbitElement_t *qq;
@@ -1317,7 +1349,7 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 				free(qq); // since popped off heap, need to free
 			}
 		} else {
-			//std::cerr << "choosing new\n";
+			//std::cout << "choosing new\n" << flush;
 			vector<int> physicalIDs = closestNewSet;
 			if (debugRevMemHybrid)
 				printf("Obtaining %u new qubits.\n", num_qbits);  
@@ -1334,6 +1366,7 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 				qubitsAdd(&newt[i]);
 				logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
 				physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
+				//cout << "Init: q" << getPhysicalID(&newt[i]) << "(" << &newt[i]<< ", " << activeTime[&newt[i]][0] << ", " << qubitUsage[&newt[i]] << ")\n" << flush;
 				waitlist.insert(make_pair(res[i].addr, false));
 			}
 		}
@@ -1356,6 +1389,7 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 			qubitsAdd(&newt[i]);
 			logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
 			physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
+			//cout << "Init: q" << getPhysicalID(&newt[i]) << "(" << &newt[i]<< ", " << activeTime[&newt[i]][0] << ", " << qubitUsage[&newt[i]] << ")\n" << flush;
 			waitlist.insert(make_pair(res[i].addr, false));
 		}
 	}
@@ -1518,18 +1552,19 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 }
 
 void setQubitActive(int num_qbits, qbit_t **result){
-	int Tmax;
+	int Tmax = 0;
 	for (int i = 0; i < num_qbits; i++) {
-                int T = qubitUsage[result[i]];
-                if (T > Tmax) {
-                        Tmax = T;
-                }
-        }
+		int T = qubitUsage[result[i]];
+		if (T > Tmax) {
+			Tmax = T;
+		}
+	}
 	for (int i = 0; i < num_qbits; i++) {
 		if (activeTime[result[i]][1] == 1){ //start recording active time
 			activeTime[result[i]][1] = 0;
-			activeTime[result[i]][2] = Tmax+1;
-			cout <<"allocate ID: q" << getPhysicalID(result[i]) << endl;
+			activeTime[result[i]][2] = Tmax;
+			qubitUsage[result[i]] = Tmax;
+			//cout <<"allocate ID: q" << getPhysicalID(result[i]) << " Tmax: " << activeTime[result[i]][2]  << endl;
 		} else {
 			cout << "error: try to allocate non-free qubit " << getPhysicalID(result[i]) << endl;
 		}
@@ -1546,14 +1581,14 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 	}// else {
 	//	std::cerr << inter[0] << "\n";
 	//}
-	//std::cerr << "memHeapAlloc " << num_qbits << "\n";
+	//std::cout << "memHeapAlloc " << num_qbits << "\n" << flush;
 	if (current_node == NULL) {
 		fprintf(stderr, "Call graph has not been initialized when memHeapAlloc.\n");
 		exit(1);
 	}
 	int num_owned = current_node->qbits_owned.size();
 	if (num_owned > 0) {
-		cout << "Found allocation pair in uncomputation. Reusing compute qubits.\n";
+		//cout << "Found allocation pair in uncomputation. Reusing compute qubits.\n";
 		// This allocation must belong to an uncomputation (since comp-uncomp always pair up)
 		if (num_owned != num_qbits) {
 			fprintf(stderr, "Allocations in compute (%d) vs uncompute (%d) do not match.\n", num_owned, num_qbits);
@@ -1568,7 +1603,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 	}
 	// Need to allocate
 	if (doStall(num_qbits, heap_idx)) {
-		//std::cerr << "stall here?\n";
+		//std::cout << "stall here?\n" << flush;
 		qbitElement_t temp_res[num_qbits];
 		int temp_new = memHeapNewTempQubits(num_qbits, &temp_res[0]);// marked as waiting
 		if (temp_new != num_qbits) {
@@ -1593,12 +1628,12 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 		setQubitActive(num_qbits, result);
 		return num_qbits;
 	} else {
-		//std::cerr << "Allocating " << num_qbits << " qubits.\n";
+		std::cout << "Allocating " << num_qbits << " qubits.\n" << flush;
 		if (heap_idx == 0) {
 			// find num_qbits of qubits in the global memoryheap
 			qbitElement_t res[num_qbits];
 			// check if there are available in the heap
-			//std::cerr << "haha\n";
+			//std::cout << "haha\n" << flush;
 			int heap_num;
 			if (allocPolicy == _MINQ) {
 				heap_num = num_qbits;
@@ -1627,8 +1662,10 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				return num_qbits;
 
 			} else if (allocPolicy == _CLOSEST_BLOCK) {
+				//std::cout << "closest block\n" << flush;
 
 				int num = memHeapClosestQubits(num_qbits, memoryHeap, &res[0], inter, ninter); 
+				//std::cout << "found " << num <<  " closest qubits.\n" << flush;
 				if (num != num_qbits) {
 					fprintf(stderr, "Unable to initialize %u qubits.\n", num_qbits);
 					exit(1);
@@ -1639,7 +1676,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 					//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
 					//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 				}
-				//std::cerr << "hihi\n";
+				//std::cout << "hihi\n" << flush;
 				// Write to qbits_owned
 				for (int i = 0; i < num_qbits; i++) {
 					current_node->qbits_owned.push_back(result[i]);
@@ -1702,7 +1739,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		exit(1);
 	}
 	vector<qbit_t*> toPush = current_node->from_children;
-	cout << "Freeing " << toPush.size() << " qubits from children, and " << num_qbits << " from self.\n";
+	cout << "Freeing " << toPush.size() << " qubits from children, and " << num_qbits << " from self.\n" << flush;
 
 	bool checkTemp = false;
 	int qIdx;
@@ -1722,11 +1759,11 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		toPush.push_back(ancilla[i]);
 	}
 
-	cout << "free physical ID: ";
-	for (int i = 0; i < toPush.size(); i++){
-		cout << getPhysicalID(toPush[i]) << " ";
-	}
-	cout << endl;
+	//cout << "free physical ID: ";
+	//for (int i = 0; i < toPush.size(); i++){
+	//	cout << getPhysicalID(toPush[i]) << " ";
+	//}
+	//cout << endl;
 
 	//cerr << "checkTemp: " << checkTemp << "\n";
 	// TODO: do i need to let go those can be found in qubitsFind?
@@ -1751,6 +1788,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		// all qIdx found in qubitsFind()	
 		//cerr << "pushing " << toPush.size() << " qubits. Self: " << num_qbits << "\n";
 		for (int i = 0; i < toPush.size(); i++) {
+			//cout << "i: " << i << endl;
 			qIdx = qubitsFind(toPush[i]);
 			qbitElement_t *toFree = (qbitElement_t *)malloc(sizeof(qbitElement_t));
 			qbitElement_t qe = AllQubits->Qubits[qIdx];
@@ -1764,8 +1802,10 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 				// Calculate active quantum volume: 1: set the qubit free, 2: add active time
 				if (activeTime[toFree->addr][1] == 0){
 					activeTime[toFree->addr][1] = 1;
-					activeTime[toFree->addr][0] = activeTime[toFree->addr][0] + qubitUsage[toFree->addr] - activeTime[toFree->addr][2];
-					cout << "free ID: q" << getPhysicalID(toFree->addr) << endl;
+					activeTime[toFree->addr][0] = activeTime[toFree->addr][0] + qubitUsage[toFree->addr] + 1 - activeTime[toFree->addr][2];
+					//cout << "Update q" << getPhysicalID(toFree->addr) << " active: " << activeTime[toFree->addr][0] << " usage: " << qubitUsage[toFree->addr] << " start: " << activeTime[toFree->addr][2] << endl << flush;
+					//cout << "free ID: q" << getPhysicalID(toFree->addr) << endl;
+					
 				} else {
 					cout << "error: " << getPhysicalID(toFree->addr) << endl;
 				}
@@ -1782,9 +1822,11 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 				exit(1);
 			}
 		}
+
 	}
 	if (debugRevMemHybrid)
-		printf("Freeing up %lu qubits.\n", toPush.size());  
+		fprintf(stdout, "Freeing up %lu qubits.\n", toPush.size());  
+		cout << flush;
 	return num_qbits;	
 }
 
@@ -1809,8 +1851,10 @@ int memHeapTransfer(int num_qbits, int heap_idx, qbit_t **ancilla) {
 		return num_qbits;
 	} else {
 		int to_transfer = num_qbits + current_node->from_children.size();
-		cout << "Transfering " << to_transfer << " qubits.\n";
-		cout << "parent has: " << current_node->parent->from_children.size() << " qubits.\n";
+		if (debugRevMemHybrid) {
+			cout << "Transfering " << to_transfer << " qubits.\n";
+			cout << "parent has: " << current_node->parent->from_children.size() << " qubits.\n";
+		}
 		for (int i = 0; i < num_qbits; i++) {
 			current_node->parent->from_children.push_back(ancilla[i]);
 		}
@@ -1869,7 +1913,7 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 		exit(1);
 	}
 
-	//cout << "freeOnOff in " << current_node->id << "\n"; 
+	cout << "freeOnOff in " << current_node->id << "\n" << flush; 
 	if (current_node->on_off == -1){
 		// calculate num gates based on children's decisions
 		int nGate1 = ng1;
@@ -1995,7 +2039,8 @@ void schedule(gate_t *new_gate) {
 	}
 
 	if (gate_name == "free") {
-		memHeapFree(numOp, 0, &operands[0]);;
+		memHeapFree(numOp, 0, &operands[0]);
+		cout << "there\n" << flush;
 	}
 
 
