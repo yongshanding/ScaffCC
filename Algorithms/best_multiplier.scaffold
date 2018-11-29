@@ -46,7 +46,7 @@ void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 		Toffoli(ctrl, b[n-1], cout);
 		Toffoli(ctrl, cout, a[n]);
 	}
-	Uncompute(a,n,anc, 2, 3*N, 6*N){
+	Uncompute(a,n,anc, 2, 6*N, 3*N){
 		for (int i = n-1; i >=0; i--) {
 			if (i == 0) {
 				x = cin;
@@ -83,7 +83,7 @@ void partialProduct(qbit *ctrl, qbit **a, qbit *b, qbit **res, int n, int i) {
 	}
 	//printf("here3\n");
 	//release(&res[i], N, prod, N+1, NULL);
-	Uncompute(res,0,prod,N+1,N, 2*N){
+	Uncompute(res,0,prod,N+1,2*N, N){
 		for (int j = 0; j < n; j++) {
 			Toffoli(a[j], b, prod[j+1]);
 		}
