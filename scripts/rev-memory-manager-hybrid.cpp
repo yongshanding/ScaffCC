@@ -39,6 +39,7 @@
 #define _OPTC 6
 #define _OPTD 7
 #define _OPTE 8
+#define _OPTF 9
 
 #define _LIFO 0
 #define _MINQ 1
@@ -76,7 +77,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _EXT; 
+int freePolicy = _OPTF; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -163,6 +164,9 @@ typedef struct callnode_t {
 	int reverse_flag;
 	int num_children;
 	int children_walked;
+	int degree; // num of child
+	int pa_degree; // parent's degree
+	int children_ng1_sum;
 	vector<qbit_t*> from_children; // qbits needed to free onbehalf of children
 	vector<qbit_t*> qbits_owned; // qbits allocated in comp
 	callnode_t *parent;
@@ -195,6 +199,7 @@ callnode_t *callGraphNew() {
 	newGraph->reverse_flag= 0;
 	newGraph->num_children= 0;
 	newGraph->children_walked= 0;
+	newGraph->children_ng1_sum = 0;
 	vector<qbit_t*> new_vec;
 	newGraph->from_children = new_vec;
 	vector<qbit_t*> new_vec2;
@@ -218,7 +223,7 @@ void callGraphDelete(callnode_t *cg) {
 
 }
 
-void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int r1, int r2) {
+void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int pa_degree, int r2) {
 	// called when seeing "Compute" in children
 	if (current_node == NULL) {
 		fprintf(stderr, "Call graph has not been initialize yet.\n");
@@ -238,11 +243,14 @@ void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int r1,
 		newNode->is_root = 0;
 		newNode->id = id++;
 		newNode->on_off = -1;
-		newNode->ng1 = -1;
-		newNode->ng0 = -1;
+		newNode->ng1 = ngate1;
+		newNode->ng0 = ngate0;
+		newNode->degree = degree;
+		newNode->pa_degree = pa_degree;
 		newNode->num_to_parent = 0;
 		newNode->num_children = 0;
 		newNode->children_walked = 0;
+		newNode->children_ng1_sum = 0;
 		newNode->reverse_flag= 0;
 		vector<qbit_t*> new_vec; 
 		newNode->from_children = new_vec;
@@ -1291,7 +1299,7 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	if (num_qbits == 0) {
 		return 0;
 	}
-	
+
 	//std::cout << "memHeapClosestQubits: " << num_qbits << "\n" << flush;
 	size_t available = M->numQubits;
 	vector<qbit_t *> closestSet;
@@ -1805,7 +1813,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 					activeTime[toFree->addr][0] = activeTime[toFree->addr][0] + qubitUsage[toFree->addr] + 1 - activeTime[toFree->addr][2];
 					//cout << "Update q" << getPhysicalID(toFree->addr) << " active: " << activeTime[toFree->addr][0] << " usage: " << qubitUsage[toFree->addr] << " start: " << activeTime[toFree->addr][2] << endl << flush;
 					//cout << "free ID: q" << getPhysicalID(toFree->addr) << endl;
-					
+
 				} else {
 					cout << "error: " << getPhysicalID(toFree->addr) << endl;
 				}
@@ -1826,7 +1834,7 @@ int memHeapFree(int num_qbits, int heap_idx, qbit_t **ancilla) {
 	}
 	if (debugRevMemHybrid)
 		fprintf(stdout, "Freeing up %lu qubits.\n", toPush.size());  
-		cout << flush;
+	cout << flush;
 	return num_qbits;	
 }
 
@@ -1994,19 +2002,46 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 		} else if (freePolicy == _OPTE) {
 			int weight_q = 1;
 			int total_q = AllQubits->N;
-			int q_in_use = total_q - memoryHeap->numQubits;
-			int anc_penalty = 1;
-			int weight_g = std::sqrt(q_in_use);
+			int q_active = total_q - memoryHeap->numQubits;
+			int weight_g = std::sqrt(q_active);
 			int c_nAnc = current_node->from_children.size();
+			int total_pa_degree = current_node->pa_degree;
+			int num_younger_sis = total_pa_degree - current_node->parent->num_children;
+			int workload_1 = 0;
+			int workload_0 = 0;
 			cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
 			cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
-			if (nAnc + c_nAnc > memoryHeap->numQubits){
-				anc_penalty = std::sqrt(nAnc + c_nAnc - memoryHeap->numQubits);
-			}
-			if ((q_in_use) * (weight_g * nGate1 / (c_nAnc + nAnc)) > (q_in_use + nAnc + c_nAnc) * (weight_g * nGate0 / nAnc + std::sqrt(nAnc + c_nAnc))) {
-				current_node->on_off = 0;
-			} else {
+			cerr << "num_younger_sis: " << num_younger_sis << " q_active: " << q_active << endl;
+			workload_1 = nGate1 * q_active * weight_g;
+			workload_0 = nGate0 * q_active * weight_g + (nAnc + c_nAnc) * num_younger_sis * (std::sqrt(q_active) + std::sqrt(nAnc) + std::sqrt(c_nAnc)) * nGate1;
+			if (workload_1 < workload_0){
 				current_node->on_off = 1;
+			} else {
+				current_node->on_off = 0;
+			}
+			cerr << "on_off: " << current_node->on_off << "\n";
+		} else if (freePolicy == _OPTF) {
+			int weight_q = 1;
+			int total_q = AllQubits->N;
+			int q_active = total_q - memoryHeap->numQubits;
+			int weight_g = std::sqrt(q_active);
+			int c_nAnc = current_node->from_children.size();
+			int total_pa_degree = current_node->pa_degree;
+			int num_younger_sis = total_pa_degree - current_node->parent->num_children;
+			int workload_1 = 0;
+			int workload_0 = 0;
+			double ng1_avg;
+			current_node->parent->children_ng1_sum += nGate1;
+			ng1_avg = current_node->parent->children_ng1_sum / current_node->parent->num_children;
+			//cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
+			//cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+			//cerr << "num_younger_sis: " << num_younger_sis << " q_active: " << q_active << endl;
+			workload_1 = nGate1 * q_active * weight_g;
+			workload_0 = nGate0 * q_active * weight_g + (nAnc + c_nAnc) * num_younger_sis * (std::sqrt(q_active) + std::sqrt(nAnc) + std::sqrt(c_nAnc)) * ng1_avg;
+			if (workload_1 < workload_0){
+				current_node->on_off = 1;
+			} else {
+				current_node->on_off = 0;
 			}
 			cerr << "on_off: " << current_node->on_off << "\n";
 		}
