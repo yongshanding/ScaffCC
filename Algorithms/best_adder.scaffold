@@ -26,7 +26,6 @@ void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 	qbit *cin = anc[0];
 	qbit *cout = anc[1];
 	qbit *x; qbit *y; qbit *z; // rename
-	int ng = n * (14+1+14);
 	Compute{
 		acquire(2, anc, 1, a);
 		for (int i = 0; i < n; i++) {

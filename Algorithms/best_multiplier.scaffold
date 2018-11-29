@@ -24,36 +24,42 @@ void CUma(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
 /* In place: a,b -> a+b, b, arxiv:1202.6614*/
 void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 	qbit *anc[2];
-	acquire(2, anc, 1, a);
 	qbit *cin = anc[0];
 	qbit *cout = anc[1];
 	qbit *x; qbit *y; qbit *z; // rename
-	for (int i = 0; i < n; i++) {
-		if (i == 0) {
-			x = cin;
-			y = a[0];
-			z = b[0];
-		} else {
-			x = b[i-1];
-			y = a[i];
-			z = b[i];
+	Compute{
+		acquire(2, anc, 1, a);
+		for (int i = 0; i < n; i++) {
+			if (i == 0) {
+				x = cin;
+				y = a[0];
+				z = b[0];
+			} else {
+				x = b[i-1];
+				y = a[i];
+				z = b[i];
+			}
+			CMaj(ctrl, x, y, z);
 		}
-		CMaj(ctrl, x, y, z);
 	}
-	Toffoli(ctrl, b[n-1], cout);
-	
-	for (int i = n-1; i >=0; i--) {
-		if (i == 0) {
-			x = cin;
-			y = a[0];
-			z = b[0];
-		} else {
-			x = b[i-1];
-			y = a[i];
-			z = b[i];
+	Store{
+		Toffoli(ctrl, b[n-1], cout);
+		Toffoli(ctrl, cout, a[n]);
+	}
+	Uncompute(anc,2,a,n,3*N, 6*N){
+		for (int i = n-1; i >=0; i--) {
+			if (i == 0) {
+				x = cin;
+				y = a[0];
+				z = b[0];
+			} else {
+				x = b[i-1];
+				y = a[i];
+				z = b[i];
+			}
+			CUma(ctrl, x, y, z);
 		}
-		CUma(ctrl, x, y, z);
-	}
+	} Free(anc,2) {}
 }
 
 void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n) {
@@ -63,21 +69,21 @@ void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n) {
 
 void partialProduct(qbit *ctrl, qbit **a, qbit *b, qbit **res, int n, int i) {
 	qbit *prod[N+1];
-	acquire(N+1, prod, N, a);
 	//printf("here1\n");
 	//qbit **temp = &prod[N]; // length: N+2
 	Compute {
-	for (int j = 0; j < n; j++) {
-		Toffoli(a[j], b, prod[j+1]);
-	}
-	//printf("here2\n");
+		acquire(N+1, prod, N, a);
+		for (int j = 0; j < n; j++) {
+			Toffoli(a[j], b, prod[j+1]);
+		}
+		//printf("here2\n");
 	}
 	Store {
 		inPlaceAdd(ctrl, &res[i], prod, N+1); 
 	}
 	//printf("here3\n");
 	//release(&res[i], N, prod, N+1, NULL);
-	Uncompute(res,0,prod,N+1,N*14){
+	Uncompute(res,0,prod,N+1,N, 2*N){
 		for (int j = 0; j < n; j++) {
 			Toffoli(a[j], b, prod[j+1]);
 		}
@@ -113,6 +119,6 @@ int main() {
 		MeasZ(res[i]);
 	}
 	return 0;
-	
+
 }
 
