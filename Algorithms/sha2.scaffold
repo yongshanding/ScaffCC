@@ -18,7 +18,7 @@ void addMod(qbit **a, qbit **b, int n) {
 	}
 	qbit *c[1];
 
-	Compute{
+	Compute(0, 1, 30*3+2+30*3, 30*3+2, 0, 32*7, 0){
 		acquire(1, c, 64, d);
 	
 		CNOT(a[0], b[0]);
@@ -57,7 +57,7 @@ void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
 	qbit *anc[2*n];
 	qbit **t = &anc[32];
 
-	Compute{
+	Compute(0, 64, 2*32+32+2*32, 2*32+32, 0, 32*7, 0){
 		acquire(64, anc, 96, d);
 		for (int i = 0; i < n; i++){
 			Toffoli(e[i], f[i], anc[i]);
@@ -91,7 +91,7 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 	d[2] = c;
 	d[3] = t;
 	qbit *anc[1];
-	Compute{
+	Compute(0, 1, 4+1+4, 4+1, 0, 32, 0){
 		acquire(1, anc, 4, d);
 		Toffoli(a,b,anc[0]);
 		Toffoli(a,c,anc[0]);
@@ -118,7 +118,7 @@ void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
 	}
 	qbit *t[33];
 	qbit **ttemp;
-	Compute{
+	Compute(0, 33, 0+1+0, 0+1, 32, 32*7, 0){
 		acquire(33,t, 96, d);
 		ttemp = &t[32];
 		for (int i = 0; i < n; i++){
@@ -157,7 +157,7 @@ void s0(qbit **a, qbit **h, int n){
 	qbit *a13[32];
 	qbit *a22[32];
 
-	Compute{
+	Compute(0, 32, 32*3+32+32*3, 32*3+32, 0, 32*7, 0){
 		acquire(32,t, 32, a);
 		rot(a, a2, n, 2);
 		rot(a, a13, n, 13);
@@ -192,7 +192,7 @@ void s1(qbit **a, qbit **h, int n){
 	qbit *a6[32];
 	qbit *a11[32];
 	qbit *a25[32];
-	Compute{
+	Compute(0, 32, 32*3+32+32*3, 32*3+32, 0, 32*7,0){
 		acquire(32,t, 32, a);
 		rot(a, a6, n, 6);
 		rot(a, a11, n, 11);
