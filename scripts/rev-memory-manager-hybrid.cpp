@@ -218,7 +218,7 @@ void callGraphDelete(callnode_t *cg) {
 
 }
 
-void computeNode() {
+void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int r1, int r2) {
 	// called when seeing "Compute" in children
 	if (current_node == NULL) {
 		fprintf(stderr, "Call graph has not been initialize yet.\n");
