@@ -14,7 +14,7 @@ void XOR(qbit **a, qbit **b){
 	}
 }
 
-
+//rotate left
 void rotate(qbit **a, int n){
 	qbit* tmp = a[N - 1];
 	for (int i = N - 1; i >= 0; i--){
@@ -28,7 +28,20 @@ void rotate(qbit **a, int n){
 		}
 	}
 }
-
+//rotate right = rotate reverse
+void rotate_R(qbit **a, int n){
+        qbit* tmp = a[0];
+        for (int i = 0; i < N; i++){
+                if (i + n == N){
+                        a[i] = tmp;
+                }
+                else if (i + n < N){
+                        a[i] = a[i + n];
+                } else {
+                        a[i] = a[i + n - N];
+                }
+        }
+}
 
 void lookaheadHelper(qbit **a, qbit **b, qbit **res, int n) {
 	qbit *all_anc[N];
@@ -116,7 +129,7 @@ void salsa_helper(qbit** x, int idx_1, int idx_2, int idx_3, int rot){
 
 	}
 	Uncompute(res, 0, temp, N+1, 126 + 1 + 126, 126 + 1){
-		_reverse_rotate(temp, rot);
+		rotate_R(temp, rot);
 		_reverse_carryLookaheadAdder(a, b, temp, N);
 	} Free(temp, N+1){}
 
