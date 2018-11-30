@@ -40,6 +40,7 @@
 #define _OPTD 7
 #define _OPTE 8
 #define _OPTF 9
+#define _OPTG 10
 
 #define _LIFO 0
 #define _MINQ 1
@@ -77,7 +78,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPTF; 
+int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -167,6 +168,7 @@ typedef struct callnode_t {
 	int degree; // num of child
 	int pa_degree; // parent's degree
 	int children_ng1_sum;
+	int level; //node level. root is 0.
 	vector<qbit_t*> from_children; // qbits needed to free onbehalf of children
 	vector<qbit_t*> qbits_owned; // qbits allocated in comp
 	callnode_t *parent;
@@ -200,6 +202,7 @@ callnode_t *callGraphNew() {
 	newGraph->num_children= 0;
 	newGraph->children_walked= 0;
 	newGraph->children_ng1_sum = 0;
+	newGraph->level = 0;
 	vector<qbit_t*> new_vec;
 	newGraph->from_children = new_vec;
 	vector<qbit_t*> new_vec2;
@@ -251,6 +254,7 @@ void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int pa_
 		newNode->num_children = 0;
 		newNode->children_walked = 0;
 		newNode->children_ng1_sum = 0;
+		newNode->level = newNode->parent->level + 1;
 		newNode->reverse_flag= 0;
 		vector<qbit_t*> new_vec; 
 		newNode->from_children = new_vec;
@@ -2036,16 +2040,28 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			//cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
 			//cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
 			//cerr << "num_younger_sis: " << num_younger_sis << " q_active: " << q_active << endl;
-			workload_1 = nGate1 * q_active * weight_g;
-			workload_0 = nGate0 * q_active * weight_g + (nAnc + c_nAnc) * num_younger_sis * (std::sqrt(q_active) + std::sqrt(nAnc) + std::sqrt(c_nAnc)) * ng1_avg;
-			if (workload_1 < workload_0){
-				current_node->on_off = 1;
+			if (current_node->is_root == 1){
+				if (c_nAnc + nAnc > 0){
+					current_node->on_off = 1;
+				} else {
+					current_node->on_off = 0;
+				}
 			} else {
-				current_node->on_off = 0;
+				if (current_node->parent->is_root == 1){
+					current_node->on_off = 1;
+				} else {
+					workload_1 = std::pow(2, current_node->level - 1) * (nGate1 - nGate0) * q_active *  weight_g;
+					workload_0 = (nAnc + c_nAnc) * num_younger_sis * std::sqrt(q_active + nAnc + c_nAnc) * ng1_avg + (current_node->parent->ng1 - current_node->parent->ng0) * std::sqrt(q_active + nAnc + c_nAnc) * (nAnc + c_nAnc);
+				
+                        		if (workload_1 < workload_0){
+                                		current_node->on_off = 1;
+                        		} else {
+                                		current_node->on_off = 0;
+                        		}
+				}
 			}
 			cerr << "on_off: " << current_node->on_off << "\n";
-		}
-		else if (freePolicy == _EXT) {
+		} else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
 		}
 		outfile << current_node->on_off;
