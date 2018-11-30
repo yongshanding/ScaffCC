@@ -42,6 +42,7 @@ def build_fun(i, all_calls, outf):
     nq = all_calls[i][2][0]
     na = all_calls[i][2][1]
     ng = all_calls[i][2][2]
+    parent_degree = all_calls[i][2][3]
     buff = ""
     buff_r = ""
     # Write a function with branching degree b
@@ -116,8 +117,8 @@ def build_fun(i, all_calls, outf):
         buff += "\t"*TL + "// Leaf function" + "\n"
         buff_r += "\t"*TL + "// Leaf function" + "\n"
         #writeline(outf, "Compute {")
-        buff += "\t"*TL + "Compute {" + "\n"
-        buff_r += "\t"*TL + "_computeModule();" + "\n"
+        buff += "\t"*TL + "Compute (0, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + ", 0, " + str(parent_degree) + ", 0) {" + "\n"
+        buff_r += "\t"*TL + "_computeModule(0, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + ", 0, " + str(parent_degree) + ", 0);" + "\n"
         buff_r += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
         buff_r += "\t"*TL + "Recompute (res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
         tab()
@@ -188,8 +189,8 @@ def build_fun(i, all_calls, outf):
         shuffle_ins = [all_ins[i] for i in indices]
         shuffle_ins_r = [all_ins_r[i] for i in indices]
         #writeline(outf, "Compute {")
-        buff += "\t"*TL + "Compute {" + "\n"
-        buff_r += "\t"*TL + "_computeModule();" + "\n"
+        buff += "\t"*TL + "Compute (0, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + ", " + str(len(callees))+ ", " + str(parent_degree) + ", 0){" + "\n"
+        buff_r += "\t"*TL + "_computeModule(0, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + ", " + str(len(callees))+ ", " + str(parent_degree) + ", 0);" + "\n"
         buff_r += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
         buff_r += "\t"*TL + "Recompute"+ "(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
         tab()
@@ -379,7 +380,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
                 #subg = random.randint(1,min(ng, all_calls[i][2][2]))
                 subg = random.randint(1, ng) # gates dont have to be fewer 
             #print c
-            all_calls[c] = (c, callees, [subq, suba, subg])
+            all_calls[c] = (c, callees, [subq, suba, subg, len(calls)])
             #all_subs.append([subq, suba, subg])
             
     builtR = [0 for _ in range(len(all_calls))]
