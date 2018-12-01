@@ -77,16 +77,19 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
+int allocPolicy = _LIFO;
 int freePolicy = _EXT; 
 bool swapAlloc = false; // not this flag
-int systemSize = 21609; // perfect square number
+int systemSize = 1024; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
 
+// Parallel Salsa
+int salsa_counter = 0;
+int salsa_p = 1;
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
-bool swapflag = true;
+bool swapflag = false;
 
 
 // output files
@@ -1339,7 +1342,28 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	//std::cout << "calling findClosestNew." << "\n" << flush;
 	vector<int> closestNewSet = findClosestNew(CoM_inter, num_qbits, &new_dist);
 
-	if (num_qbits <= available) {
+	if ((salsa_p > 1) && (salsa_counter - 1) % 8 < 2 && (salsa_counter <= 27)) {
+		cout << "salsa: force new" << endl;
+                vector<int> physicalIDs = closestNewSet;
+                if (debugRevMemHybrid)
+                        printf("Obtaining %u new qubits.\n", num_qbits);
+                // malloc new qubits!
+                qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
+                if (newt == NULL) {
+                        fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+                        exit(1);
+                }
+                for (size_t i = 0; i < num_qbits; i++) {
+                        unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
+                        res[i].addr = &newt[i];
+                        res[i].idx = AllQubits->N;
+                        qubitsAdd(&newt[i]);
+                        logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
+                        physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
+                        //cout << "Init: q" << getPhysicalID(&newt[i]) << "(" << &newt[i]<< ", " << activeTime[&newt[i]][0] << ", " << qubitUsage[&newt[i]] << ")\n" << flush;
+                        waitlist.insert(make_pair(res[i].addr, false));
+                }
+        } else if (num_qbits <= available) {
 		if (debugRevMemHybrid) {
 			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
@@ -1695,12 +1719,18 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				}
 				setQubitActive(num_qbits, result);
 				return num_qbits;
-
 			} else {
+				salsa_counter++;
 				heap_num = num_qbits;
 			}
 
-			int num = memHeapGetQubits(heap_num, memoryHeap, &res[0], inter, ninter);
+			int num = 0;
+			if ((salsa_p > 1) && (salsa_counter - 2) % 8 < 2 && (salsa_counter <= 27)) {
+				cout << "salsa_counter = " << salsa_counter << endl;
+				cout << "salsa force new qubit: " << endl;
+			} else {
+				num = memHeapGetQubits(heap_num, memoryHeap, &res[0], inter, ninter);
+			}
 			// malloc any extra qubits needed
 			int num_new = 0;
 			if (num < num_qbits) {
@@ -1714,9 +1744,11 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			// Store the addresses into result
 			for (size_t i = 0; i < num_qbits; i++) {
 				result[i] = res[i].addr;
+				cout << " q" << getPhysicalID(result[i]) << " ";
 				//logicalPhysicalMap.insert(make_pair(res[i].addr, res[i].idx));
 				//physicalLogicalMap.insert(make_pair(res[i].idx, res[i].addr));
 			}
+			cout << endl;
 			//std::cerr << "hihi\n";
 			// Write to qbits_owned
 			for (int i = 0; i < num_qbits; i++) {
