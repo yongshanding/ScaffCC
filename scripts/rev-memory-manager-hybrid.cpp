@@ -77,10 +77,10 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _EXT; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _EAGER; 
 bool swapAlloc = false; // not this flag
-int systemSize = 1024; // perfect square number
+int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
 
 // Parallel Salsa
@@ -89,7 +89,7 @@ int salsa_p = 1;
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
-bool swapflag = false;
+bool swapflag = true;
 
 
 // output files
@@ -170,7 +170,10 @@ typedef struct callnode_t {
 	int children_walked;
 	int degree; // num of child
 	int pa_degree; // parent's degree
+	int n_swap; // num of swap gate
+	int children_ng0_sum;
 	int children_ng1_sum;
+	int children_swap_sum;
 	int level; //node level. root is 0.
 	vector<qbit_t*> from_children; // qbits needed to free onbehalf of children
 	vector<qbit_t*> qbits_owned; // qbits allocated in comp
@@ -200,11 +203,14 @@ callnode_t *callGraphNew() {
 	newGraph->on_off = -1;
 	newGraph->ng1 = -1;
 	newGraph->ng0 = -1;
+	newGraph->n_swap = 0;
 	newGraph->num_to_parent = 0;
 	newGraph->reverse_flag= 0;
 	newGraph->num_children= 0;
 	newGraph->children_walked= 0;
+	newGraph->children_ng0_sum = 0;
 	newGraph->children_ng1_sum = 0;
+	newGraph->children_swap_sum = 0;
 	newGraph->level = 0;
 	vector<qbit_t*> new_vec;
 	newGraph->from_children = new_vec;
@@ -251,12 +257,15 @@ void computeNode(int nout, int nanc, int ngate1, int ngate0, int degree, int pa_
 		newNode->on_off = -1;
 		newNode->ng1 = ngate1;
 		newNode->ng0 = ngate0;
+		newNode->n_swap = 0;
 		newNode->degree = degree;
 		newNode->pa_degree = pa_degree;
 		newNode->num_to_parent = 0;
 		newNode->num_children = 0;
 		newNode->children_walked = 0;
+		newNode->children_ng0_sum = 0;
 		newNode->children_ng1_sum = 0;
+		newNode->children_swap_sum = 0;
 		newNode->level = newNode->parent->level + 1;
 		newNode->reverse_flag= 0;
 		vector<qbit_t*> new_vec; 
@@ -1026,6 +1035,7 @@ vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
 	if (num_ops == 2 && _SWAP_CHAIN == 0){
 		swaps = manhattan(operands[0],operands[1]);
 	}
+	current_node->n_swap += swaps.size();
 	return swaps;
 }
 
@@ -1344,26 +1354,26 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 
 	if ((salsa_p > 1) && (salsa_counter - 1) % 8 < 2 && (salsa_counter <= 27)) {
 		cout << "salsa: force new" << endl;
-                vector<int> physicalIDs = closestNewSet;
-                if (debugRevMemHybrid)
-                        printf("Obtaining %u new qubits.\n", num_qbits);
-                // malloc new qubits!
-                qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
-                if (newt == NULL) {
-                        fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
-                        exit(1);
-                }
-                for (size_t i = 0; i < num_qbits; i++) {
-                        unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
-                        res[i].addr = &newt[i];
-                        res[i].idx = AllQubits->N;
-                        qubitsAdd(&newt[i]);
-                        logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
-                        physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
-                        //cout << "Init: q" << getPhysicalID(&newt[i]) << "(" << &newt[i]<< ", " << activeTime[&newt[i]][0] << ", " << qubitUsage[&newt[i]] << ")\n" << flush;
-                        waitlist.insert(make_pair(res[i].addr, false));
-                }
-        } else if (num_qbits <= available) {
+		vector<int> physicalIDs = closestNewSet;
+		if (debugRevMemHybrid)
+			printf("Obtaining %u new qubits.\n", num_qbits);
+		// malloc new qubits!
+		qbit_t *newt = (qbit_t *)malloc(sizeof(qbit_t)*num_qbits);
+		if (newt == NULL) {
+			fprintf(stderr, "Insufficient memory to initialize qubit memory.\n");
+			exit(1);
+		}
+		for (size_t i = 0; i < num_qbits; i++) {
+			unusedQubits.erase(std::remove(unusedQubits.begin(), unusedQubits.end(), physicalIDs[i]), unusedQubits.end());
+			res[i].addr = &newt[i];
+			res[i].idx = AllQubits->N;
+			qubitsAdd(&newt[i]);
+			logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
+			physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
+			//cout << "Init: q" << getPhysicalID(&newt[i]) << "(" << &newt[i]<< ", " << activeTime[&newt[i]][0] << ", " << qubitUsage[&newt[i]] << ")\n" << flush;
+			waitlist.insert(make_pair(res[i].addr, false));
+		}
+	} else if (num_qbits <= available) {
 		if (debugRevMemHybrid) {
 			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
 		}
@@ -2084,15 +2094,57 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 				} else {
 					workload_1 = std::pow(2, current_node->level - 1) * (nGate1 - nGate0) * q_active *  weight_g;
 					workload_0 = (nAnc + c_nAnc) * num_younger_sis * std::sqrt(q_active + nAnc + c_nAnc) * ng1_avg + (current_node->parent->ng1 - current_node->parent->ng0) * std::sqrt(q_active + nAnc + c_nAnc) * (nAnc + c_nAnc);
-				
-                        		if (workload_1 < workload_0){
-                                		current_node->on_off = 1;
-                        		} else {
-                                		current_node->on_off = 0;
-                        		}
+
+					if (workload_1 < workload_0){
+						current_node->on_off = 1;
+					} else {
+						current_node->on_off = 0;
+					}
 				}
 			}
 			cerr << "on_off: " << current_node->on_off << "\n";
+		} else if (freePolicy == _OPTG) {
+			int weight_q = 1;
+			int total_q = AllQubits->N;
+			int q_active = total_q - memoryHeap->numQubits;
+			int weight_g = std::sqrt(q_active);
+			int c_nAnc = current_node->from_children.size();
+			int total_pa_degree = current_node->pa_degree;
+			int num_younger_sis = total_pa_degree - current_node->parent->num_children;
+			int workload_1 = 0;
+			int workload_0 = 0;
+			double ng1_avg;
+			double swap_sum;
+			double swap_avg;
+			double increased_weight = 1 + (std::sqrt(nAnc + c_nAnc) / std::sqrt(q_active));
+			current_node->parent->children_ng0_sum += nGate0;
+			current_node->parent->children_ng1_sum += nGate1;
+			ng1_avg = current_node->parent->children_ng1_sum / (current_node->parent->num_children);
+			swap_sum =  current_node->children_swap_sum + current_node->n_swap;
+			current_node->parent->children_swap_sum += swap_sum;
+			swap_avg = current_node->parent->children_swap_sum / (current_node->parent->num_children);
+			weight_q = current_node->parent->children_swap_sum / current_node->parent->children_ng0_sum;
+			
+			//cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
+			//cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
+			//cerr << "num_younger_sis: " << num_younger_sis << " q_active: " << q_active << endl;
+			if (current_node->is_root == 1){
+				current_node->on_off = 0;
+			} else {
+				if (current_node->parent->is_root == 1){
+				workload_1 = (nGate1 - nGate0 + swap_sum) * q_active;
+				workload_0 = (nAnc + c_nAnc) * (num_younger_sis  * ng1_avg) * weight_q * increased_weight;
+				} else {
+				workload_1 = std::pow(2, current_node->level - 1) * (nGate1 - nGate0 + swap_sum) * q_active;
+				workload_0 = (nAnc + c_nAnc) * (num_younger_sis  * ng1_avg + current_node->parent->ng0 + nGate0) * weight_q * increased_weight;
+				}
+				if (workload_1 < workload_0){
+					current_node->on_off = 1;
+				} else {
+					current_node->on_off = 0;
+				}
+			}
+			//cerr << "on_off: " << current_node->on_off << "\n";
 		} else if (freePolicy == _EXT) {
 			current_node->on_off = exhaustiveOnOff( CURRENT_IDX++ );
 		}
