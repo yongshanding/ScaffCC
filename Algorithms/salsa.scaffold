@@ -148,14 +148,14 @@ void salsa_helper(qbit** x, int idx_1, int idx_2, int idx_3, int rot){
 		}
 		//test(a,b,temp,N);
 		carryLookaheadAdder(a, b, temp, N);
-		rotate(temp, rot);
+		//rotate(temp, rot);
 	}
 	Store{
 		XOR(temp, res); //N gates
 
 	}
 	Uncompute(res, 0, temp, N+1, 9*N - 2, 5*N-1){
-		rotate_R(temp, rot);
+		//rotate_R(temp, rot);
 		_reverse_carryLookaheadAdder(a, b, temp, N);
 		//test(a,b,temp,N);
 	} Free(temp, N+1){}

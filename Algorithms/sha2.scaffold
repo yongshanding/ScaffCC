@@ -159,9 +159,9 @@ void s0(qbit **a, qbit **h, int n){
 
 	Compute(0, 32, 32*3+32+32*3, 32*3+32, 0, 32*7, 0){
 		acquire(32,t, 32, a);
-		rot(a, a2, n, 2);
-		rot(a, a13, n, 13);
-		rot(a, a22, n, 22);
+		//rot(a, a2, n, 2);
+		//rot(a, a13, n, 13);
+		//rot(a, a22, n, 22);
 
 		for (int i = 0; i < n; i++){
 			CNOT(a2[i], t[i]);	
@@ -182,9 +182,9 @@ void s0(qbit **a, qbit **h, int n){
 			CNOT(a13[i], t[i]);
 			CNOT(a2[i], t[i]);
 		}
-		_reverse_rot(a, a22, n, 22);
-		_reverse_rot(a, a13, n, 13);
-		_reverse_rot(a, a2, n, 2);
+		//_reverse_rot(a, a22, n, 22);
+		//_reverse_rot(a, a13, n, 13);
+		//_reverse_rot(a, a2, n, 2);
 	}Free(t, 32){}
 }
 void s1(qbit **a, qbit **h, int n){
@@ -194,9 +194,9 @@ void s1(qbit **a, qbit **h, int n){
 	qbit *a25[32];
 	Compute(0, 32, 32*3+32+32*3, 32*3+32, 0, 32*7,0){
 		acquire(32,t, 32, a);
-		rot(a, a6, n, 6);
-		rot(a, a11, n, 11);
-		rot(a, a25, n, 25);
+		//rot(a, a6, n, 6);
+		//rot(a, a11, n, 11);
+		//rot(a, a25, n, 25);
 
 		for (int i = 0; i < n; i++){
 			CNOT(a6[i], t[i]);
@@ -216,9 +216,9 @@ void s1(qbit **a, qbit **h, int n){
 			CNOT(a11[i], t[i]);
 			CNOT(a6[i], t[i]);
 		}
-		_reverse_rot(a, a25, n, 25);
-		_reverse_rot(a, a11, n, 11);
-		_reverse_rot(a, a6, n, 6);
+		//_reverse_rot(a, a25, n, 25);
+		//_reverse_rot(a, a11, n, 11);
+		//_reverse_rot(a, a6, n, 6);
 
 	}Free(t, 32){}
 }
@@ -262,7 +262,7 @@ void hsh(qbit **k, qbit **w, qbit **x){
 
 void sha2Looper(qbit **k, qbit **w, qbit **x, int val){
 	qbit *anc[256];
-	rot(x,anc,256,val);
+	//rot(x,anc,256,val);
 	x = anc;
 	hsh(k,w,x);
 
