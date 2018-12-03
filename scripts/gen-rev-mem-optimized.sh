@@ -203,7 +203,8 @@ for f in $*; do
     $OPT -S -dce -dse -dce ${b}/${b}_instr.ll -o ${b}/${b}_instr2.ll
     $OPT -S -O1 ${b}/${b}_instr2.ll -o ${b}/${b}_instr.ll
     echo -e "\t[gen-rev-mem-optimized.sh] Executing ${b}/${b}_instr.ll with lli" >&2
-    $LLI ${b}/${b}_instr.ll > ${b}/${b}.flat${th}.freq
+    echo "TIME TIME TIME TIME TIME TIME"
+    time $LLI ${b}/${b}_instr.ll > ${b}/${b}.flat${th}.freq
     #$LLI instr_temp.ll > ${b}/${b}.flat${th}.freq
     echo -e "\t[gen-rev-mem-optimized.sh] Frequency estimates written to ${b}.flat${th}.freq"
   fi
