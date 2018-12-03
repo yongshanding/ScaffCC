@@ -5,11 +5,11 @@
 #include "uncompute.h"
 
 #define B 2 // base
-#define LOGB 20 // num bits of base
+#define LOGB 2 // num bits of base
 #define M 55 // modulo
-#define LOGM 6 // num bits of modulo
-#define N1 60 // top
-#define N2 60 // bottom = logm
+#define LOGM 15 // num bits of modulo
+#define N1 24 // top
+#define N2 24 // bottom = logm
 /* in place */
 //void cucarroAdder(qbit **a, qbit **b, int n) {
 //	qbit *anc[1];
