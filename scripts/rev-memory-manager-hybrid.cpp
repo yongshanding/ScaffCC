@@ -78,14 +78,15 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _EAGER; 
+int freePolicy = _OPTG; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
 
-// Parallel Salsa
+// Parallel setting
 int salsa_counter = 0;
 int salsa_p = 1;
+int parallel_alloc = 0;
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
@@ -98,6 +99,7 @@ std::ofstream outfile(outfilename.c_str());
 
 int num_gate_scheduled = 0;
 int time_step_scheduled = 0;
+int longest_chain = 0;
 
 typedef int16_t qbit_t;
 
@@ -603,6 +605,7 @@ void gatesInit() {
 }
 
 void printGateCounts() {
+	size_t gate_count = 0;
 	std::cout << "Total number of gates by type: \n";
 	for (size_t i = 0; i < _TOTAL_GATES / 2; i++) {
 		std::cout << std::left << setw(8) << gate_str[i];
@@ -610,6 +613,7 @@ void printGateCounts() {
 	std::cout << "\n";
 	for (size_t i = 0; i < _TOTAL_GATES / 2; i++) {
 		std::cout << std::left << setw(8) <<AllGates[i];
+		gate_count += AllGates[i];
 	}
 	std::cout << "\n";
 	for (size_t i = _TOTAL_GATES / 2; i < _TOTAL_GATES; i++) {
@@ -618,8 +622,10 @@ void printGateCounts() {
 	std::cout << "\n";
 	for (size_t i = _TOTAL_GATES / 2; i < _TOTAL_GATES; i++) {
 		std::cout << std::left << setw(8) <<AllGates[i];
+		gate_count += AllGates[i];
 	}
 	std::cout << "\n";
+	cout << "Total Gate Count: " << gate_count << " Longest Chain: " << longest_chain << endl;
 }
 
 
@@ -1036,6 +1042,9 @@ vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
 		swaps = manhattan(operands[0],operands[1]);
 	}
 	current_node->n_swap += swaps.size();
+	if (swaps.size() > longest_chain){
+		longest_chain = swaps.size();
+	}
 	return swaps;
 }
 
@@ -1351,9 +1360,10 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	int CoM_inter = findCoM(targets, subgraph);
 	//std::cout << "calling findClosestNew." << "\n" << flush;
 	vector<int> closestNewSet = findClosestNew(CoM_inter, num_qbits, &new_dist);
-
-	if ((salsa_p > 1) && (salsa_counter - 1) % 8 < 2 && (salsa_counter <= 27)) {
-		cout << "salsa: force new" << endl;
+	if ( ((salsa_p > 1) && (salsa_counter - 2) % 8 < 2 && (salsa_counter <= (4*(2*salsa_p - 1)-1))) ||
+		(parallel_alloc == 1 && (num_qbits <= systemSize - AllQubits->N)) ) {
+		cout << "salsa_counter = " << salsa_counter << endl;
+		cout << "salsa force new qubit: " << endl;
 		vector<int> physicalIDs = closestNewSet;
 		if (debugRevMemHybrid)
 			printf("Obtaining %u new qubits.\n", num_qbits);
@@ -1370,9 +1380,10 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 			qubitsAdd(&newt[i]);
 			logicalPhysicalMap.insert(make_pair(res[i].addr,physicalIDs[i]));
 			physicalLogicalMap.insert(make_pair(physicalIDs[i],res[i].addr));
-			//cout << "Init: q" << getPhysicalID(&newt[i]) << "(" << &newt[i]<< ", " << activeTime[&newt[i]][0] << ", " << qubitUsage[&newt[i]] << ")\n" << flush;
 			waitlist.insert(make_pair(res[i].addr, false));
+			//cout << " q" << getPhysicalID(res[i].addr) << " ";
 		}
+		cout << endl;
 	} else if (num_qbits <= available) {
 		if (debugRevMemHybrid) {
 			printf("Obtaining %u qubits from pool of %zu...\n", num_qbits, available);  
@@ -1709,7 +1720,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 
 			} else if (allocPolicy == _CLOSEST_BLOCK) {
 				//std::cout << "closest block\n" << flush;
-
+				salsa_counter++;
 				int num = memHeapClosestQubits(num_qbits, memoryHeap, &res[0], inter, ninter); 
 				//std::cout << "found " << num <<  " closest qubits.\n" << flush;
 				if (num != num_qbits) {
@@ -1735,7 +1746,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			}
 
 			int num = 0;
-			if ((salsa_p > 1) && (salsa_counter - 2) % 8 < 2 && (salsa_counter <= 27)) {
+			if ((salsa_p > 1) && (salsa_counter - 2) % 8 < 2 && (salsa_counter <= (4*(2*salsa_p - 1)-1))) {
 				cout << "salsa_counter = " << salsa_counter << endl;
 				cout << "salsa force new qubit: " << endl;
 			} else {
