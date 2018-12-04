@@ -6,10 +6,10 @@
 
 #define B 2 // base
 #define LOGB 2 // num bits of base
-#define M 55 // modulo
+#define M 1815 // modulo
 #define LOGM 15 // num bits of modulo
-#define N1 24 // top
-#define N2 24 // bottom = logm
+#define N1 LOGM // top
+#define N2 LOGM // bottom = logm
 /* in place */
 //void cucarroAdder(qbit **a, qbit **b, int n) {
 //	qbit *anc[1];
