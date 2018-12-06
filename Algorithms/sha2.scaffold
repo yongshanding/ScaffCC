@@ -11,6 +11,7 @@
 
 
 void addMod(qbit **a, qbit **b, int n) {
+	printf("func addMod\n");
 	qbit *d[2*32];
 	for (int i = 0; i < 32; i++) {
 		d[i] = a[i];
@@ -48,6 +49,7 @@ void addMod(qbit **a, qbit **b, int n) {
 }
 
 void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
+	printf("func ch\n");
 	qbit *d[3*32];
 	for (int i = 0; i < 32; i++) {
 		d[i] = e[i];
@@ -78,6 +80,7 @@ void ch(qbit **e, qbit **f, qbit **g, qbit **h, int n){
 }
 
 void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
+	printf("func ch_param\n");
 	for (int i = 0; i < n; i++){
 		Toffoli(e[i], f[i], anc[i]);
 		Toffoli(anc[i], g[i], t[i]);
@@ -85,6 +88,7 @@ void ch_param(qbit **e, qbit **f, qbit **g, qbit **t, qbit **anc, int n){
 }
 
 void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
+	printf("func toffLoopHelper\n");
 	qbit *d[4];
 	d[0] = a;
 	d[1] = b;
@@ -110,6 +114,7 @@ void toffLoopHelper(qbit *a, qbit *b, qbit *c, qbit *t, qbit *ttemp){
 }
 
 void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
+	printf("func ma\n");
 	qbit *d[3*32];
 	for (int i = 0; i < 32; i++) {
 		d[i] = a[i];
@@ -139,6 +144,7 @@ void ma(qbit **a, qbit **b, qbit **c, qbit **h, int n){
 }
 
 void rot(qbit **a, qbit **b, int n, int shift){
+	printf("func rot\n");
 	int j = 0;
 	for (int i = n - shift - 1; i < n; i++){
 		b[j] = a[i];
@@ -151,6 +157,7 @@ void rot(qbit **a, qbit **b, int n, int shift){
 }
 
 void s0(qbit **a, qbit **h, int n){
+	printf("func s0\n");
 	qbit *t[32];
 
 	qbit *a2[32];
@@ -188,6 +195,7 @@ void s0(qbit **a, qbit **h, int n){
 	}Free(t, 32){}
 }
 void s1(qbit **a, qbit **h, int n){
+	printf("func s1\n");
 	qbit *t[32];
 	qbit *a6[32];
 	qbit *a11[32];
@@ -232,6 +240,7 @@ void s1(qbit **a, qbit **h, int n){
 //}
 
 void hsh(qbit **k, qbit **w, qbit **x){
+	printf("func hsh\n");
 	//qbit *htemp[32];
 	//acquire(32,htemp);
 	qbit **a = &x[0];
@@ -261,14 +270,16 @@ void hsh(qbit **k, qbit **w, qbit **x){
 }
 
 void sha2Looper(qbit **k, qbit **w, qbit **x, int val){
-	qbit *anc[256];
+	printf("func sha2Looper\n");
+	//qbit *anc[256];
 	//rot(x,anc,256,val);
-	x = anc;
+	//x = anc;
 	hsh(k,w,x);
 
 }
 
 void sha2(qbit **k, qbit **w, qbit **x, int n){
+	printf("func sha2\n");
 	//qbit *xtemp[256];
 	//acquire(256,xtemp);
 	for (int i = 0; i < n; i++){
