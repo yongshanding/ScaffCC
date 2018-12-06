@@ -1,5 +1,5 @@
-#!/bin/sh
-test_array=("best_adder_32" "best_adder_64" "best_multiplier_32" "best_multiplier_64" "best_modExp" "sha2" "salsa")
+#!/bin/bash
+test_array=( "best_adder_32" "best_adder_64" "best_multiplier_32" "best_multiplier_64" "best_modExp" "sha2" "salsa")
 
 for i in $(seq 0 $(((${#test_array[*]}-1))))
 do
