@@ -77,8 +77,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _NOFREE; 
+int allocPolicy = _LIFO;
+int freePolicy = _OPTG; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -158,7 +158,7 @@ std::map<qbit_t *, int> AllQubitsHash; // permanent
 all_qbits_t *TempQubits = NULL; //temporary
 std::map<qbit_t *, int> TempQubitsHash; // temporary
 
-std::map<qbit_t*, int> qubitUsage; // latest usage of qubits
+std::map<qbit_t*, long long> qubitUsage; // latest usage of qubits
 std::map<qbit_t*, int> tempQubitUsage; // latest usage of temporary qubits
 std::map<qbit_t*, map<int, long long> > activeTime; // {active_time, free_flag, start_time}
 
@@ -647,9 +647,9 @@ void printGateCounts() {
 
 
 void printVolume() {
-	int maxT = 0;
+	long long maxT = 0;
 	long long sumV = 0;
-	for (std::map<qbit_t*, int>::iterator it= qubitUsage.begin(); it != qubitUsage.end(); ++it) {
+	for (std::map<qbit_t*, long long>::iterator it= qubitUsage.begin(); it != qubitUsage.end(); ++it) {
 		if (it->second > maxT) {
 			maxT = it->second;
 		}
@@ -1552,8 +1552,8 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	// Track the new qubits in AllQubits and the mapping
 	//printf("Obtain\n");  
 	int sum_dist;
-	vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
-	//vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
+	//vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
 	// Note that if random, then the qubits that are allocated may not be contiguous
 	// however, the swap chain will still use those qubits along the way,
 	// and they may be denoted as 'q-1' in the output
@@ -1630,9 +1630,9 @@ void recordGate(int gateID, qbit_t **operands, int numOp, int t) {
 }
 
 void setQubitActive(int num_qbits, qbit_t **result){
-	int Tmax = 0;
+	long long Tmax = 0;
 	for (int i = 0; i < num_qbits; i++) {
-		int T = qubitUsage[result[i]];
+		long long T = qubitUsage[result[i]];
 		if (T > Tmax) {
 			Tmax = T;
 		}
@@ -2197,9 +2197,9 @@ void schedule(gate_t *new_gate) {
 	//std::cerr << "Scheduling " << gate_name << "\n";
 
 
-	int Tmax = 0;
+	long long Tmax = 0;
 	for (int i = 0; i < numOp; i++) {
-		int T = qubitUsage[operands[i]];
+		long long T = qubitUsage[operands[i]];
 		if (T > Tmax) {
 			Tmax = T;
 		}
