@@ -77,7 +77,7 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _EAGER;
+int allocPolicy = _CLOSEST_BLOCK;
 int freePolicy = _NOFREE; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
