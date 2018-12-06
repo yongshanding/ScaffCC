@@ -176,6 +176,8 @@ def build_fun(i, all_calls, all_qs, outf, call_lists, nloop):
         buff += "\t"*TL + "// Non-leaf function" + "\n"
         buff_r += "\t"*TL + "// Non-leaf function" + "\n"
         # Interleaving function calls among gates
+        temp_nq = ""
+        temp_nq_r = ""
         for (j, c) in enumerate(callees):
             num_q = callees_nq[j]
             a_start = all_qs[i][2][j]
@@ -185,8 +187,8 @@ def build_fun(i, all_calls, all_qs, outf, call_lists, nloop):
             for (k,cq) in enumerate(callee_q):
                 cq_op = "q["+str(cq)+"]" if (cq<nq) else "anc["+str(cq-nq)+"]"
                 #writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
-                buff += "\t"*TL + "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";" + "\n"
-                buff_r += "\t"*TL + "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";" + "\n"
+                temp_nq += "\t"*TL + "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";" + "\n"
+                temp_nq_r += "\t"*TL + "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";" + "\n"
             all_ins.append("func" + str(c) + "(nq"+str(j)+", "+str(num_q)+");")
             all_ins_r.append("func" + str(c) + "R(nq"+str(j)+", "+str(num_q)+");")
         indices = range(len(all_ins))
@@ -197,11 +199,13 @@ def build_fun(i, all_calls, all_qs, outf, call_lists, nloop):
         buff += "\t"*TL + "Compute (0, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + ", " + str(len(callees))+ ", " + str(parent_degree) + ", 0){" + "\n"
         buff_r += "\t"*TL + "_computeModule(0, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + ", " + str(len(callees))+ ", " + str(parent_degree) + ", 0);" + "\n"
         buff_r += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
+        buff_r += temp_nq_r
         buff_r += "\t"*TL + "Recompute"+ "(res, 0, anc, " + str(na) + ", " + str(ng+num_out+ng) + ", "+ str(ng+num_out) + "){" + "\n"
         tab()
         # Now ready to allocate the ancilla
         #writeline(outf, "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);")
         buff += "\t"*TL + "acquire(" + str(na) + ", anc, " + str(len(interqs)) + ", nb);" + "\n"
+        buff += temp_nq
         # In-place reverse if building reverse version of function
         shuffle_ins_r.reverse()
         #for ins in reversed(shuffle_ins_r):
