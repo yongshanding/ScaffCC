@@ -14,4 +14,4 @@ echo "[run.sh] ${FILE} begins..."
 ./scripts/gen-rev-mem-optimized.sh Algorithms/${FILE}.scaffold #>${FILE}.err 2> ${FILE}.err2
 tail -n 14 ${FILE}/*freq 
 tail ${FILE}/*freq > ${FILE}.out 
-echo $FILE >> bench_list.txt
+echo $FILE >> tsv_order.txt

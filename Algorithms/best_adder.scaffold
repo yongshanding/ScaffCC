@@ -4,7 +4,7 @@
 #include "qalloc.h"
 #include "uncompute.h"
 
-#define N 8
+#define N 32
 
 /*arxiv:1202.6614*/
 void CMaj(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
