@@ -77,8 +77,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
-int freePolicy = _OPTG; 
+int allocPolicy = _CLOSEST_BLOCK;
+int freePolicy = _EAGER; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -655,7 +655,7 @@ void printVolume() {
 		}
 	}
 	printf("==================================\n");
-	printf("Total number of time steps: %d. \n", maxT);
+	printf("Total number of time steps: %lld. \n", maxT);
 
 
 	for (std::map<qbit_t*, map<int, long long> >::iterator it= activeTime.begin(); it != activeTime.end(); ++it) {
@@ -1552,8 +1552,8 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	// Track the new qubits in AllQubits and the mapping
 	//printf("Obtain\n");  
 	int sum_dist;
-	//vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
-	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
+	vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	//vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
 	// Note that if random, then the qubits that are allocated may not be contiguous
 	// however, the swap chain will still use those qubits along the way,
 	// and they may be denoted as 'q-1' in the output
@@ -2214,7 +2214,7 @@ void schedule(gate_t *new_gate) {
 	if (gate_name == "swap_chain") {
 		if (swap_dependency == true){
 			for (int i = 0; i < numOp; i++) {
-				map<qbit_t*, int>::iterator it = qubitUsage.find(operands[i]);
+				map<qbit_t*, long long>::iterator it = qubitUsage.find(operands[i]);
 				if (operands[i] != NULL && it != qubitUsage.end()){
 					qubitUsage[operands[i]] = Tmax+numOp-1; //modify usage in place
 				}
