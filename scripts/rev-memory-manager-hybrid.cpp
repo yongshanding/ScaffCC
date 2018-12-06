@@ -77,8 +77,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPTG; 
+int allocPolicy = _EAGER;
+int freePolicy = _NOFREE; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -91,15 +91,26 @@ int parallel_alloc = 0;
 bool trackGates = true;
 bool debugRevMemHybrid = true;
 bool swapflag = true;
+bool swap_dependency = false;
 
 
 // output files
 string outfilename = "on_off_sequences_out.txt";
 std::ofstream outfile(outfilename.c_str());
+string tsv_filename = "result_out.tsv";
+std::ofstream tsv_out(tsv_filename.c_str(), std::ofstream::out | std::ofstream::app);
+
+// output info
+long long tsv_act_v = 0;
+long tsv_depth = 0;
 
 int num_gate_scheduled = 0;
 int time_step_scheduled = 0;
 int longest_chain = 0;
+int swap_len = 0;
+int num_swap_chain = 0;
+long long total_swap_len = 0;
+
 
 typedef int16_t qbit_t;
 
@@ -626,6 +637,9 @@ void printGateCounts() {
 	}
 	std::cout << "\n";
 	cout << "Total Gate Count: " << gate_count << " Longest Chain: " << longest_chain << endl;
+	tsv_out << freePolicy << "\t" << tsv_act_v << "\t" << gate_count - AllGates[_SWAP] << "\t";
+	tsv_out << AllQubits->N << "\t" << tsv_depth << "\t" << AllGates[_SWAP] << "\t";
+	tsv_out << total_swap_len << "\t" << num_swap_chain << "\t" << longest_chain << endl;
 }
 
 
@@ -657,7 +671,8 @@ void printVolume() {
 	}
 	printf("==================================\n");
 	printf("Total active Volume: %lld. \n", sumV);
-
+	tsv_act_v = sumV;
+	tsv_depth = maxT;
 }
 
 
@@ -1045,6 +1060,9 @@ vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
 	if (swaps.size() > longest_chain){
 		longest_chain = swaps.size();
 	}
+	swap_len = swaps.size();
+	total_swap_len += swaps.size();
+	num_swap_chain++;
 	return swaps;
 }
 
@@ -1531,8 +1549,8 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	// Track the new qubits in AllQubits and the mapping
 	//printf("Obtain\n");  
 	int sum_dist;
-	//vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
-	vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
+	vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	//vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
 	// Note that if random, then the qubits that are allocated may not be contiguous
 	// however, the swap chain will still use those qubits along the way,
 	// and they may be denoted as 'q-1' in the output
@@ -2191,10 +2209,12 @@ void schedule(gate_t *new_gate) {
 
 
 	if (gate_name == "swap_chain") {
-		for (int i = 0; i < numOp; i++) {
-			map<qbit_t*, int>::iterator it = qubitUsage.find(operands[i]);
-			if (operands[i] != NULL && it != qubitUsage.end()){
-				qubitUsage[operands[i]] = Tmax+numOp-1; //modify usage in place
+		if (swap_dependency == true){
+			for (int i = 0; i < numOp; i++) {
+				map<qbit_t*, int>::iterator it = qubitUsage.find(operands[i]);
+				if (operands[i] != NULL && it != qubitUsage.end()){
+					qubitUsage[operands[i]] = Tmax+numOp-1; //modify usage in place
+				}
 			}
 		}
 		vector<pair<int,int> > swaps;
@@ -2208,6 +2228,10 @@ void schedule(gate_t *new_gate) {
 		updateMaps(swaps);
 	}
 	else {
+		if ((swap_dependency == false) && gateID == _CNOT){
+			Tmax = Tmax + swap_len;
+			swap_len = 0;
+		}
 		for (int i = 0; i < numOp; i++) {
 			qubitUsage[operands[i]] = Tmax+1; //modify usage in place
 		}
