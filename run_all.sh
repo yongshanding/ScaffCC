@@ -1,10 +1,15 @@
 #!/bin/sh
+test_array=("best_adder_32" "best_adder_64" "best_multiplier_32" "best_multiplier_64" "best_modExp" "sha2" "salsa")
 
-./run.sh best_adder_32
-./run.sh best_adder_64
-./run.sh best_multiplier_32
-./run.sh best_multiplier_64
-./run.sh best_modExp
-./run.sh sha2
-./run.sh salsa
+for i in $(seq 0 $(((${#test_array[*]}-1))))
+do
+	cp rev-memory-manager-hybrid_EAGER.cpp scripts/rev-memory-manager-hybrid.cpp
+	./run.sh ${test_array[$i]}
+	cp rev-memory-manager-hybrid_NOFREE.cpp scripts/rev-memory-manager-hybrid.cpp
+	./run.sh best_adder_32 ${test_array[$i]}
+	cp rev-memory-manager-hybrid_OPTG.cpp scripts/rev-memory-manager-hybrid.cpp
+	./run.sh best_adder_32 ${test_array[$i]}
+done
+
+
 
