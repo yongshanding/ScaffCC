@@ -36,13 +36,15 @@ def sample_gates(ng, nq, na):
     buff += "\t"*TL +  + "\n"
     buff_r += "\t"*TL +  + "\n"
 
-def build_fun(i, all_calls, all_qs, outf):
+def build_fun(i, all_calls, all_qs, outf, call_lists, nloop):
     # all_calls[i]: (i, callees, [nq,na,ng])
     callees = all_calls[i][1]
     nq = all_calls[i][2][0]
     na = all_calls[i][2][1]
     ng = all_calls[i][2][2]
     parent_degree = all_calls[i][2][3]
+    if i in call_lists[0]:
+        parent_degree *= nloop
     buff = ""
     buff_r = ""
     # Write a function with branching degree b
@@ -415,7 +417,7 @@ def rand_synth(outf, nq, na, ng, nl, nd, nloop):
             
     builtR = [0 for _ in range(len(all_calls))]
     for (c, _, _) in reversed(all_calls[1:]):
-        build_fun(c, all_calls, all_qs, outf)
+        build_fun(c, all_calls, all_qs, outf, call_lists, nloop)
 
     # Lastly, build main
     build_main(call_lists[0], all_calls, all_qs, outf, nq, na, ng, nloop)
