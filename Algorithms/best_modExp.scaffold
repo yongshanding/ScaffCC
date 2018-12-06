@@ -72,11 +72,13 @@ void CUma(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
 /* In place: a,b -> a+b, b: 1202.6614*/
 void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 	qbit *anc[2];
-	qbit *cin = anc[0];
-	qbit *cout = anc[1];
+	qbit *cin;
+	qbit *cout;
 	qbit *x; qbit *y; qbit *z; // rename
 	Compute(0, 2, 6*(N2/2+1)+2, 3*(N2/2+1)+2, 0, 1, 0){
 		acquire(2, anc, 1, a);
+		cin = anc[0];
+		cout = anc[1];
 		for (int i = 0; i < n; i++) {
 			if (i == 0) {
 				x = cin;
@@ -163,12 +165,14 @@ void ctrlBitNegate(qbit *ctrl, qbit **a, int n) {
 void cucarroSubIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 
 	qbit *anc[2];
-	qbit *cin = anc[0];
-	qbit *out = anc[1];
+	qbit *cin;
+	qbit *out;
 	qbit *x; qbit *y; qbit *z; // rename
 
 	Compute(0, 2, 8*LOGM+2, 4*LOGM+2, 0, 2 ,0){
 		acquire(2, anc, 1, a);
+		cin = anc[0];
+		out = anc[1];
 		ctrlBitNegate(ctrl, a, n);
 		for (int i = 0; i < n; i++) {
 			if (i == 0) {
@@ -265,9 +269,10 @@ void ctrlStore(qbit *ctrl, int num, qbit **res, int nb) {
 /* Computes res % m, conditioned on ctrl bit*/
 void ctrlModReduction(qbit *ctrl, qbit **res, int nb, int m) {
 	qbit *temp[LOGM+1];
-	qbit *new_ctrl = temp[LOGM];
+	qbit *new_ctrl;
 	Compute (0, LOGM+1, 2*LOGM, LOGM, 2, 2,0){
 		acquire(LOGM+1, temp, LOGM, res);
+		new_ctrl = temp[LOGM];
 		ctrlStore(ctrl, m, temp, LOGM);
 		//comparator(ctrl, res, temp, &new_ctrl, LOGM);
 		comparator(ctrl, res, temp, temp+6, LOGM);
@@ -292,9 +297,10 @@ void ctrlModReduction(qbit *ctrl, qbit **res, int nb, int m) {
 /* Computes res % m, conditioned on ctrl bit*/
 void ctrlModReduction_R(qbit *ctrl, qbit **res, int nb, int m) {
         qbit *temp[LOGM+1];
-        qbit *new_ctrl = temp[LOGM];
+        qbit *new_ctrl;
         _computeModule(0, LOGM+1, 2*LOGM, LOGM, 2, 2,0);
 	acquire(LOGM+1, temp, LOGM, res);
+	new_ctrl = temp[LOGM];
 	Recompute (res, nb, temp, LOGM+1, 2*LOGM, LOGM){
                 comparator(ctrl, res, temp, temp+6, LOGM);
                 ctrlStore(ctrl, m, temp, LOGM);

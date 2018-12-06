@@ -4,8 +4,7 @@
 #include "qalloc.h"
 #include "uncompute.h"
 
-#define N 32
-
+#define N 64
 
 /*arxiv:1202.6614*/
 void CMaj(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
@@ -27,7 +26,7 @@ void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 	qbit *cin;
 	qbit *cout;
 	qbit *x; qbit *y; qbit *z; // rename
-	Compute(0, 2, 6*N+2, 3*N+2, 0, 1, 0){
+	Compute(n, 2, 6*N, 3*N, 0, 0, 0){
 		acquire(2, anc, 1, a);
 		cin = anc[0];
 		cout = anc[1];
@@ -48,7 +47,7 @@ void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 		Toffoli(ctrl, b[n-1], cout);
 		Toffoli(ctrl, cout, a[n]);
 	}
-	Uncompute(a,n,anc, 2, 6*N+2, 3*N+2){
+	Uncompute(a,n,anc, 2, 6*N, 3*N){
 		for (int i = n-1; i >=0; i--) {
 			if (i == 0) {
 				x = cin;
@@ -69,44 +68,15 @@ void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n) {
 }
 
 
-void partialProduct(qbit *ctrl, qbit **a, qbit *b, qbit **res, int n, int i) {
-	qbit *prod[N+1];
-	//printf("here1\n");
-	//qbit **temp = &prod[N]; // length: N+2
-	Compute (0, N+1, 2*N, N, 1, N, 0){
-		acquire(N+1, prod, N, a);
-		for (int j = 0; j < n; j++) {
-			Toffoli(a[j], b, prod[j+1]);
-		}
-		//printf("here2\n");
-	}
-	Store {
-		inPlaceAdd(ctrl, &res[i], prod, N+1); 
-	}
-	//printf("here3\n");
-	//release(&res[i], N, prod, N+1, NULL);
-	Uncompute(res,0,prod,N+1,2*N, N){
-		for (int j = 0; j < n; j++) {
-			Toffoli(a[j], b, prod[j+1]);
-		}
-	} Free(prod,N+1) {}
-}
-
-void multiply(qbit *ctrl, qbit **a, qbit **b, qbit **res, int n) {
-	for (int i = 0; i < n/2; i++) { // b
-		partialProduct(ctrl, a, b[i], res, n/2, i);
-	}
-}
 
 
 int main() {
 	int n = N;
-	qbit *new[N+N+2*N+1];
-	acquire(4*N+1, new, 0, NULL);
+	qbit *new[2*N+2];
+	acquire(2*N+2, new, 0, NULL);
 	qbit **ctrl = &new[0]; // 1 bit
-	qbit **a = &new[1]; // N bits (last bit for resulting carry bit)
-	qbit **b = &new[N+1]; // N bits
-	qbit **res = &new[2*N+1]; // 2*N bits
+	qbit **a = &new[1]; // N+1 bits (last bit for resulting carry bit)
+	qbit **b = &new[N+2]; // N bits
 	/* Initialize a, b here; default a=b=0 */
 	X(ctrl[0]);
 	//X(a[1]);
@@ -115,12 +85,12 @@ int main() {
 	//X(b[1]);
 	//X(b[3]);
 	//X(b[5]);
-	/* Out of place multiplier */
-	multiply(ctrl[0], a, b, res, 2*N);
-	for (int i = 0; i < 2*N; i++) {
-		MeasZ(res[i]);
+	/* In place addition */
+	inPlaceAdd(ctrl[0], a, b, N);
+	for (int i = 0; i < N+1; i++) {
+		MeasZ(a[i]);
 	}
 	return 0;
-
+	
 }
 

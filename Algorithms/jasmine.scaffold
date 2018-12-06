@@ -1,0 +1,2143 @@
+// Scaffold file synthesized by para-bench.py
+// qubits: 16 ancilla: 32 gates: 32 levels: 2 degrees: 4 loops: 32
+#include "qalloc.h"
+#include "uncompute.h"
+#define LOOP 32
+// Call list: 1,2,3,4;5,6,7,8;9,10;11;12,13,14;15,16,17,18
+// Function 18 with degree 0
+// nq: 1, na: 7, ng: 1
+void func18(qbit **q, int n) {
+printf("func18\n");
+fflush(stderr);
+	qbit *anc[7]; // ancilla
+	qbit *nb[1]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	res[0] = q[0];
+	// Leaf function
+	Compute (0, 7, 3, 2, 0, 4, 0) {
+		acquire(7, anc, 1, nb);
+		CNOT( q[0], anc[1] );
+	}
+	Store {
+		CNOT( anc[3], res[0] );
+	}
+	Uncompute(res, 0, anc, 7, 3, 2){
+		CNOT( q[0], anc[1] );
+	} Free(anc, 7) {}
+}
+// Function 18 with degree 0
+// nq: 1, na: 7, ng: 1
+void func18R(qbit **q, int n) {
+printf("func18R\n");
+fflush(stderr);
+	qbit *anc[7]; // ancilla
+	qbit *nb[1]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	res[0] = q[0];
+	// Leaf function
+	_computeModule(0, 7, 3, 2, 0, 4, 0);
+	acquire(7, anc, 1, nb);
+	Recompute (res, 0, anc, 7, 3, 2){
+		CNOT( q[0], anc[1] );
+	}
+	Restore {
+		CNOT( anc[3], res[0] );
+	}
+	Unrecompute {
+		CNOT( q[0], anc[1] );
+	} Refree(anc, 7) {}
+}
+// Function 17 with degree 0
+// nq: 1, na: 10, ng: 23
+void func17(qbit **q, int n) {
+printf("func17\n");
+fflush(stderr);
+	qbit *anc[10]; // ancilla
+	qbit *nb[2]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	nb[1] = q[0];
+	res[0] = q[0];
+	// Leaf function
+	Compute (0, 10, 47, 24, 0, 4, 0) {
+		acquire(10, anc, 2, nb);
+		CNOT( anc[7], anc[6] );
+		Toffoli( anc[8], anc[0], anc[7] );
+		CNOT( anc[2], anc[0] );
+		Toffoli( anc[7], anc[6], anc[5] );
+		Toffoli( anc[4], anc[5], anc[3] );
+		Toffoli( anc[2], anc[3], anc[6] );
+		CNOT( anc[6], anc[4] );
+		Toffoli( anc[4], q[0], anc[0] );
+		CNOT( anc[6], anc[8] );
+		CNOT( anc[1], anc[9] );
+		Toffoli( anc[7], anc[4], anc[2] );
+		Toffoli( anc[7], anc[6], anc[1] );
+		Toffoli( anc[7], anc[8], anc[3] );
+		Toffoli( anc[7], q[0], anc[0] );
+		Toffoli( anc[1], anc[7], anc[5] );
+		Toffoli( anc[7], anc[3], anc[6] );
+		Toffoli( anc[5], anc[4], anc[9] );
+		Toffoli( anc[9], anc[0], anc[7] );
+		Toffoli( anc[2], anc[6], anc[0] );
+		CNOT( anc[7], anc[8] );
+		CNOT( anc[4], anc[1] );
+		Toffoli( anc[7], anc[0], anc[3] );
+		CNOT( anc[7], anc[9] );
+	}
+	Store {
+		CNOT( anc[7], res[0] );
+	}
+	Uncompute(res, 0, anc, 10, 47, 24){
+		CNOT( anc[7], anc[9] );
+		Toffoli( anc[7], anc[0], anc[3] );
+		CNOT( anc[4], anc[1] );
+		CNOT( anc[7], anc[8] );
+		Toffoli( anc[2], anc[6], anc[0] );
+		Toffoli( anc[9], anc[0], anc[7] );
+		Toffoli( anc[5], anc[4], anc[9] );
+		Toffoli( anc[7], anc[3], anc[6] );
+		Toffoli( anc[1], anc[7], anc[5] );
+		Toffoli( anc[7], q[0], anc[0] );
+		Toffoli( anc[7], anc[8], anc[3] );
+		Toffoli( anc[7], anc[6], anc[1] );
+		Toffoli( anc[7], anc[4], anc[2] );
+		CNOT( anc[1], anc[9] );
+		CNOT( anc[6], anc[8] );
+		Toffoli( anc[4], q[0], anc[0] );
+		CNOT( anc[6], anc[4] );
+		Toffoli( anc[2], anc[3], anc[6] );
+		Toffoli( anc[4], anc[5], anc[3] );
+		Toffoli( anc[7], anc[6], anc[5] );
+		CNOT( anc[2], anc[0] );
+		Toffoli( anc[8], anc[0], anc[7] );
+		CNOT( anc[7], anc[6] );
+	} Free(anc, 10) {}
+}
+// Function 17 with degree 0
+// nq: 1, na: 10, ng: 23
+void func17R(qbit **q, int n) {
+printf("func17R\n");
+fflush(stderr);
+	qbit *anc[10]; // ancilla
+	qbit *nb[2]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	nb[1] = q[0];
+	res[0] = q[0];
+	// Leaf function
+	_computeModule(0, 10, 47, 24, 0, 4, 0);
+	acquire(10, anc, 2, nb);
+	Recompute (res, 0, anc, 10, 47, 24){
+		CNOT( anc[7], anc[9] );
+		Toffoli( anc[7], anc[0], anc[3] );
+		CNOT( anc[4], anc[1] );
+		CNOT( anc[7], anc[8] );
+		Toffoli( anc[2], anc[6], anc[0] );
+		Toffoli( anc[9], anc[0], anc[7] );
+		Toffoli( anc[5], anc[4], anc[9] );
+		Toffoli( anc[7], anc[3], anc[6] );
+		Toffoli( anc[1], anc[7], anc[5] );
+		Toffoli( anc[7], q[0], anc[0] );
+		Toffoli( anc[7], anc[8], anc[3] );
+		Toffoli( anc[7], anc[6], anc[1] );
+		Toffoli( anc[7], anc[4], anc[2] );
+		CNOT( anc[1], anc[9] );
+		CNOT( anc[6], anc[8] );
+		Toffoli( anc[4], q[0], anc[0] );
+		CNOT( anc[6], anc[4] );
+		Toffoli( anc[2], anc[3], anc[6] );
+		Toffoli( anc[4], anc[5], anc[3] );
+		Toffoli( anc[7], anc[6], anc[5] );
+		CNOT( anc[2], anc[0] );
+		Toffoli( anc[8], anc[0], anc[7] );
+		CNOT( anc[7], anc[6] );
+	}
+	Restore {
+		CNOT( anc[7], res[0] );
+	}
+	Unrecompute {
+		CNOT( anc[7], anc[6] );
+		Toffoli( anc[8], anc[0], anc[7] );
+		CNOT( anc[2], anc[0] );
+		Toffoli( anc[7], anc[6], anc[5] );
+		Toffoli( anc[4], anc[5], anc[3] );
+		Toffoli( anc[2], anc[3], anc[6] );
+		CNOT( anc[6], anc[4] );
+		Toffoli( anc[4], q[0], anc[0] );
+		CNOT( anc[6], anc[8] );
+		CNOT( anc[1], anc[9] );
+		Toffoli( anc[7], anc[4], anc[2] );
+		Toffoli( anc[7], anc[6], anc[1] );
+		Toffoli( anc[7], anc[8], anc[3] );
+		Toffoli( anc[7], q[0], anc[0] );
+		Toffoli( anc[1], anc[7], anc[5] );
+		Toffoli( anc[7], anc[3], anc[6] );
+		Toffoli( anc[5], anc[4], anc[9] );
+		Toffoli( anc[9], anc[0], anc[7] );
+		Toffoli( anc[2], anc[6], anc[0] );
+		CNOT( anc[7], anc[8] );
+		CNOT( anc[4], anc[1] );
+		Toffoli( anc[7], anc[0], anc[3] );
+		CNOT( anc[7], anc[9] );
+	} Refree(anc, 10) {}
+}
+// Function 16 with degree 0
+// nq: 1, na: 32, ng: 6
+void func16(qbit **q, int n) {
+printf("func16\n");
+fflush(stderr);
+	qbit *anc[32]; // ancilla
+	qbit *nb[1]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	res[0] = q[0];
+	// Leaf function
+	Compute (0, 32, 13, 7, 0, 4, 0) {
+		acquire(32, anc, 1, nb);
+		CNOT( anc[26], q[0] );
+		CNOT( anc[30], anc[15] );
+		CNOT( anc[11], anc[19] );
+		Toffoli( anc[30], anc[21], anc[29] );
+		CNOT( anc[31], anc[28] );
+		Toffoli( anc[10], anc[19], anc[9] );
+	}
+	Store {
+		CNOT( anc[23], res[0] );
+	}
+	Uncompute(res, 0, anc, 32, 13, 7){
+		Toffoli( anc[10], anc[19], anc[9] );
+		CNOT( anc[31], anc[28] );
+		Toffoli( anc[30], anc[21], anc[29] );
+		CNOT( anc[11], anc[19] );
+		CNOT( anc[30], anc[15] );
+		CNOT( anc[26], q[0] );
+	} Free(anc, 32) {}
+}
+// Function 16 with degree 0
+// nq: 1, na: 32, ng: 6
+void func16R(qbit **q, int n) {
+printf("func16R\n");
+fflush(stderr);
+	qbit *anc[32]; // ancilla
+	qbit *nb[1]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	res[0] = q[0];
+	// Leaf function
+	_computeModule(0, 32, 13, 7, 0, 4, 0);
+	acquire(32, anc, 1, nb);
+	Recompute (res, 0, anc, 32, 13, 7){
+		Toffoli( anc[10], anc[19], anc[9] );
+		CNOT( anc[31], anc[28] );
+		Toffoli( anc[30], anc[21], anc[29] );
+		CNOT( anc[11], anc[19] );
+		CNOT( anc[30], anc[15] );
+		CNOT( anc[26], q[0] );
+	}
+	Restore {
+		CNOT( anc[23], res[0] );
+	}
+	Unrecompute {
+		CNOT( anc[26], q[0] );
+		CNOT( anc[30], anc[15] );
+		CNOT( anc[11], anc[19] );
+		Toffoli( anc[30], anc[21], anc[29] );
+		CNOT( anc[31], anc[28] );
+		Toffoli( anc[10], anc[19], anc[9] );
+	} Refree(anc, 32) {}
+}
+// Function 15 with degree 0
+// nq: 1, na: 18, ng: 2
+void func15(qbit **q, int n) {
+printf("func15\n");
+fflush(stderr);
+	qbit *anc[18]; // ancilla
+	qbit *nb[0]; // interacting bits
+	qbit *res[1];
+	res[0] = q[0];
+	// Leaf function
+	Compute (0, 18, 5, 3, 0, 4, 0) {
+		acquire(18, anc, 0, nb);
+		Toffoli( anc[4], anc[13], anc[2] );
+		CNOT( anc[10], anc[8] );
+	}
+	Store {
+		CNOT( anc[15], res[0] );
+	}
+	Uncompute(res, 0, anc, 18, 5, 3){
+		CNOT( anc[10], anc[8] );
+		Toffoli( anc[4], anc[13], anc[2] );
+	} Free(anc, 18) {}
+}
+// Function 15 with degree 0
+// nq: 1, na: 18, ng: 2
+void func15R(qbit **q, int n) {
+printf("func15R\n");
+fflush(stderr);
+	qbit *anc[18]; // ancilla
+	qbit *nb[0]; // interacting bits
+	qbit *res[1];
+	res[0] = q[0];
+	// Leaf function
+	_computeModule(0, 18, 5, 3, 0, 4, 0);
+	acquire(18, anc, 0, nb);
+	Recompute (res, 0, anc, 18, 5, 3){
+		CNOT( anc[10], anc[8] );
+		Toffoli( anc[4], anc[13], anc[2] );
+	}
+	Restore {
+		CNOT( anc[15], res[0] );
+	}
+	Unrecompute {
+		Toffoli( anc[4], anc[13], anc[2] );
+		CNOT( anc[10], anc[8] );
+	} Refree(anc, 18) {}
+}
+// Function 14 with degree 0
+// nq: 5, na: 16, ng: 5
+void func14(qbit **q, int n) {
+printf("func14\n");
+fflush(stderr);
+	qbit *anc[16]; // ancilla
+	qbit *nb[3]; // interacting bits
+	qbit *res[4];
+	nb[0] = q[2];
+	nb[1] = q[1];
+	nb[2] = q[2];
+	res[0] = q[0];
+	res[1] = q[2];
+	res[2] = q[3];
+	res[3] = q[4];
+	// Leaf function
+	Compute (0, 16, 14, 9, 0, 3, 0) {
+		acquire(16, anc, 3, nb);
+		CNOT( anc[13], anc[12] );
+		Toffoli( anc[5], anc[15], q[2] );
+		Toffoli( anc[13], q[1], anc[7] );
+		CNOT( anc[1], anc[9] );
+		Toffoli( anc[1], q[2], anc[6] );
+	}
+	Store {
+		CNOT( anc[4], res[0] );
+		CNOT( anc[6], res[1] );
+		CNOT( q[1], res[2] );
+		CNOT( q[0], res[3] );
+	}
+	Uncompute(res, 0, anc, 16, 14, 9){
+		Toffoli( anc[1], q[2], anc[6] );
+		CNOT( anc[1], anc[9] );
+		Toffoli( anc[13], q[1], anc[7] );
+		Toffoli( anc[5], anc[15], q[2] );
+		CNOT( anc[13], anc[12] );
+	} Free(anc, 16) {}
+}
+// Function 14 with degree 0
+// nq: 5, na: 16, ng: 5
+void func14R(qbit **q, int n) {
+printf("func14R\n");
+fflush(stderr);
+	qbit *anc[16]; // ancilla
+	qbit *nb[3]; // interacting bits
+	qbit *res[4];
+	nb[0] = q[2];
+	nb[1] = q[1];
+	nb[2] = q[2];
+	res[0] = q[0];
+	res[1] = q[2];
+	res[2] = q[3];
+	res[3] = q[4];
+	// Leaf function
+	_computeModule(0, 16, 14, 9, 0, 3, 0);
+	acquire(16, anc, 3, nb);
+	Recompute (res, 0, anc, 16, 14, 9){
+		Toffoli( anc[1], q[2], anc[6] );
+		CNOT( anc[1], anc[9] );
+		Toffoli( anc[13], q[1], anc[7] );
+		Toffoli( anc[5], anc[15], q[2] );
+		CNOT( anc[13], anc[12] );
+	}
+	Restore {
+		CNOT( anc[4], res[0] );
+		CNOT( anc[6], res[1] );
+		CNOT( q[1], res[2] );
+		CNOT( q[0], res[3] );
+	}
+	Unrecompute {
+		CNOT( anc[13], anc[12] );
+		Toffoli( anc[5], anc[15], q[2] );
+		Toffoli( anc[13], q[1], anc[7] );
+		CNOT( anc[1], anc[9] );
+		Toffoli( anc[1], q[2], anc[6] );
+	} Refree(anc, 16) {}
+}
+// Function 13 with degree 0
+// nq: 5, na: 6, ng: 1
+void func13(qbit **q, int n) {
+printf("func13\n");
+fflush(stderr);
+	qbit *anc[6]; // ancilla
+	qbit *nb[0]; // interacting bits
+	qbit *res[1];
+	res[0] = q[2];
+	// Leaf function
+	Compute (0, 6, 3, 2, 0, 3, 0) {
+		acquire(6, anc, 0, nb);
+		CNOT( anc[2], anc[5] );
+	}
+	Store {
+		CNOT( anc[4], res[0] );
+	}
+	Uncompute(res, 0, anc, 6, 3, 2){
+		CNOT( anc[2], anc[5] );
+	} Free(anc, 6) {}
+}
+// Function 13 with degree 0
+// nq: 5, na: 6, ng: 1
+void func13R(qbit **q, int n) {
+printf("func13R\n");
+fflush(stderr);
+	qbit *anc[6]; // ancilla
+	qbit *nb[0]; // interacting bits
+	qbit *res[1];
+	res[0] = q[2];
+	// Leaf function
+	_computeModule(0, 6, 3, 2, 0, 3, 0);
+	acquire(6, anc, 0, nb);
+	Recompute (res, 0, anc, 6, 3, 2){
+		CNOT( anc[2], anc[5] );
+	}
+	Restore {
+		CNOT( anc[4], res[0] );
+	}
+	Unrecompute {
+		CNOT( anc[2], anc[5] );
+	} Refree(anc, 6) {}
+}
+// Function 12 with degree 0
+// nq: 5, na: 6, ng: 11
+void func12(qbit **q, int n) {
+printf("func12\n");
+fflush(stderr);
+	qbit *anc[6]; // ancilla
+	qbit *nb[12]; // interacting bits
+	qbit *res[5];
+	nb[0] = q[2];
+	nb[1] = q[2];
+	nb[2] = q[1];
+	nb[3] = q[0];
+	nb[4] = q[4];
+	nb[5] = q[1];
+	nb[6] = q[3];
+	nb[7] = q[4];
+	nb[8] = q[3];
+	nb[9] = q[1];
+	nb[10] = q[4];
+	nb[11] = q[3];
+	res[0] = q[1];
+	res[1] = q[4];
+	res[2] = q[2];
+	res[3] = q[3];
+	res[4] = q[0];
+	// Leaf function
+	Compute (0, 6, 27, 16, 0, 3, 0) {
+		acquire(6, anc, 12, nb);
+		Toffoli( anc[5], anc[4], anc[3] );
+		Toffoli( anc[3], anc[4], q[2] );
+		Toffoli( q[2], anc[0], q[1] );
+		Toffoli( anc[4], anc[0], q[0] );
+		CNOT( q[4], q[1] );
+		CNOT( anc[0], anc[4] );
+		Toffoli( q[3], anc[1], anc[4] );
+		Toffoli( anc[5], anc[1], anc[2] );
+		Toffoli( anc[1], q[4], q[3] );
+		CNOT( anc[3], q[1] );
+		Toffoli( q[4], anc[3], q[3] );
+	}
+	Store {
+		CNOT( anc[5], res[0] );
+		CNOT( q[0], res[1] );
+		CNOT( anc[2], res[2] );
+		CNOT( anc[4], res[3] );
+		CNOT( q[3], res[4] );
+	}
+	Uncompute(res, 0, anc, 6, 27, 16){
+		Toffoli( q[4], anc[3], q[3] );
+		CNOT( anc[3], q[1] );
+		Toffoli( anc[1], q[4], q[3] );
+		Toffoli( anc[5], anc[1], anc[2] );
+		Toffoli( q[3], anc[1], anc[4] );
+		CNOT( anc[0], anc[4] );
+		CNOT( q[4], q[1] );
+		Toffoli( anc[4], anc[0], q[0] );
+		Toffoli( q[2], anc[0], q[1] );
+		Toffoli( anc[3], anc[4], q[2] );
+		Toffoli( anc[5], anc[4], anc[3] );
+	} Free(anc, 6) {}
+}
+// Function 12 with degree 0
+// nq: 5, na: 6, ng: 11
+void func12R(qbit **q, int n) {
+printf("func12R\n");
+fflush(stderr);
+	qbit *anc[6]; // ancilla
+	qbit *nb[12]; // interacting bits
+	qbit *res[5];
+	nb[0] = q[2];
+	nb[1] = q[2];
+	nb[2] = q[1];
+	nb[3] = q[0];
+	nb[4] = q[4];
+	nb[5] = q[1];
+	nb[6] = q[3];
+	nb[7] = q[4];
+	nb[8] = q[3];
+	nb[9] = q[1];
+	nb[10] = q[4];
+	nb[11] = q[3];
+	res[0] = q[1];
+	res[1] = q[4];
+	res[2] = q[2];
+	res[3] = q[3];
+	res[4] = q[0];
+	// Leaf function
+	_computeModule(0, 6, 27, 16, 0, 3, 0);
+	acquire(6, anc, 12, nb);
+	Recompute (res, 0, anc, 6, 27, 16){
+		Toffoli( q[4], anc[3], q[3] );
+		CNOT( anc[3], q[1] );
+		Toffoli( anc[1], q[4], q[3] );
+		Toffoli( anc[5], anc[1], anc[2] );
+		Toffoli( q[3], anc[1], anc[4] );
+		CNOT( anc[0], anc[4] );
+		CNOT( q[4], q[1] );
+		Toffoli( anc[4], anc[0], q[0] );
+		Toffoli( q[2], anc[0], q[1] );
+		Toffoli( anc[3], anc[4], q[2] );
+		Toffoli( anc[5], anc[4], anc[3] );
+	}
+	Restore {
+		CNOT( anc[5], res[0] );
+		CNOT( q[0], res[1] );
+		CNOT( anc[2], res[2] );
+		CNOT( anc[4], res[3] );
+		CNOT( q[3], res[4] );
+	}
+	Unrecompute {
+		Toffoli( anc[5], anc[4], anc[3] );
+		Toffoli( anc[3], anc[4], q[2] );
+		Toffoli( q[2], anc[0], q[1] );
+		Toffoli( anc[4], anc[0], q[0] );
+		CNOT( q[4], q[1] );
+		CNOT( anc[0], anc[4] );
+		Toffoli( q[3], anc[1], anc[4] );
+		Toffoli( anc[5], anc[1], anc[2] );
+		Toffoli( anc[1], q[4], q[3] );
+		CNOT( anc[3], q[1] );
+		Toffoli( q[4], anc[3], q[3] );
+	} Refree(anc, 6) {}
+}
+// Function 11 with degree 0
+// nq: 9, na: 19, ng: 22
+void func11(qbit **q, int n) {
+printf("func11\n");
+fflush(stderr);
+	qbit *anc[19]; // ancilla
+	qbit *nb[20]; // interacting bits
+	qbit *res[4];
+	nb[0] = q[4];
+	nb[1] = q[1];
+	nb[2] = q[6];
+	nb[3] = q[5];
+	nb[4] = q[1];
+	nb[5] = q[2];
+	nb[6] = q[3];
+	nb[7] = q[0];
+	nb[8] = q[3];
+	nb[9] = q[2];
+	nb[10] = q[8];
+	nb[11] = q[6];
+	nb[12] = q[3];
+	nb[13] = q[0];
+	nb[14] = q[3];
+	nb[15] = q[2];
+	nb[16] = q[2];
+	nb[17] = q[6];
+	nb[18] = q[2];
+	nb[19] = q[4];
+	res[0] = q[1];
+	res[1] = q[7];
+	res[2] = q[2];
+	res[3] = q[3];
+	// Leaf function
+	Compute (0, 19, 48, 26, 0, 1, 0) {
+		acquire(19, anc, 20, nb);
+		Toffoli( anc[0], anc[9], q[4] );
+		CNOT( anc[3], anc[1] );
+		CNOT( anc[0], q[1] );
+		Toffoli( anc[13], q[6], q[5] );
+		CNOT( q[1], anc[16] );
+		CNOT( anc[15], q[2] );
+		Toffoli( anc[7], q[3], anc[18] );
+		CNOT( anc[5], anc[18] );
+		Toffoli( anc[8], q[0], q[3] );
+		Toffoli( anc[18], anc[6], q[2] );
+		Toffoli( anc[3], q[8], anc[5] );
+		Toffoli( anc[10], anc[18], q[6] );
+		Toffoli( q[3], anc[4], anc[12] );
+		Toffoli( anc[17], anc[7], anc[11] );
+		CNOT( q[0], anc[6] );
+		CNOT( anc[16], anc[4] );
+		CNOT( anc[3], anc[13] );
+		Toffoli( anc[5], anc[7], anc[4] );
+		Toffoli( anc[15], q[3], anc[7] );
+		Toffoli( q[2], anc[16], anc[5] );
+		Toffoli( anc[7], anc[2], q[2] );
+		Toffoli( q[6], q[2], q[4] );
+	}
+	Store {
+		CNOT( anc[12], res[0] );
+		CNOT( anc[15], res[1] );
+		CNOT( anc[13], res[2] );
+		CNOT( anc[10], res[3] );
+	}
+	Uncompute(res, 0, anc, 19, 48, 26){
+		Toffoli( q[6], q[2], q[4] );
+		Toffoli( anc[7], anc[2], q[2] );
+		Toffoli( q[2], anc[16], anc[5] );
+		Toffoli( anc[15], q[3], anc[7] );
+		Toffoli( anc[5], anc[7], anc[4] );
+		CNOT( anc[3], anc[13] );
+		CNOT( anc[16], anc[4] );
+		CNOT( q[0], anc[6] );
+		Toffoli( anc[17], anc[7], anc[11] );
+		Toffoli( q[3], anc[4], anc[12] );
+		Toffoli( anc[10], anc[18], q[6] );
+		Toffoli( anc[3], q[8], anc[5] );
+		Toffoli( anc[18], anc[6], q[2] );
+		Toffoli( anc[8], q[0], q[3] );
+		CNOT( anc[5], anc[18] );
+		Toffoli( anc[7], q[3], anc[18] );
+		CNOT( anc[15], q[2] );
+		CNOT( q[1], anc[16] );
+		Toffoli( anc[13], q[6], q[5] );
+		CNOT( anc[0], q[1] );
+		CNOT( anc[3], anc[1] );
+		Toffoli( anc[0], anc[9], q[4] );
+	} Free(anc, 19) {}
+}
+// Function 11 with degree 0
+// nq: 9, na: 19, ng: 22
+void func11R(qbit **q, int n) {
+printf("func11R\n");
+fflush(stderr);
+	qbit *anc[19]; // ancilla
+	qbit *nb[20]; // interacting bits
+	qbit *res[4];
+	nb[0] = q[4];
+	nb[1] = q[1];
+	nb[2] = q[6];
+	nb[3] = q[5];
+	nb[4] = q[1];
+	nb[5] = q[2];
+	nb[6] = q[3];
+	nb[7] = q[0];
+	nb[8] = q[3];
+	nb[9] = q[2];
+	nb[10] = q[8];
+	nb[11] = q[6];
+	nb[12] = q[3];
+	nb[13] = q[0];
+	nb[14] = q[3];
+	nb[15] = q[2];
+	nb[16] = q[2];
+	nb[17] = q[6];
+	nb[18] = q[2];
+	nb[19] = q[4];
+	res[0] = q[1];
+	res[1] = q[7];
+	res[2] = q[2];
+	res[3] = q[3];
+	// Leaf function
+	_computeModule(0, 19, 48, 26, 0, 1, 0);
+	acquire(19, anc, 20, nb);
+	Recompute (res, 0, anc, 19, 48, 26){
+		Toffoli( q[6], q[2], q[4] );
+		Toffoli( anc[7], anc[2], q[2] );
+		Toffoli( q[2], anc[16], anc[5] );
+		Toffoli( anc[15], q[3], anc[7] );
+		Toffoli( anc[5], anc[7], anc[4] );
+		CNOT( anc[3], anc[13] );
+		CNOT( anc[16], anc[4] );
+		CNOT( q[0], anc[6] );
+		Toffoli( anc[17], anc[7], anc[11] );
+		Toffoli( q[3], anc[4], anc[12] );
+		Toffoli( anc[10], anc[18], q[6] );
+		Toffoli( anc[3], q[8], anc[5] );
+		Toffoli( anc[18], anc[6], q[2] );
+		Toffoli( anc[8], q[0], q[3] );
+		CNOT( anc[5], anc[18] );
+		Toffoli( anc[7], q[3], anc[18] );
+		CNOT( anc[15], q[2] );
+		CNOT( q[1], anc[16] );
+		Toffoli( anc[13], q[6], q[5] );
+		CNOT( anc[0], q[1] );
+		CNOT( anc[3], anc[1] );
+		Toffoli( anc[0], anc[9], q[4] );
+	}
+	Restore {
+		CNOT( anc[12], res[0] );
+		CNOT( anc[15], res[1] );
+		CNOT( anc[13], res[2] );
+		CNOT( anc[10], res[3] );
+	}
+	Unrecompute {
+		Toffoli( anc[0], anc[9], q[4] );
+		CNOT( anc[3], anc[1] );
+		CNOT( anc[0], q[1] );
+		Toffoli( anc[13], q[6], q[5] );
+		CNOT( q[1], anc[16] );
+		CNOT( anc[15], q[2] );
+		Toffoli( anc[7], q[3], anc[18] );
+		CNOT( anc[5], anc[18] );
+		Toffoli( anc[8], q[0], q[3] );
+		Toffoli( anc[18], anc[6], q[2] );
+		Toffoli( anc[3], q[8], anc[5] );
+		Toffoli( anc[10], anc[18], q[6] );
+		Toffoli( q[3], anc[4], anc[12] );
+		Toffoli( anc[17], anc[7], anc[11] );
+		CNOT( q[0], anc[6] );
+		CNOT( anc[16], anc[4] );
+		CNOT( anc[3], anc[13] );
+		Toffoli( anc[5], anc[7], anc[4] );
+		Toffoli( anc[15], q[3], anc[7] );
+		Toffoli( q[2], anc[16], anc[5] );
+		Toffoli( anc[7], anc[2], q[2] );
+		Toffoli( q[6], q[2], q[4] );
+	} Refree(anc, 19) {}
+}
+// Function 10 with degree 0
+// nq: 8, na: 26, ng: 7
+void func10(qbit **q, int n) {
+printf("func10\n");
+fflush(stderr);
+	qbit *anc[26]; // ancilla
+	qbit *nb[7]; // interacting bits
+	qbit *res[3];
+	nb[0] = q[7];
+	nb[1] = q[7];
+	nb[2] = q[6];
+	nb[3] = q[4];
+	nb[4] = q[0];
+	nb[5] = q[6];
+	nb[6] = q[2];
+	res[0] = q[1];
+	res[1] = q[0];
+	res[2] = q[4];
+	// Leaf function
+	Compute (0, 26, 17, 10, 0, 2, 0) {
+		acquire(26, anc, 7, nb);
+		CNOT( anc[11], anc[12] );
+		CNOT( q[7], anc[0] );
+		Toffoli( q[7], anc[7], anc[3] );
+		Toffoli( q[6], q[4], anc[20] );
+		CNOT( q[0], q[6] );
+		CNOT( anc[9], anc[23] );
+		CNOT( q[2], anc[19] );
+	}
+	Store {
+		CNOT( anc[20], res[0] );
+		CNOT( anc[19], res[1] );
+		CNOT( q[5], res[2] );
+	}
+	Uncompute(res, 0, anc, 26, 17, 10){
+		CNOT( q[2], anc[19] );
+		CNOT( anc[9], anc[23] );
+		CNOT( q[0], q[6] );
+		Toffoli( q[6], q[4], anc[20] );
+		Toffoli( q[7], anc[7], anc[3] );
+		CNOT( q[7], anc[0] );
+		CNOT( anc[11], anc[12] );
+	} Free(anc, 26) {}
+}
+// Function 10 with degree 0
+// nq: 8, na: 26, ng: 7
+void func10R(qbit **q, int n) {
+printf("func10R\n");
+fflush(stderr);
+	qbit *anc[26]; // ancilla
+	qbit *nb[7]; // interacting bits
+	qbit *res[3];
+	nb[0] = q[7];
+	nb[1] = q[7];
+	nb[2] = q[6];
+	nb[3] = q[4];
+	nb[4] = q[0];
+	nb[5] = q[6];
+	nb[6] = q[2];
+	res[0] = q[1];
+	res[1] = q[0];
+	res[2] = q[4];
+	// Leaf function
+	_computeModule(0, 26, 17, 10, 0, 2, 0);
+	acquire(26, anc, 7, nb);
+	Recompute (res, 0, anc, 26, 17, 10){
+		CNOT( q[2], anc[19] );
+		CNOT( anc[9], anc[23] );
+		CNOT( q[0], q[6] );
+		Toffoli( q[6], q[4], anc[20] );
+		Toffoli( q[7], anc[7], anc[3] );
+		CNOT( q[7], anc[0] );
+		CNOT( anc[11], anc[12] );
+	}
+	Restore {
+		CNOT( anc[20], res[0] );
+		CNOT( anc[19], res[1] );
+		CNOT( q[5], res[2] );
+	}
+	Unrecompute {
+		CNOT( anc[11], anc[12] );
+		CNOT( q[7], anc[0] );
+		Toffoli( q[7], anc[7], anc[3] );
+		Toffoli( q[6], q[4], anc[20] );
+		CNOT( q[0], q[6] );
+		CNOT( anc[9], anc[23] );
+		CNOT( q[2], anc[19] );
+	} Refree(anc, 26) {}
+}
+// Function 9 with degree 0
+// nq: 8, na: 4, ng: 13
+void func9(qbit **q, int n) {
+printf("func9\n");
+fflush(stderr);
+	qbit *anc[4]; // ancilla
+	qbit *nb[20]; // interacting bits
+	qbit *res[7];
+	nb[0] = q[7];
+	nb[1] = q[0];
+	nb[2] = q[1];
+	nb[3] = q[2];
+	nb[4] = q[2];
+	nb[5] = q[2];
+	nb[6] = q[1];
+	nb[7] = q[3];
+	nb[8] = q[5];
+	nb[9] = q[0];
+	nb[10] = q[7];
+	nb[11] = q[3];
+	nb[12] = q[5];
+	nb[13] = q[4];
+	nb[14] = q[5];
+	nb[15] = q[2];
+	nb[16] = q[0];
+	nb[17] = q[7];
+	nb[18] = q[1];
+	nb[19] = q[3];
+	res[0] = q[5];
+	res[1] = q[3];
+	res[2] = q[0];
+	res[3] = q[6];
+	res[4] = q[2];
+	res[5] = q[1];
+	res[6] = q[4];
+	// Leaf function
+	Compute (0, 4, 33, 20, 0, 2, 0) {
+		acquire(4, anc, 20, nb);
+		CNOT( q[7], anc[1] );
+		CNOT( q[0], anc[1] );
+		Toffoli( q[1], anc[2], q[2] );
+		CNOT( anc[1], anc[0] );
+		CNOT( anc[1], q[2] );
+		Toffoli( q[2], anc[1], q[1] );
+		Toffoli( q[3], q[5], q[0] );
+		CNOT( q[7], q[3] );
+		Toffoli( q[5], q[4], anc[0] );
+		CNOT( anc[3], q[5] );
+		Toffoli( q[2], q[0], anc[1] );
+		CNOT( q[7], q[1] );
+		CNOT( q[3], anc[1] );
+	}
+	Store {
+		CNOT( q[1], res[0] );
+		CNOT( q[6], res[1] );
+		CNOT( q[5], res[2] );
+		CNOT( anc[3], res[3] );
+		CNOT( q[4], res[4] );
+		CNOT( q[2], res[5] );
+		CNOT( q[0], res[6] );
+	}
+	Uncompute(res, 0, anc, 4, 33, 20){
+		CNOT( q[3], anc[1] );
+		CNOT( q[7], q[1] );
+		Toffoli( q[2], q[0], anc[1] );
+		CNOT( anc[3], q[5] );
+		Toffoli( q[5], q[4], anc[0] );
+		CNOT( q[7], q[3] );
+		Toffoli( q[3], q[5], q[0] );
+		Toffoli( q[2], anc[1], q[1] );
+		CNOT( anc[1], q[2] );
+		CNOT( anc[1], anc[0] );
+		Toffoli( q[1], anc[2], q[2] );
+		CNOT( q[0], anc[1] );
+		CNOT( q[7], anc[1] );
+	} Free(anc, 4) {}
+}
+// Function 9 with degree 0
+// nq: 8, na: 4, ng: 13
+void func9R(qbit **q, int n) {
+printf("func9R\n");
+fflush(stderr);
+	qbit *anc[4]; // ancilla
+	qbit *nb[20]; // interacting bits
+	qbit *res[7];
+	nb[0] = q[7];
+	nb[1] = q[0];
+	nb[2] = q[1];
+	nb[3] = q[2];
+	nb[4] = q[2];
+	nb[5] = q[2];
+	nb[6] = q[1];
+	nb[7] = q[3];
+	nb[8] = q[5];
+	nb[9] = q[0];
+	nb[10] = q[7];
+	nb[11] = q[3];
+	nb[12] = q[5];
+	nb[13] = q[4];
+	nb[14] = q[5];
+	nb[15] = q[2];
+	nb[16] = q[0];
+	nb[17] = q[7];
+	nb[18] = q[1];
+	nb[19] = q[3];
+	res[0] = q[5];
+	res[1] = q[3];
+	res[2] = q[0];
+	res[3] = q[6];
+	res[4] = q[2];
+	res[5] = q[1];
+	res[6] = q[4];
+	// Leaf function
+	_computeModule(0, 4, 33, 20, 0, 2, 0);
+	acquire(4, anc, 20, nb);
+	Recompute (res, 0, anc, 4, 33, 20){
+		CNOT( q[3], anc[1] );
+		CNOT( q[7], q[1] );
+		Toffoli( q[2], q[0], anc[1] );
+		CNOT( anc[3], q[5] );
+		Toffoli( q[5], q[4], anc[0] );
+		CNOT( q[7], q[3] );
+		Toffoli( q[3], q[5], q[0] );
+		Toffoli( q[2], anc[1], q[1] );
+		CNOT( anc[1], q[2] );
+		CNOT( anc[1], anc[0] );
+		Toffoli( q[1], anc[2], q[2] );
+		CNOT( q[0], anc[1] );
+		CNOT( q[7], anc[1] );
+	}
+	Restore {
+		CNOT( q[1], res[0] );
+		CNOT( q[6], res[1] );
+		CNOT( q[5], res[2] );
+		CNOT( anc[3], res[3] );
+		CNOT( q[4], res[4] );
+		CNOT( q[2], res[5] );
+		CNOT( q[0], res[6] );
+	}
+	Unrecompute {
+		CNOT( q[7], anc[1] );
+		CNOT( q[0], anc[1] );
+		Toffoli( q[1], anc[2], q[2] );
+		CNOT( anc[1], anc[0] );
+		CNOT( anc[1], q[2] );
+		Toffoli( q[2], anc[1], q[1] );
+		Toffoli( q[3], q[5], q[0] );
+		CNOT( q[7], q[3] );
+		Toffoli( q[5], q[4], anc[0] );
+		CNOT( anc[3], q[5] );
+		Toffoli( q[2], q[0], anc[1] );
+		CNOT( q[7], q[1] );
+		CNOT( q[3], anc[1] );
+	} Refree(anc, 4) {}
+}
+// Function 8 with degree 0
+// nq: 2, na: 30, ng: 13
+void func8(qbit **q, int n) {
+printf("func8\n");
+fflush(stderr);
+	qbit *anc[30]; // ancilla
+	qbit *nb[0]; // interacting bits
+	qbit *res[2];
+	res[0] = q[1];
+	res[1] = q[0];
+	// Leaf function
+	Compute (0, 30, 28, 15, 0, 4, 0) {
+		acquire(30, anc, 0, nb);
+		CNOT( anc[10], anc[14] );
+		CNOT( anc[22], anc[25] );
+		CNOT( anc[22], anc[14] );
+		Toffoli( anc[18], anc[3], anc[6] );
+		CNOT( anc[29], anc[10] );
+		Toffoli( anc[3], anc[11], anc[12] );
+		Toffoli( anc[4], anc[28], anc[5] );
+		CNOT( anc[2], anc[20] );
+		Toffoli( anc[27], anc[1], anc[13] );
+		Toffoli( anc[20], anc[2], anc[19] );
+		Toffoli( anc[11], anc[26], anc[12] );
+		Toffoli( anc[22], anc[9], anc[16] );
+		CNOT( anc[25], anc[26] );
+	}
+	Store {
+		CNOT( anc[8], res[0] );
+		CNOT( anc[17], res[1] );
+	}
+	Uncompute(res, 0, anc, 30, 28, 15){
+		CNOT( anc[25], anc[26] );
+		Toffoli( anc[22], anc[9], anc[16] );
+		Toffoli( anc[11], anc[26], anc[12] );
+		Toffoli( anc[20], anc[2], anc[19] );
+		Toffoli( anc[27], anc[1], anc[13] );
+		CNOT( anc[2], anc[20] );
+		Toffoli( anc[4], anc[28], anc[5] );
+		Toffoli( anc[3], anc[11], anc[12] );
+		CNOT( anc[29], anc[10] );
+		Toffoli( anc[18], anc[3], anc[6] );
+		CNOT( anc[22], anc[14] );
+		CNOT( anc[22], anc[25] );
+		CNOT( anc[10], anc[14] );
+	} Free(anc, 30) {}
+}
+// Function 8 with degree 0
+// nq: 2, na: 30, ng: 13
+void func8R(qbit **q, int n) {
+printf("func8R\n");
+fflush(stderr);
+	qbit *anc[30]; // ancilla
+	qbit *nb[0]; // interacting bits
+	qbit *res[2];
+	res[0] = q[1];
+	res[1] = q[0];
+	// Leaf function
+	_computeModule(0, 30, 28, 15, 0, 4, 0);
+	acquire(30, anc, 0, nb);
+	Recompute (res, 0, anc, 30, 28, 15){
+		CNOT( anc[25], anc[26] );
+		Toffoli( anc[22], anc[9], anc[16] );
+		Toffoli( anc[11], anc[26], anc[12] );
+		Toffoli( anc[20], anc[2], anc[19] );
+		Toffoli( anc[27], anc[1], anc[13] );
+		CNOT( anc[2], anc[20] );
+		Toffoli( anc[4], anc[28], anc[5] );
+		Toffoli( anc[3], anc[11], anc[12] );
+		CNOT( anc[29], anc[10] );
+		Toffoli( anc[18], anc[3], anc[6] );
+		CNOT( anc[22], anc[14] );
+		CNOT( anc[22], anc[25] );
+		CNOT( anc[10], anc[14] );
+	}
+	Restore {
+		CNOT( anc[8], res[0] );
+		CNOT( anc[17], res[1] );
+	}
+	Unrecompute {
+		CNOT( anc[10], anc[14] );
+		CNOT( anc[22], anc[25] );
+		CNOT( anc[22], anc[14] );
+		Toffoli( anc[18], anc[3], anc[6] );
+		CNOT( anc[29], anc[10] );
+		Toffoli( anc[3], anc[11], anc[12] );
+		Toffoli( anc[4], anc[28], anc[5] );
+		CNOT( anc[2], anc[20] );
+		Toffoli( anc[27], anc[1], anc[13] );
+		Toffoli( anc[20], anc[2], anc[19] );
+		Toffoli( anc[11], anc[26], anc[12] );
+		Toffoli( anc[22], anc[9], anc[16] );
+		CNOT( anc[25], anc[26] );
+	} Refree(anc, 30) {}
+}
+// Function 7 with degree 0
+// nq: 2, na: 19, ng: 21
+void func7(qbit **q, int n) {
+printf("func7\n");
+fflush(stderr);
+	qbit *anc[19]; // ancilla
+	qbit *nb[8]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	nb[1] = q[0];
+	nb[2] = q[1];
+	nb[3] = q[1];
+	nb[4] = q[1];
+	nb[5] = q[1];
+	nb[6] = q[1];
+	nb[7] = q[1];
+	res[0] = q[0];
+	// Leaf function
+	Compute (0, 19, 43, 22, 0, 4, 0) {
+		acquire(19, anc, 8, nb);
+		CNOT( anc[18], q[0] );
+		Toffoli( anc[6], anc[12], anc[9] );
+		CNOT( q[0], anc[3] );
+		CNOT( anc[6], anc[18] );
+		Toffoli( anc[15], anc[13], anc[4] );
+		CNOT( anc[12], q[1] );
+		CNOT( anc[9], q[1] );
+		CNOT( q[1], anc[0] );
+		CNOT( anc[7], anc[3] );
+		CNOT( anc[9], anc[15] );
+		CNOT( anc[12], anc[2] );
+		CNOT( anc[7], anc[4] );
+		Toffoli( anc[4], anc[13], anc[5] );
+		CNOT( anc[8], anc[3] );
+		CNOT( anc[10], anc[7] );
+		Toffoli( anc[15], anc[10], anc[0] );
+		CNOT( anc[14], anc[11] );
+		Toffoli( q[1], anc[17], anc[8] );
+		Toffoli( q[1], anc[15], anc[14] );
+		Toffoli( q[1], anc[6], anc[16] );
+		Toffoli( anc[14], anc[13], anc[17] );
+	}
+	Store {
+		CNOT( anc[12], res[0] );
+	}
+	Uncompute(res, 0, anc, 19, 43, 22){
+		Toffoli( anc[14], anc[13], anc[17] );
+		Toffoli( q[1], anc[6], anc[16] );
+		Toffoli( q[1], anc[15], anc[14] );
+		Toffoli( q[1], anc[17], anc[8] );
+		CNOT( anc[14], anc[11] );
+		Toffoli( anc[15], anc[10], anc[0] );
+		CNOT( anc[10], anc[7] );
+		CNOT( anc[8], anc[3] );
+		Toffoli( anc[4], anc[13], anc[5] );
+		CNOT( anc[7], anc[4] );
+		CNOT( anc[12], anc[2] );
+		CNOT( anc[9], anc[15] );
+		CNOT( anc[7], anc[3] );
+		CNOT( q[1], anc[0] );
+		CNOT( anc[9], q[1] );
+		CNOT( anc[12], q[1] );
+		Toffoli( anc[15], anc[13], anc[4] );
+		CNOT( anc[6], anc[18] );
+		CNOT( q[0], anc[3] );
+		Toffoli( anc[6], anc[12], anc[9] );
+		CNOT( anc[18], q[0] );
+	} Free(anc, 19) {}
+}
+// Function 7 with degree 0
+// nq: 2, na: 19, ng: 21
+void func7R(qbit **q, int n) {
+printf("func7R\n");
+fflush(stderr);
+	qbit *anc[19]; // ancilla
+	qbit *nb[8]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	nb[1] = q[0];
+	nb[2] = q[1];
+	nb[3] = q[1];
+	nb[4] = q[1];
+	nb[5] = q[1];
+	nb[6] = q[1];
+	nb[7] = q[1];
+	res[0] = q[0];
+	// Leaf function
+	_computeModule(0, 19, 43, 22, 0, 4, 0);
+	acquire(19, anc, 8, nb);
+	Recompute (res, 0, anc, 19, 43, 22){
+		Toffoli( anc[14], anc[13], anc[17] );
+		Toffoli( q[1], anc[6], anc[16] );
+		Toffoli( q[1], anc[15], anc[14] );
+		Toffoli( q[1], anc[17], anc[8] );
+		CNOT( anc[14], anc[11] );
+		Toffoli( anc[15], anc[10], anc[0] );
+		CNOT( anc[10], anc[7] );
+		CNOT( anc[8], anc[3] );
+		Toffoli( anc[4], anc[13], anc[5] );
+		CNOT( anc[7], anc[4] );
+		CNOT( anc[12], anc[2] );
+		CNOT( anc[9], anc[15] );
+		CNOT( anc[7], anc[3] );
+		CNOT( q[1], anc[0] );
+		CNOT( anc[9], q[1] );
+		CNOT( anc[12], q[1] );
+		Toffoli( anc[15], anc[13], anc[4] );
+		CNOT( anc[6], anc[18] );
+		CNOT( q[0], anc[3] );
+		Toffoli( anc[6], anc[12], anc[9] );
+		CNOT( anc[18], q[0] );
+	}
+	Restore {
+		CNOT( anc[12], res[0] );
+	}
+	Unrecompute {
+		CNOT( anc[18], q[0] );
+		Toffoli( anc[6], anc[12], anc[9] );
+		CNOT( q[0], anc[3] );
+		CNOT( anc[6], anc[18] );
+		Toffoli( anc[15], anc[13], anc[4] );
+		CNOT( anc[12], q[1] );
+		CNOT( anc[9], q[1] );
+		CNOT( q[1], anc[0] );
+		CNOT( anc[7], anc[3] );
+		CNOT( anc[9], anc[15] );
+		CNOT( anc[12], anc[2] );
+		CNOT( anc[7], anc[4] );
+		Toffoli( anc[4], anc[13], anc[5] );
+		CNOT( anc[8], anc[3] );
+		CNOT( anc[10], anc[7] );
+		Toffoli( anc[15], anc[10], anc[0] );
+		CNOT( anc[14], anc[11] );
+		Toffoli( q[1], anc[17], anc[8] );
+		Toffoli( q[1], anc[15], anc[14] );
+		Toffoli( q[1], anc[6], anc[16] );
+		Toffoli( anc[14], anc[13], anc[17] );
+	} Refree(anc, 19) {}
+}
+// Function 6 with degree 0
+// nq: 2, na: 19, ng: 23
+void func6(qbit **q, int n) {
+printf("func6\n");
+fflush(stderr);
+	qbit *anc[19]; // ancilla
+	qbit *nb[3]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	nb[1] = q[0];
+	nb[2] = q[1];
+	res[0] = q[1];
+	// Leaf function
+	Compute (0, 19, 47, 24, 0, 4, 0) {
+		acquire(19, anc, 3, nb);
+		CNOT( anc[16], anc[5] );
+		CNOT( anc[13], anc[17] );
+		CNOT( anc[11], anc[1] );
+		Toffoli( anc[5], anc[12], anc[0] );
+		CNOT( anc[7], anc[16] );
+		Toffoli( anc[10], anc[13], anc[9] );
+		Toffoli( anc[16], q[0], anc[5] );
+		Toffoli( anc[13], anc[16], anc[11] );
+		Toffoli( anc[7], anc[17], anc[2] );
+		Toffoli( q[0], anc[15], anc[17] );
+		Toffoli( anc[18], anc[2], anc[14] );
+		CNOT( anc[9], anc[12] );
+		Toffoli( anc[16], anc[9], anc[1] );
+		Toffoli( anc[16], anc[2], anc[15] );
+		CNOT( anc[15], anc[5] );
+		CNOT( anc[12], anc[5] );
+		CNOT( anc[17], anc[15] );
+		CNOT( anc[12], anc[14] );
+		CNOT( anc[4], anc[12] );
+		CNOT( anc[3], anc[18] );
+		CNOT( anc[0], anc[10] );
+		Toffoli( anc[15], anc[0], anc[9] );
+		CNOT( q[1], anc[9] );
+	}
+	Store {
+		CNOT( anc[6], res[0] );
+	}
+	Uncompute(res, 0, anc, 19, 47, 24){
+		CNOT( q[1], anc[9] );
+		Toffoli( anc[15], anc[0], anc[9] );
+		CNOT( anc[0], anc[10] );
+		CNOT( anc[3], anc[18] );
+		CNOT( anc[4], anc[12] );
+		CNOT( anc[12], anc[14] );
+		CNOT( anc[17], anc[15] );
+		CNOT( anc[12], anc[5] );
+		CNOT( anc[15], anc[5] );
+		Toffoli( anc[16], anc[2], anc[15] );
+		Toffoli( anc[16], anc[9], anc[1] );
+		CNOT( anc[9], anc[12] );
+		Toffoli( anc[18], anc[2], anc[14] );
+		Toffoli( q[0], anc[15], anc[17] );
+		Toffoli( anc[7], anc[17], anc[2] );
+		Toffoli( anc[13], anc[16], anc[11] );
+		Toffoli( anc[16], q[0], anc[5] );
+		Toffoli( anc[10], anc[13], anc[9] );
+		CNOT( anc[7], anc[16] );
+		Toffoli( anc[5], anc[12], anc[0] );
+		CNOT( anc[11], anc[1] );
+		CNOT( anc[13], anc[17] );
+		CNOT( anc[16], anc[5] );
+	} Free(anc, 19) {}
+}
+// Function 6 with degree 0
+// nq: 2, na: 19, ng: 23
+void func6R(qbit **q, int n) {
+printf("func6R\n");
+fflush(stderr);
+	qbit *anc[19]; // ancilla
+	qbit *nb[3]; // interacting bits
+	qbit *res[1];
+	nb[0] = q[0];
+	nb[1] = q[0];
+	nb[2] = q[1];
+	res[0] = q[1];
+	// Leaf function
+	_computeModule(0, 19, 47, 24, 0, 4, 0);
+	acquire(19, anc, 3, nb);
+	Recompute (res, 0, anc, 19, 47, 24){
+		CNOT( q[1], anc[9] );
+		Toffoli( anc[15], anc[0], anc[9] );
+		CNOT( anc[0], anc[10] );
+		CNOT( anc[3], anc[18] );
+		CNOT( anc[4], anc[12] );
+		CNOT( anc[12], anc[14] );
+		CNOT( anc[17], anc[15] );
+		CNOT( anc[12], anc[5] );
+		CNOT( anc[15], anc[5] );
+		Toffoli( anc[16], anc[2], anc[15] );
+		Toffoli( anc[16], anc[9], anc[1] );
+		CNOT( anc[9], anc[12] );
+		Toffoli( anc[18], anc[2], anc[14] );
+		Toffoli( q[0], anc[15], anc[17] );
+		Toffoli( anc[7], anc[17], anc[2] );
+		Toffoli( anc[13], anc[16], anc[11] );
+		Toffoli( anc[16], q[0], anc[5] );
+		Toffoli( anc[10], anc[13], anc[9] );
+		CNOT( anc[7], anc[16] );
+		Toffoli( anc[5], anc[12], anc[0] );
+		CNOT( anc[11], anc[1] );
+		CNOT( anc[13], anc[17] );
+		CNOT( anc[16], anc[5] );
+	}
+	Restore {
+		CNOT( anc[6], res[0] );
+	}
+	Unrecompute {
+		CNOT( anc[16], anc[5] );
+		CNOT( anc[13], anc[17] );
+		CNOT( anc[11], anc[1] );
+		Toffoli( anc[5], anc[12], anc[0] );
+		CNOT( anc[7], anc[16] );
+		Toffoli( anc[10], anc[13], anc[9] );
+		Toffoli( anc[16], q[0], anc[5] );
+		Toffoli( anc[13], anc[16], anc[11] );
+		Toffoli( anc[7], anc[17], anc[2] );
+		Toffoli( q[0], anc[15], anc[17] );
+		Toffoli( anc[18], anc[2], anc[14] );
+		CNOT( anc[9], anc[12] );
+		Toffoli( anc[16], anc[9], anc[1] );
+		Toffoli( anc[16], anc[2], anc[15] );
+		CNOT( anc[15], anc[5] );
+		CNOT( anc[12], anc[5] );
+		CNOT( anc[17], anc[15] );
+		CNOT( anc[12], anc[14] );
+		CNOT( anc[4], anc[12] );
+		CNOT( anc[3], anc[18] );
+		CNOT( anc[0], anc[10] );
+		Toffoli( anc[15], anc[0], anc[9] );
+		CNOT( q[1], anc[9] );
+	} Refree(anc, 19) {}
+}
+// Function 5 with degree 4
+// nq: 2, na: 3, ng: 6
+void func5(qbit **q, int n) {
+printf("func5\n");
+fflush(stderr);
+	qbit *anc[3]; // ancilla
+	qbit *nb[5]; // interacting bits
+	qbit *res[1];
+	qbit *nq0[1];
+	qbit *nq1[1];
+	qbit *nq2[1];
+	qbit *nq3[1];
+	nb[0] = q[1];
+	nb[1] = q[0];
+	nb[2] = q[0];
+	nb[3] = q[1];
+	nb[4] = q[1];
+	res[0] = q[1];
+	// Non-leaf function
+	Compute (0, 3, 13, 7, 4, 4, 0){
+		acquire(3, anc, 5, nb);
+	nq0[0] = anc[0];
+	nq1[0] = q[0];
+	nq2[0] = q[1];
+	nq3[0] = anc[2];
+		Toffoli( q[1], anc[2], anc[1] );
+		func18(nq3, 1);
+		CNOT( anc[1], q[1] );
+		func16(nq1, 1);
+		CNOT( anc[0], anc[2] );
+		func15(nq0, 1);
+		func17(nq2, 1);
+		Toffoli( anc[1], q[0], anc[2] );
+		Toffoli( q[0], anc[1], anc[0] );
+		Toffoli( anc[0], q[1], anc[1] );
+	}
+	Store {
+		CNOT( anc[0], res[0] );
+	}
+	Uncompute(res, 0, anc, 3, 13, 7){
+		Toffoli( anc[0], q[1], anc[1] );
+		Toffoli( q[0], anc[1], anc[0] );
+		Toffoli( anc[1], q[0], anc[2] );
+		func17R(nq2, 1);
+		func15R(nq0, 1);
+		CNOT( anc[0], anc[2] );
+		func16R(nq1, 1);
+		CNOT( anc[1], q[1] );
+		func18R(nq3, 1);
+		Toffoli( q[1], anc[2], anc[1] );
+	} Free(anc, 3) {}
+}
+// Function 5 with degree 4
+// nq: 2, na: 3, ng: 6
+void func5R(qbit **q, int n) {
+printf("func5R\n");
+fflush(stderr);
+	qbit *anc[3]; // ancilla
+	qbit *nb[5]; // interacting bits
+	qbit *res[1];
+	qbit *nq0[1];
+	qbit *nq1[1];
+	qbit *nq2[1];
+	qbit *nq3[1];
+	nb[0] = q[1];
+	nb[1] = q[0];
+	nb[2] = q[0];
+	nb[3] = q[1];
+	nb[4] = q[1];
+	res[0] = q[1];
+	// Non-leaf function
+	_computeModule(0, 3, 13, 7, 4, 4, 0);
+	acquire(3, anc, 5, nb);
+	nq0[0] = anc[0];
+	nq1[0] = q[0];
+	nq2[0] = q[1];
+	nq3[0] = anc[2];
+	Recompute(res, 0, anc, 3, 13, 7){
+		Toffoli( q[1], anc[2], anc[1] );
+		func18(nq3, 1);
+		CNOT( anc[1], q[1] );
+		func16(nq1, 1);
+		CNOT( anc[0], anc[2] );
+		func15(nq0, 1);
+		func17(nq2, 1);
+		Toffoli( anc[1], q[0], anc[2] );
+		Toffoli( q[0], anc[1], anc[0] );
+		Toffoli( anc[0], q[1], anc[1] );
+	}
+	Restore {
+		CNOT( anc[0], res[0] );
+	}
+	Unrecompute {
+		Toffoli( anc[0], q[1], anc[1] );
+		Toffoli( q[0], anc[1], anc[0] );
+		Toffoli( anc[1], q[0], anc[2] );
+		func17R(nq2, 1);
+		func15R(nq0, 1);
+		CNOT( anc[0], anc[2] );
+		func16R(nq1, 1);
+		CNOT( anc[1], q[1] );
+		func18R(nq3, 1);
+		Toffoli( q[1], anc[2], anc[1] );
+	} Refree(anc, 3) {}
+}
+// Function 4 with degree 3
+// nq: 4, na: 18, ng: 29
+void func4(qbit **q, int n) {
+printf("func4\n");
+fflush(stderr);
+	qbit *anc[18]; // ancilla
+	qbit *nb[13]; // interacting bits
+	qbit *res[2];
+	qbit *nq0[5];
+	qbit *nq1[5];
+	qbit *nq2[5];
+	nb[0] = q[0];
+	nb[1] = q[1];
+	nb[2] = q[2];
+	nb[3] = q[3];
+	nb[4] = q[3];
+	nb[5] = q[1];
+	nb[6] = q[2];
+	nb[7] = q[2];
+	nb[8] = q[0];
+	nb[9] = q[1];
+	nb[10] = q[3];
+	nb[11] = q[2];
+	nb[12] = q[1];
+	res[0] = q[2];
+	res[1] = q[3];
+	// Non-leaf function
+	Compute (0, 18, 60, 31, 3, 128, 0){
+		acquire(18, anc, 13, nb);
+	nq0[0] = q[2];
+	nq0[1] = anc[9];
+	nq0[2] = q[0];
+	nq0[3] = anc[1];
+	nq0[4] = anc[10];
+	nq1[0] = anc[0];
+	nq1[1] = anc[5];
+	nq1[2] = q[3];
+	nq1[3] = q[1];
+	nq1[4] = anc[6];
+	nq2[0] = anc[4];
+	nq2[1] = anc[3];
+	nq2[2] = anc[8];
+	nq2[3] = anc[2];
+	nq2[4] = anc[11];
+		Toffoli( anc[17], anc[7], anc[11] );
+		CNOT( anc[9], anc[13] );
+		Toffoli( anc[17], q[3], anc[0] );
+		CNOT( anc[11], anc[8] );
+		func12(nq0, 5);
+		CNOT( anc[14], q[1] );
+		Toffoli( anc[7], anc[4], anc[13] );
+		Toffoli( anc[2], anc[7], anc[8] );
+		Toffoli( q[2], anc[5], anc[6] );
+		CNOT( anc[10], anc[1] );
+		func13(nq1, 5);
+		Toffoli( q[1], q[2], anc[13] );
+		Toffoli( anc[1], anc[9], anc[13] );
+		func14(nq2, 5);
+		Toffoli( anc[12], anc[16], anc[4] );
+		Toffoli( q[1], anc[17], anc[2] );
+		CNOT( anc[14], q[1] );
+		Toffoli( anc[0], anc[9], anc[2] );
+		Toffoli( anc[4], anc[14], anc[12] );
+		Toffoli( anc[10], anc[9], anc[6] );
+		CNOT( anc[4], anc[2] );
+		CNOT( anc[3], anc[1] );
+		Toffoli( anc[0], anc[8], anc[4] );
+		Toffoli( anc[1], anc[4], q[2] );
+		Toffoli( anc[9], anc[11], anc[0] );
+		Toffoli( q[0], anc[10], anc[9] );
+		CNOT( q[3], anc[0] );
+		CNOT( anc[7], q[2] );
+		Toffoli( anc[5], anc[16], q[3] );
+		Toffoli( anc[10], anc[4], anc[0] );
+		CNOT( anc[10], q[0] );
+		Toffoli( anc[10], anc[8], anc[12] );
+	}
+	Store {
+		CNOT( anc[16], res[0] );
+		CNOT( anc[3], res[1] );
+	}
+	Uncompute(res, 0, anc, 18, 60, 31){
+		Toffoli( anc[10], anc[8], anc[12] );
+		CNOT( anc[10], q[0] );
+		Toffoli( anc[10], anc[4], anc[0] );
+		Toffoli( anc[5], anc[16], q[3] );
+		CNOT( anc[7], q[2] );
+		CNOT( q[3], anc[0] );
+		Toffoli( q[0], anc[10], anc[9] );
+		Toffoli( anc[9], anc[11], anc[0] );
+		Toffoli( anc[1], anc[4], q[2] );
+		Toffoli( anc[0], anc[8], anc[4] );
+		CNOT( anc[3], anc[1] );
+		CNOT( anc[4], anc[2] );
+		Toffoli( anc[10], anc[9], anc[6] );
+		Toffoli( anc[4], anc[14], anc[12] );
+		Toffoli( anc[0], anc[9], anc[2] );
+		CNOT( anc[14], q[1] );
+		Toffoli( q[1], anc[17], anc[2] );
+		Toffoli( anc[12], anc[16], anc[4] );
+		func14R(nq2, 5);
+		Toffoli( anc[1], anc[9], anc[13] );
+		Toffoli( q[1], q[2], anc[13] );
+		func13R(nq1, 5);
+		CNOT( anc[10], anc[1] );
+		Toffoli( q[2], anc[5], anc[6] );
+		Toffoli( anc[2], anc[7], anc[8] );
+		Toffoli( anc[7], anc[4], anc[13] );
+		CNOT( anc[14], q[1] );
+		func12R(nq0, 5);
+		CNOT( anc[11], anc[8] );
+		Toffoli( anc[17], q[3], anc[0] );
+		CNOT( anc[9], anc[13] );
+		Toffoli( anc[17], anc[7], anc[11] );
+	} Free(anc, 18) {}
+}
+// Function 4 with degree 3
+// nq: 4, na: 18, ng: 29
+void func4R(qbit **q, int n) {
+printf("func4R\n");
+fflush(stderr);
+	qbit *anc[18]; // ancilla
+	qbit *nb[13]; // interacting bits
+	qbit *res[2];
+	qbit *nq0[5];
+	qbit *nq1[5];
+	qbit *nq2[5];
+	nb[0] = q[0];
+	nb[1] = q[1];
+	nb[2] = q[2];
+	nb[3] = q[3];
+	nb[4] = q[3];
+	nb[5] = q[1];
+	nb[6] = q[2];
+	nb[7] = q[2];
+	nb[8] = q[0];
+	nb[9] = q[1];
+	nb[10] = q[3];
+	nb[11] = q[2];
+	nb[12] = q[1];
+	res[0] = q[2];
+	res[1] = q[3];
+	// Non-leaf function
+	_computeModule(0, 18, 60, 31, 3, 128, 0);
+	acquire(18, anc, 13, nb);
+	nq0[0] = q[2];
+	nq0[1] = anc[9];
+	nq0[2] = q[0];
+	nq0[3] = anc[1];
+	nq0[4] = anc[10];
+	nq1[0] = anc[0];
+	nq1[1] = anc[5];
+	nq1[2] = q[3];
+	nq1[3] = q[1];
+	nq1[4] = anc[6];
+	nq2[0] = anc[4];
+	nq2[1] = anc[3];
+	nq2[2] = anc[8];
+	nq2[3] = anc[2];
+	nq2[4] = anc[11];
+	Recompute(res, 0, anc, 18, 60, 31){
+		Toffoli( anc[17], anc[7], anc[11] );
+		CNOT( anc[9], anc[13] );
+		Toffoli( anc[17], q[3], anc[0] );
+		CNOT( anc[11], anc[8] );
+		func12(nq0, 5);
+		CNOT( anc[14], q[1] );
+		Toffoli( anc[7], anc[4], anc[13] );
+		Toffoli( anc[2], anc[7], anc[8] );
+		Toffoli( q[2], anc[5], anc[6] );
+		CNOT( anc[10], anc[1] );
+		func13(nq1, 5);
+		Toffoli( q[1], q[2], anc[13] );
+		Toffoli( anc[1], anc[9], anc[13] );
+		func14(nq2, 5);
+		Toffoli( anc[12], anc[16], anc[4] );
+		Toffoli( q[1], anc[17], anc[2] );
+		CNOT( anc[14], q[1] );
+		Toffoli( anc[0], anc[9], anc[2] );
+		Toffoli( anc[4], anc[14], anc[12] );
+		Toffoli( anc[10], anc[9], anc[6] );
+		CNOT( anc[4], anc[2] );
+		CNOT( anc[3], anc[1] );
+		Toffoli( anc[0], anc[8], anc[4] );
+		Toffoli( anc[1], anc[4], q[2] );
+		Toffoli( anc[9], anc[11], anc[0] );
+		Toffoli( q[0], anc[10], anc[9] );
+		CNOT( q[3], anc[0] );
+		CNOT( anc[7], q[2] );
+		Toffoli( anc[5], anc[16], q[3] );
+		Toffoli( anc[10], anc[4], anc[0] );
+		CNOT( anc[10], q[0] );
+		Toffoli( anc[10], anc[8], anc[12] );
+	}
+	Restore {
+		CNOT( anc[16], res[0] );
+		CNOT( anc[3], res[1] );
+	}
+	Unrecompute {
+		Toffoli( anc[10], anc[8], anc[12] );
+		CNOT( anc[10], q[0] );
+		Toffoli( anc[10], anc[4], anc[0] );
+		Toffoli( anc[5], anc[16], q[3] );
+		CNOT( anc[7], q[2] );
+		CNOT( q[3], anc[0] );
+		Toffoli( q[0], anc[10], anc[9] );
+		Toffoli( anc[9], anc[11], anc[0] );
+		Toffoli( anc[1], anc[4], q[2] );
+		Toffoli( anc[0], anc[8], anc[4] );
+		CNOT( anc[3], anc[1] );
+		CNOT( anc[4], anc[2] );
+		Toffoli( anc[10], anc[9], anc[6] );
+		Toffoli( anc[4], anc[14], anc[12] );
+		Toffoli( anc[0], anc[9], anc[2] );
+		CNOT( anc[14], q[1] );
+		Toffoli( q[1], anc[17], anc[2] );
+		Toffoli( anc[12], anc[16], anc[4] );
+		func14R(nq2, 5);
+		Toffoli( anc[1], anc[9], anc[13] );
+		Toffoli( q[1], q[2], anc[13] );
+		func13R(nq1, 5);
+		CNOT( anc[10], anc[1] );
+		Toffoli( q[2], anc[5], anc[6] );
+		Toffoli( anc[2], anc[7], anc[8] );
+		Toffoli( anc[7], anc[4], anc[13] );
+		CNOT( anc[14], q[1] );
+		func12R(nq0, 5);
+		CNOT( anc[11], anc[8] );
+		Toffoli( anc[17], q[3], anc[0] );
+		CNOT( anc[9], anc[13] );
+		Toffoli( anc[17], anc[7], anc[11] );
+	} Refree(anc, 18) {}
+}
+// Function 3 with degree 1
+// nq: 4, na: 5, ng: 1
+void func3(qbit **q, int n) {
+printf("func3\n");
+fflush(stderr);
+	qbit *anc[5]; // ancilla
+	qbit *nb[2]; // interacting bits
+	qbit *res[4];
+	qbit *nq0[9];
+	nb[0] = q[2];
+	nb[1] = q[0];
+	res[0] = q[0];
+	res[1] = q[1];
+	res[2] = q[3];
+	res[3] = q[2];
+	// Non-leaf function
+	Compute (0, 5, 6, 5, 1, 128, 0){
+		acquire(5, anc, 2, nb);
+	nq0[0] = q[0];
+	nq0[1] = anc[4];
+	nq0[2] = anc[1];
+	nq0[3] = q[3];
+	nq0[4] = anc[3];
+	nq0[5] = anc[2];
+	nq0[6] = anc[0];
+	nq0[7] = q[1];
+	nq0[8] = q[2];
+		func11(nq0, 9);
+		Toffoli( q[2], q[0], anc[3] );
+	}
+	Store {
+		CNOT( q[1], res[0] );
+		CNOT( anc[1], res[1] );
+		CNOT( q[0], res[2] );
+		CNOT( anc[3], res[3] );
+	}
+	Uncompute(res, 0, anc, 5, 6, 5){
+		Toffoli( q[2], q[0], anc[3] );
+		func11R(nq0, 9);
+	} Free(anc, 5) {}
+}
+// Function 3 with degree 1
+// nq: 4, na: 5, ng: 1
+void func3R(qbit **q, int n) {
+printf("func3R\n");
+fflush(stderr);
+	qbit *anc[5]; // ancilla
+	qbit *nb[2]; // interacting bits
+	qbit *res[4];
+	qbit *nq0[9];
+	nb[0] = q[2];
+	nb[1] = q[0];
+	res[0] = q[0];
+	res[1] = q[1];
+	res[2] = q[3];
+	res[3] = q[2];
+	// Non-leaf function
+	_computeModule(0, 5, 6, 5, 1, 128, 0);
+	acquire(5, anc, 2, nb);
+	nq0[0] = q[0];
+	nq0[1] = anc[4];
+	nq0[2] = anc[1];
+	nq0[3] = q[3];
+	nq0[4] = anc[3];
+	nq0[5] = anc[2];
+	nq0[6] = anc[0];
+	nq0[7] = q[1];
+	nq0[8] = q[2];
+	Recompute(res, 0, anc, 5, 6, 5){
+		func11(nq0, 9);
+		Toffoli( q[2], q[0], anc[3] );
+	}
+	Restore {
+		CNOT( q[1], res[0] );
+		CNOT( anc[1], res[1] );
+		CNOT( q[0], res[2] );
+		CNOT( anc[3], res[3] );
+	}
+	Unrecompute {
+		Toffoli( q[2], q[0], anc[3] );
+		func11R(nq0, 9);
+	} Refree(anc, 5) {}
+}
+// Function 2 with degree 2
+// nq: 4, na: 15, ng: 10
+void func2(qbit **q, int n) {
+printf("func2\n");
+fflush(stderr);
+	qbit *anc[15]; // ancilla
+	qbit *nb[2]; // interacting bits
+	qbit *res[3];
+	qbit *nq0[8];
+	qbit *nq1[8];
+	nb[0] = q[2];
+	nb[1] = q[0];
+	res[0] = q[0];
+	res[1] = q[3];
+	res[2] = q[2];
+	// Non-leaf function
+	Compute (0, 15, 23, 13, 2, 128, 0){
+		acquire(15, anc, 2, nb);
+	nq0[0] = anc[0];
+	nq0[1] = q[2];
+	nq0[2] = anc[1];
+	nq0[3] = anc[4];
+	nq0[4] = anc[8];
+	nq0[5] = anc[6];
+	nq0[6] = q[1];
+	nq0[7] = q[0];
+	nq1[0] = anc[3];
+	nq1[1] = anc[10];
+	nq1[2] = q[3];
+	nq1[3] = anc[7];
+	nq1[4] = anc[9];
+	nq1[5] = anc[5];
+	nq1[6] = anc[2];
+	nq1[7] = anc[11];
+		CNOT( anc[2], q[2] );
+		CNOT( anc[3], anc[10] );
+		Toffoli( anc[1], anc[12], anc[5] );
+		Toffoli( anc[10], anc[6], anc[4] );
+		CNOT( anc[3], anc[6] );
+		CNOT( anc[1], anc[11] );
+		CNOT( anc[14], anc[5] );
+		Toffoli( anc[8], anc[4], anc[2] );
+		CNOT( anc[13], anc[0] );
+		func9(nq0, 8);
+		Toffoli( anc[8], q[0], anc[3] );
+		func10(nq1, 8);
+	}
+	Store {
+		CNOT( q[1], res[0] );
+		CNOT( anc[6], res[1] );
+		CNOT( anc[14], res[2] );
+	}
+	Uncompute(res, 0, anc, 15, 23, 13){
+		func10R(nq1, 8);
+		Toffoli( anc[8], q[0], anc[3] );
+		func9R(nq0, 8);
+		CNOT( anc[13], anc[0] );
+		Toffoli( anc[8], anc[4], anc[2] );
+		CNOT( anc[14], anc[5] );
+		CNOT( anc[1], anc[11] );
+		CNOT( anc[3], anc[6] );
+		Toffoli( anc[10], anc[6], anc[4] );
+		Toffoli( anc[1], anc[12], anc[5] );
+		CNOT( anc[3], anc[10] );
+		CNOT( anc[2], q[2] );
+	} Free(anc, 15) {}
+}
+// Function 2 with degree 2
+// nq: 4, na: 15, ng: 10
+void func2R(qbit **q, int n) {
+printf("func2R\n");
+fflush(stderr);
+	qbit *anc[15]; // ancilla
+	qbit *nb[2]; // interacting bits
+	qbit *res[3];
+	qbit *nq0[8];
+	qbit *nq1[8];
+	nb[0] = q[2];
+	nb[1] = q[0];
+	res[0] = q[0];
+	res[1] = q[3];
+	res[2] = q[2];
+	// Non-leaf function
+	_computeModule(0, 15, 23, 13, 2, 128, 0);
+	acquire(15, anc, 2, nb);
+	nq0[0] = anc[0];
+	nq0[1] = q[2];
+	nq0[2] = anc[1];
+	nq0[3] = anc[4];
+	nq0[4] = anc[8];
+	nq0[5] = anc[6];
+	nq0[6] = q[1];
+	nq0[7] = q[0];
+	nq1[0] = anc[3];
+	nq1[1] = anc[10];
+	nq1[2] = q[3];
+	nq1[3] = anc[7];
+	nq1[4] = anc[9];
+	nq1[5] = anc[5];
+	nq1[6] = anc[2];
+	nq1[7] = anc[11];
+	Recompute(res, 0, anc, 15, 23, 13){
+		CNOT( anc[2], q[2] );
+		CNOT( anc[3], anc[10] );
+		Toffoli( anc[1], anc[12], anc[5] );
+		Toffoli( anc[10], anc[6], anc[4] );
+		CNOT( anc[3], anc[6] );
+		CNOT( anc[1], anc[11] );
+		CNOT( anc[14], anc[5] );
+		Toffoli( anc[8], anc[4], anc[2] );
+		CNOT( anc[13], anc[0] );
+		func9(nq0, 8);
+		Toffoli( anc[8], q[0], anc[3] );
+		func10(nq1, 8);
+	}
+	Restore {
+		CNOT( q[1], res[0] );
+		CNOT( anc[6], res[1] );
+		CNOT( anc[14], res[2] );
+	}
+	Unrecompute {
+		func10R(nq1, 8);
+		Toffoli( anc[8], q[0], anc[3] );
+		func9R(nq0, 8);
+		CNOT( anc[13], anc[0] );
+		Toffoli( anc[8], anc[4], anc[2] );
+		CNOT( anc[14], anc[5] );
+		CNOT( anc[1], anc[11] );
+		CNOT( anc[3], anc[6] );
+		Toffoli( anc[10], anc[6], anc[4] );
+		Toffoli( anc[1], anc[12], anc[5] );
+		CNOT( anc[3], anc[10] );
+		CNOT( anc[2], q[2] );
+	} Refree(anc, 15) {}
+}
+// Function 1 with degree 4
+// nq: 4, na: 4, ng: 18
+void func1(qbit **q, int n) {
+printf("func1\n");
+fflush(stderr);
+	qbit *anc[4]; // ancilla
+	qbit *nb[26]; // interacting bits
+	qbit *res[2];
+	qbit *nq0[2];
+	qbit *nq1[2];
+	qbit *nq2[2];
+	qbit *nq3[2];
+	nb[0] = q[0];
+	nb[1] = q[3];
+	nb[2] = q[0];
+	nb[3] = q[0];
+	nb[4] = q[0];
+	nb[5] = q[1];
+	nb[6] = q[1];
+	nb[7] = q[0];
+	nb[8] = q[3];
+	nb[9] = q[1];
+	nb[10] = q[1];
+	nb[11] = q[3];
+	nb[12] = q[1];
+	nb[13] = q[2];
+	nb[14] = q[2];
+	nb[15] = q[1];
+	nb[16] = q[1];
+	nb[17] = q[2];
+	nb[18] = q[0];
+	nb[19] = q[1];
+	nb[20] = q[3];
+	nb[21] = q[1];
+	nb[22] = q[3];
+	nb[23] = q[0];
+	nb[24] = q[0];
+	nb[25] = q[1];
+	res[0] = q[3];
+	res[1] = q[1];
+	// Non-leaf function
+	Compute (0, 4, 38, 20, 4, 128, 0){
+		acquire(4, anc, 26, nb);
+	nq0[0] = q[1];
+	nq0[1] = anc[3];
+	nq1[0] = anc[0];
+	nq1[1] = q[2];
+	nq2[0] = anc[1];
+	nq2[1] = anc[2];
+	nq3[0] = q[3];
+	nq3[1] = q[0];
+		Toffoli( q[0], anc[3], anc[0] );
+		Toffoli( q[1], q[2], anc[2] );
+		CNOT( anc[2], q[0] );
+		Toffoli( q[2], q[1], anc[1] );
+		CNOT( q[0], q[1] );
+		CNOT( q[1], anc[1] );
+		Toffoli( anc[2], anc[3], q[1] );
+		CNOT( anc[0], q[2] );
+		Toffoli( q[1], q[3], q[0] );
+		Toffoli( q[3], q[1], anc[0] );
+		func7(nq2, 2);
+		func5(nq0, 2);
+		Toffoli( q[0], q[1], q[3] );
+		CNOT( q[1], q[0] );
+		CNOT( q[3], anc[3] );
+		Toffoli( anc[3], anc[1], anc[0] );
+		func8(nq3, 2);
+		func6(nq1, 2);
+		CNOT( anc[0], q[0] );
+		CNOT( q[3], anc[1] );
+		Toffoli( anc[0], anc[1], anc[2] );
+		CNOT( q[0], q[1] );
+	}
+	Store {
+		CNOT( anc[2], res[0] );
+		CNOT( q[0], res[1] );
+	}
+	Uncompute(res, 0, anc, 4, 38, 20){
+		CNOT( q[0], q[1] );
+		Toffoli( anc[0], anc[1], anc[2] );
+		CNOT( q[3], anc[1] );
+		CNOT( anc[0], q[0] );
+		func6R(nq1, 2);
+		func8R(nq3, 2);
+		Toffoli( anc[3], anc[1], anc[0] );
+		CNOT( q[3], anc[3] );
+		CNOT( q[1], q[0] );
+		Toffoli( q[0], q[1], q[3] );
+		func5R(nq0, 2);
+		func7R(nq2, 2);
+		Toffoli( q[3], q[1], anc[0] );
+		Toffoli( q[1], q[3], q[0] );
+		CNOT( anc[0], q[2] );
+		Toffoli( anc[2], anc[3], q[1] );
+		CNOT( q[1], anc[1] );
+		CNOT( q[0], q[1] );
+		Toffoli( q[2], q[1], anc[1] );
+		CNOT( anc[2], q[0] );
+		Toffoli( q[1], q[2], anc[2] );
+		Toffoli( q[0], anc[3], anc[0] );
+	} Free(anc, 4) {}
+}
+// Function 1 with degree 4
+// nq: 4, na: 4, ng: 18
+void func1R(qbit **q, int n) {
+printf("func1R\n");
+fflush(stderr);
+	qbit *anc[4]; // ancilla
+	qbit *nb[26]; // interacting bits
+	qbit *res[2];
+	qbit *nq0[2];
+	qbit *nq1[2];
+	qbit *nq2[2];
+	qbit *nq3[2];
+	nb[0] = q[0];
+	nb[1] = q[3];
+	nb[2] = q[0];
+	nb[3] = q[0];
+	nb[4] = q[0];
+	nb[5] = q[1];
+	nb[6] = q[1];
+	nb[7] = q[0];
+	nb[8] = q[3];
+	nb[9] = q[1];
+	nb[10] = q[1];
+	nb[11] = q[3];
+	nb[12] = q[1];
+	nb[13] = q[2];
+	nb[14] = q[2];
+	nb[15] = q[1];
+	nb[16] = q[1];
+	nb[17] = q[2];
+	nb[18] = q[0];
+	nb[19] = q[1];
+	nb[20] = q[3];
+	nb[21] = q[1];
+	nb[22] = q[3];
+	nb[23] = q[0];
+	nb[24] = q[0];
+	nb[25] = q[1];
+	res[0] = q[3];
+	res[1] = q[1];
+	// Non-leaf function
+	_computeModule(0, 4, 38, 20, 4, 128, 0);
+	acquire(4, anc, 26, nb);
+	nq0[0] = q[1];
+	nq0[1] = anc[3];
+	nq1[0] = anc[0];
+	nq1[1] = q[2];
+	nq2[0] = anc[1];
+	nq2[1] = anc[2];
+	nq3[0] = q[3];
+	nq3[1] = q[0];
+	Recompute(res, 0, anc, 4, 38, 20){
+		Toffoli( q[0], anc[3], anc[0] );
+		Toffoli( q[1], q[2], anc[2] );
+		CNOT( anc[2], q[0] );
+		Toffoli( q[2], q[1], anc[1] );
+		CNOT( q[0], q[1] );
+		CNOT( q[1], anc[1] );
+		Toffoli( anc[2], anc[3], q[1] );
+		CNOT( anc[0], q[2] );
+		Toffoli( q[1], q[3], q[0] );
+		Toffoli( q[3], q[1], anc[0] );
+		func7(nq2, 2);
+		func5(nq0, 2);
+		Toffoli( q[0], q[1], q[3] );
+		CNOT( q[1], q[0] );
+		CNOT( q[3], anc[3] );
+		Toffoli( anc[3], anc[1], anc[0] );
+		func8(nq3, 2);
+		func6(nq1, 2);
+		CNOT( anc[0], q[0] );
+		CNOT( q[3], anc[1] );
+		Toffoli( anc[0], anc[1], anc[2] );
+		CNOT( q[0], q[1] );
+	}
+	Restore {
+		CNOT( anc[2], res[0] );
+		CNOT( q[0], res[1] );
+	}
+	Unrecompute {
+		CNOT( q[0], q[1] );
+		Toffoli( anc[0], anc[1], anc[2] );
+		CNOT( q[3], anc[1] );
+		CNOT( anc[0], q[0] );
+		func6R(nq1, 2);
+		func8R(nq3, 2);
+		Toffoli( anc[3], anc[1], anc[0] );
+		CNOT( q[3], anc[3] );
+		CNOT( q[1], q[0] );
+		Toffoli( q[0], q[1], q[3] );
+		func5R(nq0, 2);
+		func7R(nq2, 2);
+		Toffoli( q[3], q[1], anc[0] );
+		Toffoli( q[1], q[3], q[0] );
+		CNOT( anc[0], q[2] );
+		Toffoli( anc[2], anc[3], q[1] );
+		CNOT( q[1], anc[1] );
+		CNOT( q[0], q[1] );
+		Toffoli( q[2], q[1], anc[1] );
+		CNOT( anc[2], q[0] );
+		Toffoli( q[1], q[2], anc[2] );
+		Toffoli( q[0], anc[3], anc[0] );
+	} Refree(anc, 4) {}
+}
+// main function
+int main() {
+	qbit *new[16];
+	acquire(16, new, 0, NULL);
+	// Intialize inputs
+	X (new[15]);
+	X (new[5]);
+	X (new[8]);
+	X (new[6]);
+	X (new[14]);
+	X (new[3]);
+	X (new[10]);
+	X (new[1]);
+	X (new[12]);
+	X (new[2]);
+	X (new[11]);
+	// Start computation
+	qbit *nq0[4];
+	qbit *nq1[4];
+	qbit *nq2[4];
+	qbit *nq3[4];
+	nq0[0] = new[0];
+	nq0[1] = new[12];
+	nq0[2] = new[6];
+	nq0[3] = new[2];
+	nq1[0] = new[10];
+	nq1[1] = new[4];
+	nq1[2] = new[9];
+	nq1[3] = new[7];
+	nq2[0] = new[14];
+	nq2[1] = new[8];
+	nq2[2] = new[13];
+	nq2[3] = new[1];
+	nq3[0] = new[15];
+	nq3[1] = new[3];
+	nq3[2] = new[11];
+	nq3[3] = new[5];
+	for (int i = 0; i < LOOP; i++) {
+		func1(nq0, 4);
+		func2(nq1, 4);
+		func3(nq2, 4);
+		func4(nq3, 4);
+	}
+	return 0;
+}
