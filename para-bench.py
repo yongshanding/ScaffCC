@@ -259,7 +259,7 @@ def build_fun(i, all_calls, all_qs, outf):
     outf.write(buff)
     outf.write(buff_r)
 
-def build_main(callees, all_calls, all_qs, outf, nq, na, ng):
+def build_main(callees, all_calls, all_qs, outf, nq, na, ng, nloop):
     if (len(callees) == 0):
         print ("Error. main function should have at least one callees.")
         sys.exit()
@@ -301,8 +301,12 @@ def build_main(callees, all_calls, all_qs, outf, nq, na, ng):
                 cq_op = "new["+str(cq)+"]" 
                 writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
             all_ins.append("func" + str(c) + "(nq"+str(j)+", "+str(num_q)+");")
+        writeline(outf, "for (int i = 0; i < LOOP; i++) {")
+        tab()
         for ins in all_ins:
             writeline(outf, ins)
+        untab()
+        writeline(outf, "}")
     writeline(outf, "return 0;")
     untab()
     writeline(outf, "}")
@@ -313,11 +317,12 @@ def printStructure(call_lists):
         call_str = ",".join([str(c) for c in calls])
         print("\tFun " + str(i) + ": " + call_str)
 
-def rand_synth(outf, nq, na, ng, nl, nd):
+def rand_synth(outf, nq, na, ng, nl, nd, nloop):
     writeline(outf, "// Scaffold file synthesized by para-bench.py")
-    writeline(outf, "// qubits: " + str(nq) + " ancilla: " + str(na) + " gates: " + str(ng) + " levels: " + str(nl) + " degrees: "+ str(nd))
+    writeline(outf, "// qubits: " + str(nq) + " ancilla: " + str(na) + " gates: " + str(ng) + " levels: " + str(nl)  + " degrees: "+ str(nd) + " loops: "+ str(nloop))
     writeline(outf, "#include \"qalloc.h\"")
     writeline(outf, "#include \"uncompute.h\"")
+    writeline(outf, "#define LOOP " + str(nloop))
     # Build a tree-like program with depth nl, and random branching
     # First create the random branching array A[l] is the branching 
 
@@ -413,7 +418,7 @@ def rand_synth(outf, nq, na, ng, nl, nd):
         build_fun(c, all_calls, all_qs, outf)
 
     # Lastly, build main
-    build_main(call_lists[0], all_calls, all_qs, outf, nq, na, ng)
+    build_main(call_lists[0], all_calls, all_qs, outf, nq, na, ng, nloop)
     print("[para-bench.py] Sythetic benchmark written to: " + outf.name)
     #for li in range(nl):
     #    # start from the leaf level (i=0), build the necessary functions
@@ -429,16 +434,17 @@ def main():
     num_ancilla= 0
     num_gates = 0
     L = 0
+    l = 0
     d = DEFAULT_MAX_DEGREE
     try:
-        opt, args = getopt.getopt(sys.argv[1:], "ho:q:a:g:L:d:s:", ["help", "output=", "qubits=", "ancilla=", "gates=", "levels=", "degree=", "seed="])
+        opt, args = getopt.getopt(sys.argv[1:], "ho:q:a:g:L:d:l:s:", ["help", "output=", "qubits=", "ancilla=", "gates=", "levels=", "degree=", "loop=", "seed="])
     except getopt.GetOptError as err:
         print(err)
-        print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
+        print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -l <loop> -s <seed, optional>")
         sys.exit(2)
     for o,a in opt:
         if o in ("-h", "--help"):
-            print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
+            print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -l <loop>  -s <seed, optional>")
             sys.exit()
         elif o in ("-o", "--output"):
             outname = a
@@ -452,12 +458,14 @@ def main():
             L = int(a)
         elif o in ("-d", "--degree"):
             d = int(a)
+        elif o in ("-l", "--loop"):
+            l = int(a)
         elif o in ("-s", "--seed"):
             s = int(a)
         else:
-            print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
+            print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -l <loop>  -s <seed, optional>")
             sys.exit()
-    if (num_qubits > 0 and num_ancilla > 0 and num_gates > 0 and L > 0 and d > 0):
+    if (num_qubits > 0 and num_ancilla > 0 and num_gates > 0 and L > 0 and d > 0 and l > 0):
         if (not outname):
             print("Please specify valid output scaffold filename")
         else:
@@ -465,10 +473,10 @@ def main():
                 global SEED
                 SEED = s
             with open(outname, 'w') as outfile:
-                rand_synth(outfile, num_qubits, num_ancilla,  num_gates, L, d)
+                rand_synth(outfile, num_qubits, num_ancilla,  num_gates, L, d, l)
     else:
         print("qubits, gates, or levels needs to be a positive integer")
-        print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -s <seed, optional>")
+        print("Usage: para-bench.py -o <output file> -q <qubits> -a <ancilla> -g <gates> -L <levels> -d <degree> -l <loop>  -s <seed, optional>")
  
 if __name__ == "__main__":
   main()
