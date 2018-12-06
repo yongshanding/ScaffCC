@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iomanip>
 //#include <limits.h>
-
+#include <ctime>
 //#include <stddef.h>    /* offsetof  */
 //#include <string.h>    /* strcpy    */
 #include <string>
@@ -103,6 +103,8 @@ std::ofstream tsv_out(tsv_filename.c_str(), std::ofstream::out | std::ofstream::
 // output info
 long long tsv_act_v = 0;
 long tsv_depth = 0;
+clock_t t_begin;
+clock_t t_end;
 
 int num_gate_scheduled = 0;
 int time_step_scheduled = 0;
@@ -639,7 +641,8 @@ void printGateCounts() {
 	cout << "Total Gate Count: " << gate_count << " Longest Chain: " << longest_chain << endl;
 	tsv_out << freePolicy << "\t" << tsv_act_v << "\t" << gate_count - AllGates[_SWAP] << "\t";
 	tsv_out << AllQubits->N << "\t" << tsv_depth << "\t" << AllGates[_SWAP] << "\t";
-	tsv_out << total_swap_len << "\t" << num_swap_chain << "\t" << longest_chain << endl;
+	tsv_out << total_swap_len << "\t" << num_swap_chain << "\t" << longest_chain << "\t";
+	tsv_out << double(t_end - t_begin) / CLOCKS_PER_SEC << endl;
 }
 
 
@@ -2503,7 +2506,7 @@ void qasm_initialize ()
 	//printConnectivityGraph();
 	//printDistances();
 	//stackInit(_MAX_CALL_DEPTH);
-
+	t_begin = clock();
 	memoryHeap = memHeapNew(_GLOBAL_MAX_SIZE);
 	callGraph = callGraphNew();
 	qubitsInit();
@@ -2556,7 +2559,7 @@ void qasm_resource_summary ()
 		//}
 		tryPendingGates();
 	}
-
+	t_end = clock();
 	printf("==================================\n");
 	printf("Total number of qubits used: %u. \n", AllQubits->N);
 

@@ -1,4 +1,10 @@
-FILE=sha2
+FILE=$1
+if [ "$FILE" = "" ]
+then
+	echo "need a input file"
+	exit 0
+fi
+
 cd build/
 make -j 12 #>/dev/null 2>/dev/null 
 cd -  
