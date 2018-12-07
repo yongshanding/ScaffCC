@@ -77,8 +77,8 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _OPTG; 
+int allocPolicy = _LIFO;
+int freePolicy = _EAGER; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
@@ -87,7 +87,7 @@ int systemType = 1; // 0: linear, 1: grid
 int para_counter = 0;
 int parallel_alloc = 0;
 int salsa_p = 1;
-int jasmine_p = 1;
+int jasmine_p = 8;
 int elsa_p = 1;
 int belle_p = 1;
 int snowwhite_p = 1;
@@ -1776,7 +1776,12 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 			}
 
 			int num = 0;
-			if ((salsa_p > 1) && (para_counter - 2) % 8 < 2 && (para_counter <= (4*(2*salsa_p - 1)-1))) {
+			if ( ((salsa_p > 1) && (para_counter - 2) % 8 < 2 && (para_counter <= (4*(2*salsa_p - 1)-1))) || 
+				((jasmine_p > 1) && ((para_counter - 2) % (18*32/jasmine_p) < 18)) ||
+				((elsa_p > 1) && ((para_counter - 2) % (10*32/elsa_p) < 10)) ||
+				((belle_p > 1) && ((para_counter - 2) % (28*32/belle_p) < 28)) ||
+				((snowwhite_p > 1) && ((para_counter - 2) % (12*32/snowwhite_p) < 12))
+			) {
 				cout << "para_counter = " << para_counter << endl;
 				cout << "para force new qubit: " << endl;
 			} else {
