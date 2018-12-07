@@ -2154,6 +2154,7 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			int num_younger_sis = total_pa_degree - current_node->parent->num_children;
 			int workload_1 = 0;
 			int workload_0 = 0;
+			int para_factor = 1;
 			double ng1_avg;
 			double swap_sum;
 			double swap_avg;
@@ -2166,6 +2167,18 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			swap_avg = current_node->parent->children_swap_sum / (current_node->parent->num_children);
 			weight_q = current_node->parent->children_swap_sum / current_node->parent->children_ng0_sum;
 			
+			if (salsa_p > 1){
+				para_factor = salsa_p;
+			} else if (jasmine_p > 1){
+				para_factor = jasmine_p;
+			} else if (elsa_p > 1){
+				para_factor = elsa_p;
+			} else if (belle_p > 1){
+				para_factor = belle_p;
+			} else if (snowwhite_p > 1){
+				para_factor = snowwhite_p;
+			} 
+				
 			//cerr << "nout: " << nOut << " na: " << nAnc << " c_nAnc: " << c_nAnc << " Heap: " << memoryHeap->numQubits <<" Q: " << total_q << "\n";
 			//cerr << "ng1: " << nGate1 << " ng0: " << nGate0 <<  " T: " << time_step_scheduled << "\n";
 			//cerr << "num_younger_sis: " << num_younger_sis << " q_active: " << q_active << endl;
@@ -2174,10 +2187,10 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			} else {
 				if (current_node->parent->is_root == 1){
 				workload_1 = (nGate1 - nGate0 + swap_sum) * q_active;
-				workload_0 = (nAnc + c_nAnc) * (num_younger_sis  * ng1_avg) * weight_q * increased_weight;
+				workload_0 = (nAnc + c_nAnc) * (num_younger_sis / para_factor * ng1_avg) * weight_q * increased_weight;
 				} else {
 				workload_1 = std::pow(2, current_node->level - 1) * (nGate1 - nGate0 + swap_sum) * q_active;
-				workload_0 = (nAnc + c_nAnc) * (num_younger_sis  * ng1_avg + current_node->parent->ng0 + nGate0) * weight_q * increased_weight;
+				workload_0 = (nAnc + c_nAnc) * (num_younger_sis / para_factor  * ng1_avg + current_node->parent->ng0 + nGate0) * weight_q * increased_weight;
 				}
 				if (workload_1 < workload_0){
 					current_node->on_off = 1;
