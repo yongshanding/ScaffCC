@@ -78,15 +78,19 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_BLOCK;
-int freePolicy = _EAGER; 
+int freePolicy = _OPTG; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
 int systemType = 1; // 0: linear, 1: grid
 
 // Parallel setting
-int salsa_counter = 0;
+int para_counter = 0;
 int salsa_p = 1;
 int parallel_alloc = 0;
+int jasmine_p = 8;
+int elsa_p = 2;
+int belle_p = 1;
+int snowwhite_p = 1;
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
@@ -1381,10 +1385,15 @@ int memHeapClosestQubits(int num_qbits, memHeap_t *M, qbitElement_t *res, qbit_t
 	int CoM_inter = findCoM(targets, subgraph);
 	//std::cout << "calling findClosestNew." << "\n" << flush;
 	vector<int> closestNewSet = findClosestNew(CoM_inter, num_qbits, &new_dist);
-	if ( ((salsa_p > 1) && (salsa_counter - 2) % 8 < 2 && (salsa_counter <= (4*(2*salsa_p - 1)-1))) ||
-		(parallel_alloc == 1 && (num_qbits <= systemSize - AllQubits->N)) ) {
-		cout << "salsa_counter = " << salsa_counter << endl;
-		cout << "salsa force new qubit: " << endl;
+	if ( ((salsa_p > 1) && (para_counter - 2) % 8 < 2 && (para_counter <= (4*(2*salsa_p - 1)-1))) ||
+		(parallel_alloc == 1 && (num_qbits <= systemSize - AllQubits->N)) ||
+		((jasmine_p > 1) && ((para_counter - 2) % (18*32/jasmine_p) < 18)) ||
+		((elsa_p > 1) && ((para_counter - 2) % (10*32/elsa_p) < 10)) ||
+		((belle_p > 1) && ((para_counter - 2) % (28*32/belle_p) < 28)) ||
+		((snowwhite_p > 1) && ((para_counter - 2) % (12*32/snowwhite_p) < 12)) 
+	){
+		cout << "para_counter = " << para_counter << endl;
+		cout << "para force new qubit: " << endl;
 		vector<int> physicalIDs = closestNewSet;
 		if (debugRevMemHybrid)
 			printf("Obtaining %u new qubits.\n", num_qbits);
@@ -1741,7 +1750,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 
 			} else if (allocPolicy == _CLOSEST_BLOCK) {
 				//std::cout << "closest block\n" << flush;
-				salsa_counter++;
+				para_counter++;
 				int num = memHeapClosestQubits(num_qbits, memoryHeap, &res[0], inter, ninter); 
 				//std::cout << "found " << num <<  " closest qubits.\n" << flush;
 				if (num != num_qbits) {
@@ -1762,14 +1771,14 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				setQubitActive(num_qbits, result);
 				return num_qbits;
 			} else {
-				salsa_counter++;
+				para_counter++;
 				heap_num = num_qbits;
 			}
 
 			int num = 0;
-			if ((salsa_p > 1) && (salsa_counter - 2) % 8 < 2 && (salsa_counter <= (4*(2*salsa_p - 1)-1))) {
-				cout << "salsa_counter = " << salsa_counter << endl;
-				cout << "salsa force new qubit: " << endl;
+			if ((salsa_p > 1) && (para_counter - 2) % 8 < 2 && (para_counter <= (4*(2*salsa_p - 1)-1))) {
+				cout << "para_counter = " << para_counter << endl;
+				cout << "para force new qubit: " << endl;
 			} else {
 				num = memHeapGetQubits(heap_num, memoryHeap, &res[0], inter, ninter);
 			}
