@@ -274,48 +274,45 @@ def build_main(callees, all_calls, all_qs, outf, nq, na, ng, nloop):
     writeline(outf, "int main() {")
     tab()
     # allocating qubits
-    writeline(outf, "qbit *new[" + str (nq*nloop) + "];")
-    writeline(outf, "acquire(" + str(nq*nloop) + ", new, 0, NULL);")
+    writeline(outf, "qbit *new[" + str (nq) + "];")
+    writeline(outf, "acquire(" + str(nq) + ", new, 0, NULL);")
     writeline(outf, "// Intialize inputs")
-    all_bits = range(nq*nloop)
-    num_ones = random.randint(0, nq*nloop)
+    all_bits = range(nq)
+    num_ones = random.randint(0, nq)
     bits = random.sample(all_bits, num_ones)
     for b in bits:
         writeline(outf, "X (new[" + str(b) + "]);")
     writeline(outf, "// Start computation")
     if (len(callees) == 1):
-        for li in range(nloop):
-            writeline(outf, "func" + str(c) + "(&new[" + str(li * nq) + ", " + str(nq) + ");")
+        for c in callees:
+            writeline(outf, "func" + str(c) + "(new, " + str(nq) + ");")
 
     else:
         callees_nq = []
         all_ins = []
-        for li in range(nloop):
-            total_nq = 0
-            for j in range(len(callees)):
-                # num_q = random.randint(3, nq+na)
-                # need to sample the same number of qubits that callee needs
-                num_q = all_calls[callees[j]][2][0]
-                callees_nq.append(num_q)
-                total_nq += num_q
-                writeline(outf, "qbit *nq"+str(li*len(callees) + j)+"["+str(num_q)+"];") # rename callee inputs
+        for j in range(len(callees)):
+            # num_q = random.randint(3, nq+na)
+            # need to sample the same number of qubits that callee needs
+            num_q = all_calls[callees[j]][2][0]
+            callees_nq.append(num_q)
+            writeline(outf, "qbit *nq"+str(j)+"["+str(num_q)+"];") # rename callee inputs
 
-            for (j, c) in enumerate(callees):
-                num_q = callees_nq[j]
-                #callee_q = random.sample(range(nq), num_q)
-                a_start = all_qs[0][2][j]
-                a_end = all_qs[0][2][j+1]
-                callee_q = all_qs[0][1][a_start : a_end]
-                for (k,cq) in enumerate(callee_q):
-                    cq_op = "new["+str(total_nq * li + cq)+"]" 
-                    writeline(outf, "nq"+str(li*len(callees) + j)+"["+str(k)+"] = " + cq_op + ";")
-                all_ins.append("func" + str(c) + "(nq"+str(li*len(callees) + j)+", "+str(num_q)+");")
-        #writeline(outf, "for (int i = 0; i < LOOP; i++) {")
-        #tab()
+        for (j, c) in enumerate(callees):
+            num_q = callees_nq[j]
+            #callee_q = random.sample(range(nq), num_q)
+            a_start = all_qs[0][2][j]
+            a_end = all_qs[0][2][j+1]
+            callee_q = all_qs[0][1][a_start : a_end]
+            for (k,cq) in enumerate(callee_q):
+                cq_op = "new["+str(cq)+"]" 
+                writeline(outf, "nq"+str(j)+"["+str(k)+"] = " + cq_op + ";")
+            all_ins.append("func" + str(c) + "(nq"+str(j)+", "+str(num_q)+");")
+        writeline(outf, "for (int i = 0; i < LOOP; i++) {")
+        tab()
         for ins in all_ins:
             writeline(outf, ins)
-        #untab()
-        #writeline(outf, "}")
+        untab()
+        writeline(outf, "}")
     writeline(outf, "return 0;")
     untab()
     writeline(outf, "}")
