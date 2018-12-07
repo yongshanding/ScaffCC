@@ -85,10 +85,10 @@ int systemType = 1; // 0: linear, 1: grid
 
 // Parallel setting
 int para_counter = 0;
-int salsa_p = 1;
 int parallel_alloc = 0;
-int jasmine_p = 8;
-int elsa_p = 2;
+int salsa_p = 1;
+int jasmine_p = 1;
+int elsa_p = 1;
 int belle_p = 1;
 int snowwhite_p = 1;
 // DEBUG switch
@@ -2187,10 +2187,10 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			} else {
 				if (current_node->parent->is_root == 1){
 				workload_1 = (nGate1 - nGate0 + swap_sum) * q_active;
-				workload_0 = (nAnc + c_nAnc) * (num_younger_sis / para_factor * ng1_avg) * weight_q * increased_weight;
+				workload_0 = (nAnc + c_nAnc) * (num_younger_sis * ng1_avg) * weight_q * increased_weight;
 				} else {
 				workload_1 = std::pow(2, current_node->level - 1) * (nGate1 - nGate0 + swap_sum) * q_active;
-				workload_0 = (nAnc + c_nAnc) * (num_younger_sis / para_factor  * ng1_avg + current_node->parent->ng0 + nGate0) * weight_q * increased_weight;
+				workload_0 = (nAnc + c_nAnc) * (num_younger_sis * ng1_avg + current_node->parent->ng0 + nGate0) * weight_q * increased_weight;
 				}
 				if (workload_1 < workload_0){
 					current_node->on_off = 1;
