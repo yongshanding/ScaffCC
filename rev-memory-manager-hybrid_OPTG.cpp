@@ -78,7 +78,7 @@
 using namespace std;
 
 // Policy switch
-int allocPolicy = _LIFO;
+int allocPolicy = _CLOSEST_QUBIT;
 int freePolicy = _OPTH; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
@@ -2222,6 +2222,7 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 				}
 				if (total_q > target_num_q - threshold){
 					current_node->on_off = 1;
+					allocPolicy = _LIFO;
 				}
 			}
 		} else if (freePolicy == _EXT) {
