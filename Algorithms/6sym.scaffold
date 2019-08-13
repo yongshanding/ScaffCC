@@ -1,0 +1,74 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "qalloc.h"
+#include "uncompute.h"
+
+
+void sym6(qbit **x, qbit** out){
+	qbit *anc[4];
+	Compute(1,4,40,20,0,0,0){
+		acquire(4, anc, 1, out);
+		Toffoli( x[0],x[1],anc[0]);
+		CNOT( x[0],x[1]);
+		Toffoli( x[2],anc[0],anc[1]);
+		Toffoli( x[1],x[2],anc[0]);
+		CNOT( x[1],x[2]);
+		Toffoli( x[3],anc[1],anc[2]);
+		Toffoli( x[3],anc[0],anc[1]);
+		Toffoli( x[2],x[3],anc[0]);
+		CNOT( x[2],x[3]);
+		Toffoli( x[4],anc[2],anc[3]);
+		Toffoli( x[4],anc[1],anc[2]);
+		Toffoli( x[4],anc[0],anc[1]);
+		Toffoli( x[3],x[4],anc[0]);
+		CNOT( x[3],x[4]);
+		Toffoli( x[5],anc[2],anc[3]);
+		Toffoli( x[5],anc[1],anc[2]);
+		Toffoli( x[4],x[5],anc[0]);
+		CNOT( x[4],x[5]);
+		CNOT( anc[0],anc[3]);
+		CNOT( anc[2],anc[3]);
+	}
+	Store{
+		CNOT(anc[3],out[0]);
+	}
+	Uncompute(out,1,anc,4,40,20){
+		CNOT( anc[2],anc[3]);
+		CNOT( anc[0],anc[3]);
+		CNOT( x[4],x[5]);
+		Toffoli( x[4],x[5],anc[0]);
+		Toffoli( x[5],anc[1],anc[2]);
+		Toffoli( x[5],anc[2],anc[3]);
+		CNOT( x[3],x[4]);
+		Toffoli( x[3],x[4],anc[0]);
+		Toffoli( x[4],anc[0],anc[1]);
+		Toffoli( x[4],anc[1],anc[2]);
+		Toffoli( x[4],anc[2],anc[3]);
+		CNOT( x[2],x[3]);
+		Toffoli( x[2],x[3],anc[0]);
+		Toffoli( x[3],anc[0],anc[1]);
+		Toffoli( x[3],anc[1],anc[2]);
+		CNOT( x[1],x[2]);
+		Toffoli( x[1],x[2],anc[0]);
+		Toffoli( x[2],anc[0],anc[1]);
+		CNOT( x[0],x[1]);
+		Toffoli( x[0],x[1],anc[0]);
+
+	} Free(anc,4) {}
+
+}
+
+int main(){
+	qbit *new[7];
+	acquire(7,new,0,NULL);
+	qbit **in = &new[0];
+	qbit **out = &new[6];
+	for (int i = 0; i < 3; i++)
+		sym6(in, out);
+	return 0;
+}
+
+
+
+

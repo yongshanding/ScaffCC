@@ -1,0 +1,57 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "qalloc.h"
+#include "uncompute.h"
+
+
+void exec(qbit **x, qbit** out){
+	qbit *anc[2];
+	Compute(1,2,24,12,0,0,0){
+		acquire(2, anc, 1, out);	
+		Toffoli( x[0],x[1],anc[0]);
+		CNOT( x[0],x[1]);
+		Toffoli( x[2],anc[0],anc[1]);
+		Toffoli( x[1],x[2],anc[0]);
+		CNOT( x[1],x[2]);
+		Toffoli( x[3],anc[0],anc[1]);
+		Toffoli( x[2],x[3],anc[0]);
+		CNOT( x[2],x[3]);
+		Toffoli( x[4],anc[0],anc[1]);
+		Toffoli( x[3],x[4],anc[0]);
+		CNOT( x[3],x[4]);
+		CNOT( anc[1],anc[0]);
+	}
+	Store{
+		CNOT(anc[0],out[0]);
+	}
+	Uncompute(out,1,anc,2,24,12){
+		CNOT( anc[1],anc[0]);
+		CNOT( x[3],x[4]);
+		Toffoli( x[3],x[4],anc[0]);
+		Toffoli( x[4],anc[0],anc[1]);
+		CNOT( x[2],x[3]);
+		Toffoli( x[2],x[3],anc[0]);
+		Toffoli( x[3],anc[0],anc[1]);
+		CNOT( x[1],x[2]);
+		Toffoli( x[1],x[2],anc[0]);
+		Toffoli( x[2],anc[0],anc[1]);
+		CNOT( x[0],x[1]);
+		Toffoli( x[0],x[1],anc[0]);
+	} Free(anc,2) {}
+
+}
+
+int main(){
+	qbit *new[6];
+	acquire(6,new,0,NULL);
+	qbit **in = &new[0];
+	qbit **out = &new[5];
+	for (int i = 0; i < 6; i++)
+		exec(in, out);
+	return 0;
+}
+
+
+
+
