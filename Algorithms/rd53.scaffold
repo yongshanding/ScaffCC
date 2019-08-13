@@ -1,0 +1,58 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "qalloc.h"
+#include "uncompute.h"
+
+
+void rd53(qbit **in, qbit** out){
+	qbit *anc[3];
+	Compute(2,3,20,10,0,0,0){
+		acquire(3, anc, 2, out);
+		Toffoli(in[0], in[1], anc[0]);
+		CNOT(in[0], in[1]);
+		Toffoli(in[2],anc[0],anc[1]);
+		Toffoli(in[1],in[2],anc[0]);
+		CNOT(in[1],in[2]);
+		Toffoli(in[3],anc[1],anc[2]);
+		Toffoli(in[3],anc[2],anc[1]);
+		Toffoli(in[2],in[3],anc[0]);
+		CNOT(in[2],in[3]);
+		Toffoli(in[4],anc[1],anc[2]);
+		Toffoli(in[3],in[4],anc[0]);
+		CNOT(in[3],in[4]);
+	}
+	Store{
+		CNOT(anc[0],out[0]);
+		CNOT(anc[2],out[1]);
+	}
+	Uncompute(out,2,anc,3,20,10){
+		CNOT(in[3],in[4]);
+		Toffoli(in[3],in[4],anc[0]);
+		Toffoli(in[4],anc[1],anc[2]);
+		CNOT(in[2],in[3]);
+		Toffoli(in[2],in[3],anc[0]);
+		Toffoli(in[3],anc[2],anc[1]);
+		Toffoli(in[3],anc[1],anc[2]);
+		CNOT(in[1],in[2]);
+		Toffoli(in[1],in[2],anc[0]);
+		Toffoli(in[2],anc[0],anc[1]);
+		CNOT(in[0], in[1]);
+		Toffoli(in[0], in[1], anc[0]);
+	} Free(anc,3) {}
+
+}
+
+int main(){
+	qbit *new[7];
+	acquire(7,new,0,NULL);
+	qbit **in = &new[0];
+	qbit **out = &new[5];
+	for (int i = 0; i < 4; i++)
+		rd53(in, out);
+	return 0;
+}
+
+
+
+

@@ -1,0 +1,1770 @@
+initializing stack....
+heap size: 0 total: 0
+Allocating 7 qubits.
+Obtaining 7 qubits from pool of 0...
+Obtaining 7 new qubits.
+ q7  q2  q11  q0  q9  q4  q12 
+heap size: 0 total: 7
+Allocating 3 qubits.
+Obtaining 3 qubits from pool of 0...
+Obtaining 3 new qubits.
+ q6  q5  q10 
+1: H q6 
+1: T q7 
+1: T q2 
+2: T q6 
+3: swap q2 q6 
+3: CNOT q6 q7 
+4: CNOT q2 q6 
+4: swap q7 q-2 
+6: CNOT q-2 q2 
+5: Tdag q6 
+7: T q2 
+8: swap q-2 q2 
+9: swap q2 q-2 
+10: swap q-2 q4 
+11: swap q4 q5 
+11: CNOT q5 q6 
+12: Tdag q5 
+12: Tdag q6 
+13: CNOT q2 q6 
+13: swap q5 q-2 
+15: CNOT q-2 q2 
+16: swap q6 q2 
+17: swap q2 q-2 
+18: swap q-2 q0 
+19: swap q0 q-2 
+20: CNOT q-2 q2 
+16: H q6 
+21: swap q2 q-2 
+22: swap q-2 q0 
+23: swap q0 q-2 
+24: CNOT q-2 q2 
+1: H q4 
+1: T q11 
+17: T q6 
+2: T q4 
+18: swap q6 q10 
+19: CNOT q10 q11 
+3: swap q4 q-2 
+4: swap q-2 q9 
+22: CNOT q9 q10 
+23: swap q11 q10 
+24: CNOT q10 q9 
+23: Tdag q11 
+25: T q9 
+25: CNOT q10 q11 
+26: Tdag q10 
+26: Tdag q11 
+27: swap q9 q10 
+28: CNOT q10 q11 
+29: CNOT q9 q10 
+30: swap q11 q10 
+31: CNOT q10 q9 
+30: H q11 
+32: H q10 
+25: T q2 
+32: T q9 
+33: T q10 
+33: swap q9 q5 
+34: swap q5 q-2 
+35: CNOT q-2 q2 
+36: swap q10 q6 
+37: swap q6 q2 
+38: swap q2 q-2 
+39: swap q-2 q0 
+40: swap q0 q-2 
+41: CNOT q-2 q2 
+42: swap q6 q2 
+43: swap q2 q-2 
+44: swap q-2 q0 
+45: swap q0 q-2 
+46: CNOT q-2 q2 
+42: Tdag q6 
+47: T q2 
+48: swap q-2 q2 
+49: swap q2 q-2 
+50: swap q-2 q4 
+51: swap q4 q5 
+51: CNOT q5 q6 
+52: Tdag q5 
+52: Tdag q6 
+53: CNOT q2 q6 
+53: swap q5 q-2 
+55: CNOT q-2 q2 
+56: swap q6 q2 
+57: swap q2 q-2 
+58: swap q-2 q0 
+59: swap q0 q-2 
+60: CNOT q-2 q2 
+56: H q6 
+61: swap q2 q-2 
+62: swap q-2 q0 
+63: swap q0 q-2 
+64: CNOT q-2 q2 
+1: H q10 
+1: T q0 
+31: T q11 
+2: T q10 
+65: swap q11 q-2 
+66: swap q-2 q-2 
+67: swap q-2 q2 
+68: swap q2 q-2 
+36: CNOT q-2 q0 
+65: swap q10 q6 
+66: swap q6 q2 
+67: swap q2 q-2 
+68: swap q-2 q0 
+69: swap q0 q-2 
+42: CNOT q-2 q2 
+37: swap q0 q-2 
+44: CNOT q-2 q0 
+43: Tdag q2 
+45: T q0 
+46: swap q-2 q-2 
+47: swap q-2 q0 
+48: swap q0 q-2 
+48: CNOT q-2 q2 
+49: Tdag q-2 
+49: Tdag q2 
+46: swap q0 q-2 
+51: CNOT q-2 q2 
+50: swap q0 q-2 
+53: CNOT q-2 q0 
+54: swap q2 q-2 
+55: swap q-2 q0 
+56: swap q0 q-2 
+57: CNOT q-2 q2 
+54: H q0 
+58: H q-2 
+58: T q2 
+55: T q0 
+59: T q-2 
+56: swap q0 q-2 
+60: CNOT q-2 q2 
+60: swap q0 q-2 
+62: CNOT q-2 q0 
+63: swap q2 q-2 
+64: swap q-2 q0 
+65: swap q0 q-2 
+66: CNOT q-2 q2 
+63: Tdag q0 
+67: T q2 
+67: swap q-2 q-2 
+68: CNOT q-2 q0 
+69: Tdag q-2 
+69: Tdag q0 
+68: swap q2 q-2 
+71: CNOT q-2 q0 
+72: swap q2 q-2 
+73: swap q-2 q0 
+74: swap q0 q-2 
+75: CNOT q-2 q2 
+72: swap q0 q-2 
+77: CNOT q-2 q0 
+76: H q2 
+57: H q10 
+65: T q6 
+78: T q0 
+58: T q10 
+79: swap q0 q4 
+80: swap q4 q5 
+81: CNOT q5 q6 
+82: swap q10 q6 
+83: CNOT q6 q5 
+84: CNOT q10 q6 
+84: Tdag q5 
+85: T q6 
+86: swap q10 q6 
+86: CNOT q6 q5 
+87: Tdag q6 
+87: Tdag q5 
+88: swap q10 q6 
+89: CNOT q6 q5 
+90: CNOT q10 q6 
+90: swap q5 q9 
+92: CNOT q9 q10 
+91: H q6 
+93: CNOT q10 q9 
+78: H q-2 
+1: T q0 
+77: T q2 
+79: T q-2 
+78: swap q2 q-2 
+79: CNOT q-2 q0 
+80: swap q2 q-2 
+81: swap q-2 q0 
+82: swap q0 q-2 
+83: CNOT q-2 q2 
+80: swap q0 q-2 
+85: CNOT q-2 q0 
+84: Tdag q2 
+86: T q0 
+87: swap q-2 q-2 
+88: swap q-2 q0 
+89: swap q0 q-2 
+89: CNOT q-2 q2 
+90: Tdag q-2 
+90: Tdag q2 
+87: swap q0 q-2 
+92: CNOT q-2 q2 
+91: swap q0 q-2 
+94: CNOT q-2 q0 
+95: swap q2 q-2 
+96: swap q-2 q0 
+97: swap q0 q-2 
+98: CNOT q-2 q2 
+95: H q0 
+92: H q6 
+94: T q9 
+99: T q2 
+93: T q6 
+100: swap q2 q6 
+101: swap q6 q10 
+102: CNOT q10 q9 
+94: swap q2 q6 
+104: CNOT q6 q10 
+103: swap q9 q5 
+106: CNOT q5 q6 
+105: Tdag q10 
+107: T q6 
+107: swap q5 q9 
+108: CNOT q9 q10 
+109: Tdag q9 
+109: Tdag q10 
+110: CNOT q6 q10 
+110: swap q9 q5 
+112: CNOT q5 q6 
+113: swap q10 q6 
+114: CNOT q6 q5 
+113: H q10 
+115: CNOT q5 q6 
+114: CNOT q10 q9 
+96: swap q0 q4 
+97: swap q4 q-2 
+98: CNOT q-2 q12 
+freeOnOff in 1
+Free 2, 3 
+116: CNOT q5 q6 
+115: H q10 
+117: T q5 
+117: T q6 
+116: T q10 
+118: CNOT q6 q5 
+119: CNOT q10 q6 
+119: swap q5 q9 
+121: CNOT q9 q10 
+120: Tdag q6 
+122: T q10 
+122: swap q9 q5 
+123: CNOT q5 q6 
+124: Tdag q5 
+124: Tdag q6 
+125: CNOT q10 q6 
+125: swap q5 q9 
+127: CNOT q9 q10 
+128: swap q6 q10 
+129: CNOT q10 q9 
+128: H q6 
+99: H q-2 
+130: T q10 
+99: T q4 
+100: T q-2 
+130: swap q4 q-2 
+131: swap q-2 q9 
+133: CNOT q9 q10 
+101: swap q4 q-2 
+135: CNOT q-2 q9 
+134: swap q10 q6 
+135: swap q6 q2 
+136: swap q2 q-2 
+137: swap q-2 q0 
+138: swap q0 q-2 
+141: CNOT q-2 q2 
+136: Tdag q9 
+142: T q2 
+143: swap q-2 q2 
+144: swap q2 q6 
+145: swap q6 q-2 
+146: swap q-2 q-2 
+146: CNOT q-2 q9 
+147: Tdag q-2 
+147: Tdag q9 
+143: swap q6 q10 
+149: CNOT q10 q9 
+150: swap q-2 q2 
+151: swap q2 q6 
+152: swap q6 q-2 
+153: swap q-2 q-2 
+154: swap q-2 q9 
+155: CNOT q9 q10 
+150: swap q-2 q2 
+151: swap q2 q6 
+152: swap q6 q-2 
+153: swap q-2 q-2 
+160: CNOT q-2 q9 
+156: H q10 
+129: swap q2 q6 
+130: swap q6 q5 
+132: CNOT q5 q4 
+129: H q2 
+133: T q5 
+133: T q4 
+130: T q2 
+134: CNOT q4 q5 
+135: swap q2 q6 
+136: swap q6 q5 
+137: CNOT q5 q4 
+138: CNOT q6 q5 
+138: Tdag q4 
+139: T q5 
+140: swap q6 q5 
+140: CNOT q5 q4 
+141: Tdag q5 
+141: Tdag q4 
+142: swap q6 q5 
+143: CNOT q5 q4 
+144: CNOT q6 q5 
+145: swap q4 q5 
+146: CNOT q5 q6 
+145: H q4 
+161: H q-2 
+147: T q5 
+157: T q10 
+162: T q-2 
+158: swap q10 q6 
+159: CNOT q6 q5 
+163: swap q-2 q2 
+164: swap q2 q-2 
+165: swap q-2 q4 
+166: swap q4 q5 
+167: CNOT q5 q6 
+168: CNOT q4 q5 
+168: Tdag q6 
+169: T q5 
+170: swap q4 q5 
+170: CNOT q5 q6 
+171: Tdag q5 
+171: Tdag q6 
+172: swap q4 q5 
+173: CNOT q5 q6 
+174: CNOT q4 q5 
+175: swap q6 q5 
+176: CNOT q5 q4 
+175: H q6 
+177: H q5 
+177: T q4 
+176: T q6 
+178: T q5 
+179: swap q6 q5 
+179: CNOT q5 q4 
+180: CNOT q6 q5 
+181: swap q4 q5 
+182: CNOT q5 q6 
+181: Tdag q4 
+183: T q6 
+183: CNOT q5 q4 
+184: Tdag q5 
+184: Tdag q4 
+185: swap q6 q5 
+186: CNOT q5 q4 
+187: CNOT q6 q5 
+188: swap q4 q5 
+189: CNOT q5 q6 
+188: H q4 
+147: CNOT q11 q10 
+146: H q-2 
+148: T q11 
+148: T q10 
+147: T q-2 
+149: CNOT q10 q11 
+190: swap q-2 q2 
+191: swap q2 q6 
+192: swap q6 q-2 
+193: swap q-2 q-2 
+194: swap q-2 q9 
+155: CNOT q9 q10 
+156: swap q11 q10 
+157: CNOT q10 q9 
+156: Tdag q11 
+158: T q9 
+158: CNOT q10 q11 
+159: Tdag q10 
+159: Tdag q11 
+160: swap q9 q10 
+161: CNOT q10 q11 
+162: CNOT q9 q10 
+163: swap q11 q10 
+164: CNOT q10 q9 
+163: H q11 
+190: H q5 
+165: T q10 
+164: T q11 
+191: T q5 
+166: CNOT q11 q10 
+192: swap q5 q9 
+193: swap q9 q10 
+194: CNOT q10 q11 
+195: CNOT q9 q10 
+195: Tdag q11 
+196: T q10 
+197: swap q9 q10 
+197: CNOT q10 q11 
+198: Tdag q10 
+198: Tdag q11 
+199: swap q9 q10 
+200: CNOT q10 q11 
+201: CNOT q9 q10 
+202: swap q11 q10 
+203: CNOT q10 q9 
+202: H q11 
+189: swap q0 q4 
+166: CNOT q4 q5 
+204: H q10 
+167: T q4 
+167: T q5 
+205: T q10 
+168: CNOT q5 q4 
+206: swap q10 q6 
+207: CNOT q6 q5 
+208: swap q4 q5 
+209: CNOT q5 q6 
+208: Tdag q4 
+210: T q6 
+210: CNOT q5 q4 
+211: Tdag q5 
+211: Tdag q4 
+212: swap q6 q5 
+213: CNOT q5 q4 
+214: CNOT q6 q5 
+215: swap q4 q5 
+216: CNOT q5 q6 
+215: H q4 
+Freeing 0 qubits from children, and 3 from self.
+Pushing q4 on to heap
+Pushing q11 on to heap
+Pushing q0 on to heap
+Freeing up 3 qubits.
+heap size: 3 total: 10
+Allocating 3 qubits.
+Obtaining 3 qubits from pool of 3...
+Popping from heap
+Popping from heap
+Popping from heap
+ q0  q11  q4 
+216: H q0 
+217: T q6 
+217: T q5 
+217: T q0 
+218: CNOT q5 q6 
+218: swap q0 q4 
+220: CNOT q4 q5 
+221: swap q6 q5 
+222: CNOT q5 q4 
+221: Tdag q6 
+223: T q4 
+223: CNOT q5 q6 
+224: Tdag q5 
+224: Tdag q6 
+225: swap q4 q5 
+226: CNOT q5 q6 
+227: CNOT q4 q5 
+228: swap q6 q5 
+229: CNOT q5 q4 
+228: H q6 
+230: CNOT q4 q5 
+216: H q11 
+204: T q9 
+229: T q6 
+217: T q11 
+230: swap q6 q10 
+231: CNOT q10 q9 
+232: CNOT q11 q10 
+233: swap q9 q10 
+234: CNOT q10 q11 
+233: Tdag q9 
+235: T q11 
+235: CNOT q10 q9 
+236: Tdag q10 
+236: Tdag q9 
+237: swap q11 q10 
+238: CNOT q10 q9 
+239: CNOT q11 q10 
+240: swap q9 q10 
+241: CNOT q10 q11 
+240: H q9 
+242: H q10 
+231: T q5 
+242: T q11 
+243: T q10 
+243: swap q11 q-2 
+244: swap q-2 q6 
+245: CNOT q6 q5 
+246: CNOT q10 q6 
+246: swap q5 q9 
+248: CNOT q9 q10 
+247: Tdag q6 
+249: T q10 
+249: swap q9 q5 
+250: CNOT q5 q6 
+251: Tdag q5 
+251: Tdag q6 
+252: CNOT q10 q6 
+252: swap q5 q9 
+254: CNOT q9 q10 
+255: swap q6 q10 
+256: CNOT q10 q9 
+255: H q6 
+257: CNOT q9 q10 
+216: H q0 
+190: T q2 
+241: T q5 
+217: T q0 
+242: swap q5 q-2 
+243: CNOT q-2 q2 
+218: swap q0 q-2 
+245: CNOT q-2 q0 
+246: swap q2 q-2 
+247: swap q-2 q0 
+248: swap q0 q-2 
+249: CNOT q-2 q2 
+246: Tdag q0 
+250: T q2 
+250: swap q-2 q-2 
+251: CNOT q-2 q0 
+252: Tdag q-2 
+252: Tdag q0 
+251: swap q2 q-2 
+254: CNOT q-2 q0 
+255: swap q2 q-2 
+256: swap q-2 q0 
+257: swap q0 q-2 
+258: CNOT q-2 q2 
+255: swap q0 q-2 
+260: CNOT q-2 q0 
+259: H q2 
+261: H q-2 
+261: T q0 
+260: T q2 
+262: T q-2 
+261: swap q2 q-2 
+263: CNOT q-2 q0 
+264: swap q2 q-2 
+265: swap q-2 q0 
+266: swap q0 q-2 
+267: CNOT q-2 q2 
+264: swap q0 q-2 
+269: CNOT q-2 q0 
+268: Tdag q2 
+270: T q0 
+271: swap q-2 q-2 
+272: swap q-2 q0 
+273: swap q0 q-2 
+273: CNOT q-2 q2 
+274: Tdag q-2 
+274: Tdag q2 
+271: swap q0 q-2 
+276: CNOT q-2 q2 
+275: swap q0 q-2 
+278: CNOT q-2 q0 
+279: swap q2 q-2 
+280: swap q-2 q0 
+281: swap q0 q-2 
+282: CNOT q-2 q2 
+279: H q0 
+256: H q6 
+258: T q10 
+283: T q2 
+257: T q6 
+284: swap q2 q6 
+285: CNOT q6 q10 
+286: CNOT q2 q6 
+287: swap q10 q6 
+288: CNOT q6 q2 
+287: Tdag q10 
+289: T q2 
+289: CNOT q6 q10 
+290: Tdag q6 
+290: Tdag q10 
+291: swap q2 q6 
+292: CNOT q6 q10 
+293: CNOT q2 q6 
+294: swap q10 q6 
+295: CNOT q6 q2 
+294: H q10 
+296: CNOT q2 q6 
+283: H q-2 
+161: T q11 
+280: T q0 
+284: T q-2 
+295: swap q0 q4 
+296: swap q4 q-2 
+297: swap q-2 q9 
+298: swap q9 q10 
+285: CNOT q10 q11 
+295: swap q4 q-2 
+296: swap q-2 q9 
+288: CNOT q9 q10 
+289: swap q11 q10 
+290: CNOT q10 q9 
+289: Tdag q11 
+291: T q9 
+291: CNOT q10 q11 
+292: Tdag q10 
+292: Tdag q11 
+293: swap q9 q10 
+294: CNOT q10 q11 
+295: CNOT q9 q10 
+296: swap q11 q10 
+297: CNOT q10 q9 
+296: H q11 
+295: H q-2 
+297: T q6 
+298: T q9 
+296: T q-2 
+299: swap q9 q5 
+300: CNOT q5 q6 
+297: swap q-2 q2 
+298: swap q2 q-2 
+299: swap q-2 q4 
+304: CNOT q4 q5 
+305: swap q6 q5 
+306: CNOT q5 q4 
+305: Tdag q6 
+307: T q4 
+307: CNOT q5 q6 
+308: Tdag q5 
+308: Tdag q6 
+309: swap q4 q5 
+310: CNOT q5 q6 
+311: CNOT q4 q5 
+312: swap q6 q5 
+313: CNOT q5 q4 
+312: H q6 
+314: CNOT q4 q5 
+313: swap q6 q10 
+314: CNOT q10 q9 
+297: swap q11 q-2 
+298: swap q-2 q-2 
+299: swap q-2 q-2 
+300: CNOT q-2 q12 
+freeOnOff in 2
+Free 2, 3 
+315: CNOT q4 q5 
+315: H q10 
+316: T q4 
+316: T q5 
+316: T q10 
+317: CNOT q5 q4 
+317: swap q10 q6 
+319: CNOT q6 q5 
+320: swap q4 q5 
+321: CNOT q5 q6 
+320: Tdag q4 
+322: T q6 
+322: CNOT q5 q4 
+323: Tdag q5 
+323: Tdag q4 
+324: swap q6 q5 
+325: CNOT q5 q4 
+326: CNOT q6 q5 
+327: swap q4 q5 
+328: CNOT q5 q6 
+327: H q4 
+301: H q-2 
+329: T q5 
+298: T q10 
+302: T q-2 
+329: swap q10 q6 
+331: CNOT q6 q5 
+332: swap q-2 q2 
+333: swap q2 q-2 
+334: swap q-2 q4 
+335: swap q4 q5 
+336: CNOT q5 q6 
+337: CNOT q4 q5 
+337: Tdag q6 
+338: T q5 
+339: swap q4 q5 
+339: CNOT q5 q6 
+340: Tdag q5 
+340: Tdag q6 
+341: swap q4 q5 
+342: CNOT q5 q6 
+343: CNOT q4 q5 
+344: swap q6 q5 
+345: CNOT q5 q4 
+344: H q6 
+345: swap q2 q6 
+330: CNOT q6 q10 
+328: H q-2 
+331: T q6 
+331: T q10 
+329: T q-2 
+332: CNOT q10 q6 
+345: swap q-2 q2 
+346: swap q2 q6 
+347: swap q6 q-2 
+348: swap q-2 q-2 
+349: swap q-2 q9 
+338: CNOT q9 q10 
+345: swap q2 q6 
+346: swap q6 q10 
+341: CNOT q10 q9 
+339: Tdag q6 
+342: T q9 
+342: CNOT q10 q6 
+343: Tdag q10 
+343: Tdag q6 
+346: swap q9 q5 
+345: CNOT q5 q6 
+346: swap q10 q6 
+347: CNOT q6 q5 
+348: CNOT q10 q6 
+348: H q5 
+346: H q9 
+349: T q10 
+345: T q2 
+347: T q9 
+349: swap q2 q6 
+351: CNOT q6 q10 
+349: swap q9 q5 
+353: CNOT q5 q6 
+354: swap q10 q6 
+355: CNOT q6 q5 
+354: Tdag q10 
+356: T q5 
+356: CNOT q6 q10 
+357: Tdag q6 
+357: Tdag q10 
+357: swap q5 q9 
+359: CNOT q9 q10 
+360: swap q6 q10 
+361: CNOT q10 q9 
+362: CNOT q6 q10 
+362: H q9 
+363: H q6 
+363: T q10 
+363: T q9 
+364: T q6 
+364: CNOT q9 q10 
+365: swap q6 q10 
+366: CNOT q10 q9 
+367: CNOT q6 q10 
+367: Tdag q9 
+368: T q10 
+369: swap q6 q10 
+369: CNOT q10 q9 
+370: Tdag q10 
+370: Tdag q9 
+371: swap q6 q10 
+372: CNOT q10 q9 
+373: CNOT q6 q10 
+373: swap q9 q5 
+375: CNOT q5 q6 
+374: H q10 
+258: swap q11 q-2 
+259: swap q-2 q-2 
+351: CNOT q-2 q2 
+349: H q9 
+352: T q-2 
+352: T q2 
+350: T q9 
+353: swap q2 q-2 
+354: swap q-2 q0 
+355: swap q0 q-2 
+356: CNOT q-2 q2 
+376: swap q9 q5 
+377: swap q5 q-2 
+378: swap q-2 q0 
+379: swap q0 q-2 
+361: CNOT q-2 q5 
+357: swap q2 q-2 
+358: swap q-2 q0 
+359: swap q0 q-2 
+365: CNOT q-2 q2 
+362: Tdag q5 
+366: T q2 
+367: swap q-2 q2 
+368: swap q2 q-2 
+369: swap q-2 q4 
+369: CNOT q4 q5 
+370: Tdag q4 
+370: Tdag q5 
+376: swap q2 q6 
+372: CNOT q6 q5 
+373: swap q4 q5 
+374: CNOT q5 q6 
+375: CNOT q4 q5 
+375: H q6 
+376: H q9 
+376: T q4 
+376: T q6 
+377: T q9 
+377: swap q6 q5 
+378: CNOT q5 q4 
+379: CNOT q9 q5 
+379: swap q4 q-2 
+381: CNOT q-2 q9 
+380: Tdag q5 
+382: T q9 
+382: swap q-2 q2 
+383: swap q2 q-2 
+384: swap q-2 q4 
+385: CNOT q4 q5 
+386: Tdag q4 
+386: Tdag q5 
+387: CNOT q9 q5 
+387: swap q4 q-2 
+389: CNOT q-2 q9 
+388: swap q5 q-2 
+389: swap q-2 q0 
+390: swap q0 q-2 
+393: CNOT q-2 q5 
+390: H q9 
+394: swap q0 q4 
+395: swap q4 q5 
+378: CNOT q5 q6 
+394: H q-2 
+379: T q5 
+379: T q6 
+395: T q-2 
+380: CNOT q6 q5 
+396: swap q-2 q2 
+397: swap q2 q-2 
+398: swap q-2 q4 
+399: swap q4 q5 
+400: CNOT q5 q6 
+401: CNOT q4 q5 
+401: Tdag q6 
+402: T q5 
+403: swap q4 q5 
+403: CNOT q5 q6 
+404: Tdag q5 
+404: Tdag q6 
+405: swap q4 q5 
+406: CNOT q5 q6 
+407: CNOT q4 q5 
+408: swap q6 q5 
+409: CNOT q5 q4 
+408: H q6 
+Freeing 0 qubits from children, and 3 from self.
+Pushing q6 on to heap
+Pushing q9 on to heap
+Pushing q10 on to heap
+Freeing up 3 qubits.
+heap size: 3 total: 10
+Allocating 3 qubits.
+Obtaining 3 qubits from pool of 3...
+Popping from heap
+Popping from heap
+Popping from heap
+ q10  q9  q6 
+409: H q10 
+410: T q4 
+410: T q5 
+410: T q10 
+411: CNOT q5 q4 
+411: swap q10 q6 
+413: CNOT q6 q5 
+414: swap q4 q5 
+415: CNOT q5 q6 
+414: Tdag q4 
+416: T q6 
+416: CNOT q5 q4 
+417: Tdag q5 
+417: Tdag q4 
+418: swap q6 q5 
+419: CNOT q5 q4 
+420: CNOT q6 q5 
+421: swap q4 q5 
+422: CNOT q5 q6 
+421: H q4 
+423: CNOT q6 q5 
+409: H q9 
+394: T q-2 
+422: T q4 
+410: T q9 
+423: swap q4 q0 
+424: swap q0 q-2 
+425: CNOT q-2 q0 
+426: swap q9 q5 
+427: swap q5 q-2 
+428: swap q-2 q0 
+429: swap q0 q-2 
+430: CNOT q-2 q5 
+426: swap q0 q-2 
+432: CNOT q-2 q0 
+431: Tdag q5 
+433: T q0 
+433: swap q-2 q2 
+434: swap q2 q-2 
+435: swap q-2 q4 
+436: CNOT q4 q5 
+437: Tdag q4 
+437: Tdag q5 
+438: swap q0 q4 
+439: CNOT q4 q5 
+440: CNOT q0 q4 
+440: swap q5 q-2 
+442: CNOT q-2 q0 
+441: H q4 
+443: H q-2 
+424: T q9 
+443: T q0 
+444: T q-2 
+444: swap q0 q4 
+445: swap q4 q-2 
+446: CNOT q-2 q9 
+445: swap q4 q0 
+446: swap q0 q-2 
+449: CNOT q-2 q0 
+450: swap q9 q5 
+451: swap q5 q-2 
+452: swap q-2 q0 
+453: swap q0 q-2 
+454: CNOT q-2 q5 
+450: Tdag q0 
+455: T q5 
+455: swap q-2 q-2 
+456: CNOT q-2 q0 
+457: Tdag q-2 
+457: Tdag q0 
+456: swap q5 q-2 
+459: CNOT q-2 q0 
+460: swap q5 q-2 
+461: swap q-2 q0 
+462: swap q0 q-2 
+463: CNOT q-2 q5 
+460: swap q0 q-2 
+465: CNOT q-2 q0 
+464: H q5 
+466: swap q0 q-2 
+467: CNOT q-2 q0 
+409: H q10 
+376: T q2 
+442: T q4 
+410: T q10 
+468: swap q4 q0 
+469: swap q0 q-2 
+445: CNOT q-2 q2 
+468: swap q10 q6 
+469: swap q6 q2 
+470: swap q2 q-2 
+471: swap q-2 q0 
+472: swap q0 q-2 
+451: CNOT q-2 q2 
+468: swap q6 q2 
+469: swap q2 q-2 
+470: swap q-2 q0 
+471: swap q0 q-2 
+456: CNOT q-2 q2 
+452: Tdag q6 
+457: T q2 
+468: swap q-2 q2 
+469: swap q2 q-2 
+470: swap q-2 q4 
+471: swap q4 q5 
+461: CNOT q5 q6 
+462: Tdag q5 
+462: Tdag q6 
+463: CNOT q2 q6 
+463: swap q5 q-2 
+465: CNOT q-2 q2 
+468: swap q6 q2 
+469: swap q2 q-2 
+470: swap q-2 q0 
+471: swap q0 q-2 
+470: CNOT q-2 q2 
+466: H q6 
+471: H q-2 
+471: T q2 
+467: T q6 
+472: T q-2 
+472: CNOT q6 q2 
+473: swap q-2 q2 
+474: swap q2 q-2 
+475: swap q-2 q4 
+476: swap q4 q5 
+477: CNOT q5 q6 
+478: swap q2 q6 
+479: CNOT q6 q5 
+478: Tdag q2 
+480: T q5 
+480: CNOT q6 q2 
+481: Tdag q6 
+481: Tdag q2 
+481: swap q5 q-2 
+483: CNOT q-2 q2 
+484: swap q6 q2 
+485: swap q2 q-2 
+486: swap q-2 q0 
+487: swap q0 q-2 
+488: CNOT q-2 q2 
+489: swap q6 q2 
+490: swap q2 q-2 
+491: swap q-2 q0 
+492: swap q0 q-2 
+493: CNOT q-2 q2 
+489: H q6 
+465: H q5 
+468: T q4 
+494: T q2 
+466: T q5 
+495: swap q2 q6 
+496: swap q6 q5 
+497: CNOT q5 q4 
+498: CNOT q6 q5 
+499: swap q4 q5 
+500: CNOT q5 q6 
+499: Tdag q4 
+501: T q6 
+501: CNOT q5 q4 
+502: Tdag q5 
+502: Tdag q4 
+503: swap q6 q5 
+504: CNOT q5 q4 
+505: CNOT q6 q5 
+506: swap q4 q5 
+507: CNOT q5 q6 
+506: H q4 
+508: CNOT q6 q5 
+494: H q-2 
+346: T q9 
+490: T q2 
+495: T q-2 
+509: swap q2 q6 
+510: swap q6 q10 
+493: CNOT q10 q9 
+509: swap q-2 q2 
+510: swap q2 q6 
+511: swap q6 q-2 
+512: swap q-2 q-2 
+513: swap q-2 q9 
+501: CNOT q9 q10 
+509: swap q-2 q2 
+510: swap q2 q6 
+511: swap q6 q-2 
+512: swap q-2 q-2 
+506: CNOT q-2 q9 
+502: Tdag q10 
+507: T q9 
+509: swap q-2 q2 
+510: swap q2 q6 
+511: swap q6 q-2 
+512: swap q-2 q-2 
+513: swap q-2 q9 
+512: CNOT q9 q10 
+513: Tdag q9 
+513: Tdag q10 
+514: swap q-2 q2 
+515: swap q2 q6 
+516: swap q6 q-2 
+517: swap q-2 q-2 
+518: swap q-2 q9 
+519: CNOT q9 q10 
+514: swap q-2 q2 
+515: swap q2 q6 
+516: swap q6 q-2 
+517: swap q-2 q-2 
+524: CNOT q-2 q9 
+520: swap q10 q6 
+521: swap q6 q2 
+522: swap q2 q-2 
+523: swap q-2 q0 
+524: swap q0 q-2 
+530: CNOT q-2 q2 
+525: H q9 
+507: H q4 
+509: T q5 
+531: T q2 
+508: T q4 
+532: swap q2 q6 
+533: CNOT q6 q5 
+534: swap q4 q5 
+535: CNOT q5 q6 
+536: CNOT q4 q5 
+536: Tdag q6 
+537: T q5 
+538: swap q4 q5 
+538: CNOT q5 q6 
+539: Tdag q5 
+539: Tdag q6 
+540: swap q4 q5 
+541: CNOT q5 q6 
+542: CNOT q4 q5 
+543: swap q6 q5 
+544: CNOT q5 q4 
+543: H q6 
+545: CNOT q4 q5 
+544: swap q6 q10 
+545: CNOT q10 q11 
+526: swap q9 q-2 
+527: CNOT q-2 q12 
+freeOnOff in 3
+Free 2, 3 
+546: CNOT q4 q5 
+546: H q10 
+547: T q4 
+547: T q5 
+547: T q10 
+548: CNOT q5 q4 
+548: swap q10 q6 
+550: CNOT q6 q5 
+551: swap q4 q5 
+552: CNOT q5 q6 
+551: Tdag q4 
+553: T q6 
+553: CNOT q5 q4 
+554: Tdag q5 
+554: Tdag q4 
+555: swap q6 q5 
+556: CNOT q5 q4 
+557: CNOT q6 q5 
+558: swap q4 q5 
+559: CNOT q5 q6 
+558: H q4 
+528: H q-2 
+560: T q5 
+531: T q9 
+529: T q-2 
+561: CNOT q9 q5 
+560: swap q-2 q2 
+561: swap q2 q6 
+562: swap q6 q-2 
+563: swap q-2 q-2 
+566: CNOT q-2 q9 
+562: swap q5 q-2 
+563: swap q-2 q0 
+564: swap q0 q-2 
+570: CNOT q-2 q5 
+567: Tdag q9 
+571: T q5 
+571: swap q-2 q2 
+572: swap q2 q6 
+573: swap q6 q-2 
+574: swap q-2 q-2 
+575: CNOT q-2 q9 
+576: Tdag q-2 
+576: Tdag q9 
+577: CNOT q5 q9 
+577: swap q-2 q2 
+578: swap q2 q-2 
+579: swap q-2 q4 
+581: CNOT q4 q5 
+582: swap q9 q5 
+583: CNOT q5 q4 
+582: H q9 
+560: CNOT q10 q6 
+559: H q-2 
+561: T q10 
+561: T q6 
+560: T q-2 
+562: CNOT q6 q10 
+584: swap q-2 q2 
+585: swap q2 q-2 
+586: swap q-2 q4 
+587: swap q4 q5 
+567: CNOT q5 q6 
+568: swap q10 q6 
+569: CNOT q6 q5 
+568: Tdag q10 
+570: T q5 
+570: CNOT q6 q10 
+571: Tdag q6 
+571: Tdag q10 
+583: swap q5 q9 
+573: CNOT q9 q10 
+574: swap q6 q10 
+575: CNOT q10 q9 
+576: CNOT q6 q10 
+576: H q9 
+584: H q4 
+577: T q6 
+583: T q5 
+585: T q4 
+584: CNOT q5 q6 
+586: CNOT q4 q5 
+587: swap q6 q5 
+588: CNOT q5 q4 
+587: Tdag q6 
+589: T q4 
+589: CNOT q5 q6 
+590: Tdag q5 
+590: Tdag q6 
+591: swap q4 q5 
+592: CNOT q5 q6 
+593: CNOT q4 q5 
+594: swap q6 q5 
+595: CNOT q5 q4 
+594: H q6 
+596: H q5 
+596: T q4 
+595: T q6 
+597: T q5 
+598: swap q6 q5 
+598: CNOT q5 q4 
+599: CNOT q6 q5 
+600: swap q4 q5 
+601: CNOT q5 q6 
+600: Tdag q4 
+602: T q6 
+602: CNOT q5 q4 
+603: Tdag q5 
+603: Tdag q4 
+604: swap q6 q5 
+605: CNOT q5 q4 
+606: CNOT q6 q5 
+607: swap q4 q5 
+608: CNOT q5 q6 
+607: H q4 
+608: swap q0 q4 
+609: swap q4 q-2 
+610: swap q-2 q9 
+580: CNOT q9 q10 
+577: H q-2 
+581: T q9 
+581: T q10 
+578: T q-2 
+582: CNOT q10 q9 
+609: swap q-2 q2 
+610: swap q2 q6 
+611: swap q6 q-2 
+612: swap q-2 q-2 
+613: swap q-2 q9 
+588: CNOT q9 q10 
+609: swap q-2 q2 
+610: swap q2 q6 
+611: swap q6 q-2 
+612: swap q-2 q-2 
+593: CNOT q-2 q9 
+589: Tdag q10 
+594: T q9 
+609: swap q-2 q2 
+610: swap q2 q6 
+611: swap q6 q-2 
+612: swap q-2 q-2 
+613: swap q-2 q9 
+599: CNOT q9 q10 
+600: Tdag q9 
+600: Tdag q10 
+609: swap q-2 q2 
+610: swap q2 q6 
+611: swap q6 q-2 
+612: swap q-2 q-2 
+613: swap q-2 q9 
+606: CNOT q9 q10 
+609: swap q-2 q2 
+610: swap q2 q6 
+611: swap q6 q-2 
+612: swap q-2 q-2 
+611: CNOT q-2 q9 
+609: swap q10 q6 
+610: swap q6 q2 
+611: swap q2 q-2 
+612: swap q-2 q0 
+613: swap q0 q-2 
+617: CNOT q-2 q2 
+612: H q9 
+609: H q5 
+618: T q-2 
+613: T q9 
+610: T q5 
+614: swap q9 q5 
+615: swap q5 q-2 
+616: swap q-2 q0 
+617: swap q0 q-2 
+623: CNOT q-2 q5 
+624: swap q9 q5 
+625: swap q5 q-2 
+626: swap q-2 q0 
+627: swap q0 q-2 
+628: CNOT q-2 q5 
+629: swap q9 q5 
+630: swap q5 q-2 
+631: swap q-2 q0 
+632: swap q0 q-2 
+633: CNOT q-2 q5 
+629: Tdag q9 
+634: T q5 
+634: swap q-2 q2 
+635: swap q2 q6 
+636: swap q6 q-2 
+637: swap q-2 q-2 
+638: CNOT q-2 q9 
+639: Tdag q-2 
+639: Tdag q9 
+640: CNOT q5 q9 
+640: swap q-2 q2 
+641: swap q2 q-2 
+642: swap q-2 q4 
+644: CNOT q4 q5 
+645: swap q9 q5 
+646: CNOT q5 q4 
+645: H q9 
+618: CNOT q10 q6 
+647: H q5 
+619: T q10 
+619: T q6 
+648: T q5 
+620: CNOT q6 q10 
+649: CNOT q5 q6 
+650: swap q10 q6 
+651: CNOT q6 q5 
+650: Tdag q10 
+652: T q5 
+652: CNOT q6 q10 
+653: Tdag q6 
+653: Tdag q10 
+653: swap q5 q9 
+655: CNOT q9 q10 
+656: swap q6 q10 
+657: CNOT q10 q9 
+658: CNOT q6 q10 
+658: H q9 
+Freeing 0 qubits from children, and 3 from self.
+Pushing q9 on to heap
+Pushing q5 on to heap
+Pushing q0 on to heap
+Freeing up 3 qubits.
+heap size: 3 total: 10
+Allocating 3 qubits.
+Obtaining 3 qubits from pool of 3...
+Popping from heap
+Popping from heap
+Popping from heap
+ q0  q5  q9 
+659: H q0 
+659: T q10 
+659: T q6 
+660: T q0 
+660: CNOT q6 q10 
+661: swap q0 q4 
+662: swap q4 q5 
+663: CNOT q5 q6 
+664: swap q10 q6 
+665: CNOT q6 q5 
+664: Tdag q10 
+666: T q5 
+666: CNOT q6 q10 
+667: Tdag q6 
+667: Tdag q10 
+667: swap q5 q9 
+669: CNOT q9 q10 
+670: swap q6 q10 
+671: CNOT q10 q9 
+672: CNOT q6 q10 
+672: H q9 
+673: CNOT q10 q6 
+659: H q4 
+647: T q0 
+673: T q9 
+660: T q4 
+674: swap q9 q5 
+675: swap q5 q-2 
+676: CNOT q-2 q0 
+677: swap q4 q0 
+678: swap q0 q-2 
+679: CNOT q-2 q0 
+680: swap q4 q0 
+681: swap q0 q-2 
+682: CNOT q-2 q0 
+680: Tdag q4 
+683: T q0 
+683: swap q-2 q2 
+684: swap q2 q-2 
+685: CNOT q-2 q4 
+686: Tdag q-2 
+686: Tdag q4 
+687: CNOT q0 q4 
+687: swap q-2 q-2 
+689: CNOT q-2 q0 
+690: swap q4 q0 
+691: swap q0 q-2 
+692: CNOT q-2 q0 
+690: H q4 
+693: H q-2 
+674: T q6 
+693: T q0 
+694: T q-2 
+694: swap q0 q4 
+695: swap q4 q5 
+696: CNOT q5 q6 
+695: swap q-2 q2 
+696: swap q2 q-2 
+697: swap q-2 q4 
+700: CNOT q4 q5 
+701: swap q6 q5 
+702: CNOT q5 q4 
+701: Tdag q6 
+703: T q4 
+703: CNOT q5 q6 
+704: Tdag q5 
+704: Tdag q6 
+705: swap q4 q5 
+706: CNOT q5 q6 
+707: CNOT q4 q5 
+708: swap q6 q5 
+709: CNOT q5 q4 
+708: H q6 
+710: CNOT q4 q5 
+659: H q9 
+609: T q2 
+691: T q0 
+660: T q9 
+692: swap q0 q-2 
+693: CNOT q-2 q2 
+711: swap q9 q5 
+712: swap q5 q-2 
+713: swap q-2 q0 
+714: swap q0 q-2 
+698: CNOT q-2 q5 
+694: swap q2 q-2 
+695: swap q-2 q0 
+696: swap q0 q-2 
+702: CNOT q-2 q2 
+699: Tdag q5 
+703: T q2 
+711: swap q-2 q2 
+712: swap q2 q-2 
+713: swap q-2 q4 
+706: CNOT q4 q5 
+707: Tdag q4 
+707: Tdag q5 
+709: swap q2 q6 
+709: CNOT q6 q5 
+710: swap q4 q5 
+711: CNOT q5 q6 
+712: CNOT q4 q5 
+712: H q6 
+713: H q4 
+713: T q5 
+713: T q6 
+714: T q4 
+714: CNOT q6 q5 
+715: swap q4 q5 
+716: CNOT q5 q6 
+717: CNOT q4 q5 
+717: Tdag q6 
+718: T q5 
+719: swap q4 q5 
+719: CNOT q5 q6 
+720: Tdag q5 
+720: Tdag q6 
+721: swap q4 q5 
+722: CNOT q5 q6 
+723: CNOT q4 q5 
+724: swap q6 q5 
+725: CNOT q5 q4 
+724: H q6 
+709: H q2 
+711: T q9 
+726: T q4 
+710: T q2 
+727: swap q4 q-2 
+728: CNOT q-2 q9 
+711: swap q2 q-2 
+712: swap q-2 q0 
+713: swap q0 q-2 
+732: CNOT q-2 q2 
+729: swap q9 q5 
+730: swap q5 q-2 
+731: swap q-2 q0 
+732: swap q0 q-2 
+737: CNOT q-2 q5 
+733: Tdag q2 
+738: T q5 
+738: swap q-2 q-2 
+739: swap q-2 q0 
+740: swap q0 q-2 
+741: CNOT q-2 q2 
+742: Tdag q-2 
+742: Tdag q2 
+739: swap q5 q-2 
+744: CNOT q-2 q2 
+743: swap q5 q-2 
+744: swap q-2 q0 
+745: swap q0 q-2 
+748: CNOT q-2 q5 
+745: swap q2 q-2 
+746: swap q-2 q0 
+747: swap q0 q-2 
+752: CNOT q-2 q2 
+749: H q5 
+753: swap q2 q-2 
+754: swap q-2 q0 
+755: swap q0 q-2 
+756: CNOT q-2 q2 
+726: H q9 
+584: T q0 
+725: T q6 
+727: T q9 
+757: swap q6 q2 
+758: swap q2 q-2 
+728: CNOT q-2 q0 
+750: swap q9 q5 
+751: swap q5 q-2 
+752: swap q-2 q0 
+753: swap q0 q-2 
+733: CNOT q-2 q5 
+729: swap q0 q-2 
+735: CNOT q-2 q0 
+734: Tdag q5 
+736: T q0 
+757: swap q-2 q2 
+758: swap q2 q-2 
+759: swap q-2 q4 
+739: CNOT q4 q5 
+740: Tdag q4 
+740: Tdag q5 
+741: swap q0 q4 
+742: CNOT q4 q5 
+743: CNOT q0 q4 
+743: swap q5 q-2 
+745: CNOT q-2 q0 
+744: H q4 
+750: H q9 
+757: T q6 
+746: T q0 
+751: T q9 
+747: swap q0 q4 
+748: swap q4 q5 
+760: CNOT q5 q6 
+761: CNOT q9 q5 
+761: swap q6 q10 
+763: CNOT q10 q9 
+762: Tdag q5 
+764: T q9 
+764: swap q10 q6 
+765: CNOT q6 q5 
+766: Tdag q6 
+766: Tdag q5 
+767: CNOT q9 q5 
+767: swap q6 q10 
+769: CNOT q10 q9 
+770: swap q5 q9 
+771: CNOT q9 q10 
+770: H q5 
+772: CNOT q10 q9 
+773: swap q5 q9 
+774: swap q9 q10 
+773: CNOT q10 q11 
+745: swap q0 q4 
+746: swap q4 q-2 
+747: CNOT q-2 q12 
+freeOnOff in 4
+Free 2, 3 
+773: CNOT q9 q5 
+774: H q10 
+774: T q9 
+774: T q5 
+775: T q10 
+775: CNOT q5 q9 
+776: swap q10 q6 
+777: CNOT q6 q5 
+778: swap q9 q5 
+779: CNOT q5 q6 
+778: Tdag q9 
+780: T q6 
+780: CNOT q5 q9 
+781: Tdag q5 
+781: Tdag q9 
+781: swap q6 q10 
+783: CNOT q10 q9 
+784: swap q5 q9 
+785: CNOT q9 q10 
+786: CNOT q5 q9 
+786: H q10 
+748: H q-2 
+787: T q5 
+746: T q4 
+749: T q-2 
+788: CNOT q4 q5 
+757: swap q-2 q2 
+758: swap q2 q-2 
+791: CNOT q-2 q4 
+789: swap q5 q-2 
+790: swap q-2 q0 
+791: swap q0 q-2 
+795: CNOT q-2 q5 
+792: Tdag q4 
+796: T q5 
+796: swap q-2 q2 
+797: swap q2 q-2 
+798: CNOT q-2 q4 
+799: Tdag q-2 
+799: Tdag q4 
+800: CNOT q5 q4 
+801: swap q-2 q2 
+802: swap q2 q-2 
+803: swap q-2 q4 
+804: CNOT q4 q5 
+801: swap q-2 q2 
+802: swap q2 q-2 
+807: CNOT q-2 q4 
+805: H q5 
+787: swap q2 q6 
+788: swap q6 q10 
+789: CNOT q10 q9 
+787: H q6 
+790: T q10 
+790: T q9 
+788: T q6 
+791: CNOT q9 q10 
+792: swap q6 q10 
+793: CNOT q10 q9 
+794: CNOT q6 q10 
+794: Tdag q9 
+795: T q10 
+796: swap q6 q10 
+796: CNOT q10 q9 
+797: Tdag q10 
+797: Tdag q9 
+798: swap q6 q10 
+799: CNOT q10 q9 
+800: CNOT q6 q10 
+806: swap q9 q5 
+802: CNOT q5 q6 
+801: H q10 
+808: H q-2 
+803: T q5 
+806: T q9 
+809: T q-2 
+807: CNOT q9 q5 
+810: swap q-2 q2 
+811: swap q2 q6 
+812: swap q6 q-2 
+813: swap q-2 q-2 
+814: CNOT q-2 q9 
+808: swap q5 q-2 
+809: swap q-2 q0 
+810: swap q0 q-2 
+818: CNOT q-2 q5 
+815: Tdag q9 
+819: T q5 
+819: swap q-2 q2 
+820: swap q2 q6 
+821: swap q6 q-2 
+822: swap q-2 q-2 
+823: CNOT q-2 q9 
+824: Tdag q-2 
+824: Tdag q9 
+825: CNOT q5 q9 
+825: swap q-2 q2 
+826: swap q2 q-2 
+827: swap q-2 q4 
+829: CNOT q4 q5 
+830: swap q9 q5 
+831: CNOT q5 q4 
+830: H q9 
+832: H q5 
+832: T q4 
+831: T q9 
+833: T q5 
+834: swap q9 q5 
+834: CNOT q5 q4 
+835: CNOT q9 q5 
+835: swap q4 q-2 
+837: CNOT q-2 q9 
+836: Tdag q5 
+838: T q9 
+838: swap q-2 q2 
+839: swap q2 q-2 
+840: swap q-2 q4 
+841: CNOT q4 q5 
+842: Tdag q4 
+842: Tdag q5 
+843: CNOT q9 q5 
+843: swap q4 q-2 
+845: CNOT q-2 q9 
+844: swap q5 q-2 
+845: swap q-2 q0 
+846: swap q0 q-2 
+849: CNOT q-2 q5 
+846: H q9 
+850: swap q0 q4 
+851: swap q4 q5 
+805: CNOT q5 q6 
+802: H q10 
+806: T q5 
+806: T q6 
+803: T q10 
+807: CNOT q6 q5 
+808: CNOT q10 q6 
+847: swap q5 q9 
+810: CNOT q9 q10 
+809: Tdag q6 
+811: T q10 
+847: swap q9 q5 
+812: CNOT q5 q6 
+813: Tdag q5 
+813: Tdag q6 
+814: CNOT q10 q6 
+847: swap q5 q9 
+816: CNOT q9 q10 
+817: swap q6 q10 
+818: CNOT q10 q9 
+817: H q6 
+850: H q-2 
+819: T q10 
+818: T q6 
+851: T q-2 
+820: CNOT q6 q10 
+852: swap q-2 q2 
+853: swap q2 q-2 
+854: swap q-2 q4 
+855: swap q4 q5 
+856: CNOT q5 q6 
+857: swap q10 q6 
+858: CNOT q6 q5 
+857: Tdag q10 
+859: T q5 
+859: CNOT q6 q10 
+860: Tdag q6 
+860: Tdag q10 
+860: swap q5 q9 
+862: CNOT q9 q10 
+863: swap q6 q10 
+864: CNOT q10 q9 
+865: CNOT q6 q10 
+865: H q9 
+866: swap q2 q6 
+820: CNOT q6 q5 
+866: H q2 
+821: T q6 
+821: T q5 
+867: T q2 
+822: CNOT q5 q6 
+868: swap q2 q6 
+869: CNOT q6 q5 
+870: CNOT q2 q6 
+870: Tdag q5 
+871: T q6 
+872: swap q2 q6 
+872: CNOT q6 q5 
+873: Tdag q6 
+873: Tdag q5 
+874: swap q2 q6 
+875: CNOT q6 q5 
+876: CNOT q2 q6 
+876: swap q5 q-2 
+878: CNOT q-2 q2 
+877: H q6 
+Freeing 0 qubits from children, and 3 from self.
+Pushing q6 on to heap
+Pushing q9 on to heap
+Pushing q4 on to heap
+Freeing up 3 qubits.
+==================================
+Total number of qubits used: 10. 
+==================================
+Total number of time steps: 878. 
+==================================
+Total active Volume: 7712. 
+==================================
+Total number of gates by type: 
+X       Y       Z       H       T       Tdag    S       Sdag    CNOT    PrepZ   
+0       0       0       128     256     192     0       0       488     0       
+MeasZ   PrepX   MeasX   Fredkin Toffoli Rx      Ry      Rz      swap    free    
+0       0       0       0       0       0       0       0       633     0       
+Total Gate Count: 1697 Longest Chain: 5
