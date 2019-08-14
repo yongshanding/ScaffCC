@@ -79,6 +79,7 @@ using namespace std;
 
 // Policy switch
 int allocPolicy = _CLOSEST_QUBIT;
+bool init_random = true;
 int freePolicy = _OPTH; 
 bool swapAlloc = false; // not this flag
 int systemSize = 21609; // perfect square number
@@ -91,7 +92,8 @@ int parallel_alloc = 0;
 // DEBUG switch
 bool trackGates = true;
 bool debugRevMemHybrid = true;
-bool swapflag = true;
+bool swapflag = false;
+bool insert_swap = false;
 bool swap_dependency = false;
 
 
@@ -1064,9 +1066,11 @@ vector<pair<int,int> > resolveInteraction(qbit_t **operands, int num_ops){
 	if (swaps.size() > longest_chain){
 		longest_chain = swaps.size();
 	}
-	swap_len = swaps.size();
-	total_swap_len += swaps.size();
-	num_swap_chain++;
+	if (insert_swap == true){
+		swap_len = swaps.size();
+		total_swap_len += swaps.size();
+		num_swap_chain++;
+	}
 	return swaps;
 }
 
@@ -1287,8 +1291,10 @@ void memHeapDelete(memHeap_t *M) {
 
 // Remember to malloc newElement before calling push
 void memHeapPush (qbitElement_t *newElement, memHeap_t *M) {
-	if (debugRevMemHybrid)
-		printf("Pushing on to heap\n");  
+	if (debugRevMemHybrid){
+		printf("Pushing q%u on to heap\n", getPhysicalID(newElement->addr));
+		printf("%lld: Free q%u\n", qubitUsage[newElement->addr], getPhysicalID(newElement->addr));
+	}
 	if (M->numQubits >= M->maxSize) {
 		fprintf (stderr, "Can't push element on heap: heap is full.\n");
 		exit(1);
@@ -1553,7 +1559,7 @@ int memHeapNewQubits(int num_qbits, qbitElement_t *res) {
 	// Track the new qubits in AllQubits and the mapping
 	//printf("Obtain\n");  
 	int sum_dist;
-	vector<int> physicalIDs = (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT )? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
+	vector<int> physicalIDs = (init_random == false && (allocPolicy == _CLOSEST_BLOCK || allocPolicy == _CLOSEST_QUBIT ))? findClosestNew(CoM, num_qbits, &sum_dist): findRandomNew(num_qbits);
 	//vector<int> physicalIDs = findClosestNew(CoM, num_qbits, &sum_dist);
 	// Note that if random, then the qubits that are allocated may not be contiguous
 	// however, the swap chain will still use those qubits along the way,
@@ -1718,7 +1724,7 @@ int  memHeapAlloc(int num_qbits, int heap_idx, qbit_t **result, qbit_t **inter, 
 				heap_num = num_qbits;
 			} else if (allocPolicy == _HALF){
 				heap_num = num_qbits / 2;
-			} else if (allocPolicy == _CLOSEST_QUBIT) {
+			} else if (allocPolicy == _CLOSEST_QUBIT && ninter != 0) {
 				for (int j = 0; j < num_qbits; j++) {
 					int num = memHeapClosestQubits(1, memoryHeap, &res[j], inter, ninter); 
 					if (num != 1) {
@@ -2179,8 +2185,8 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 			}
 			//cerr << "on_off: " << current_node->on_off << "\n";
 		} else if (freePolicy == _OPTH) {
-			int target_num_q = 20;
-			int threshold = 4;
+			int target_num_q = systemSize;
+			int threshold = 1;
 			int weight_q = 1;
 			int total_q = AllQubits->N;
 			int q_active = total_q - memoryHeap->numQubits;
@@ -2220,7 +2226,7 @@ int freeOnOff(int nOut, int nAnc, int ng1, int ng0, int flag) {
 				} else {
 					current_node->on_off = 0;
 				}
-				if (total_q > target_num_q - threshold){
+				if (total_q >= target_num_q - threshold){
 					current_node->on_off = 1;
 					allocPolicy = _LIFO;
 				}
@@ -2407,7 +2413,7 @@ void checkAndSched(int gateID, qbit_t **operands, int numOp) {
 	//printSwapChain(swaps);
 
 	vector<gate_t*> resolvedGates;
-	if (!swaps.empty()) {
+	if (!swaps.empty() && insert_swap) {
 		gate_t *swap_gate = new gate_t();
 		swap_gate->gate_name = "swap_chain";
 		swap_gate->gate_id = _SWAP;
