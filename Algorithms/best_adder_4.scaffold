@@ -86,7 +86,7 @@ int main() {
 	//X(b[3]);
 	//X(b[5]);
 	/* In place addition */
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < 4; i++)
 		inPlaceAdd(ctrl[0], a, b, N);
 	
 	for (int i = 0; i < N+1; i++) {
