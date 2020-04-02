@@ -5,9 +5,9 @@
 #include "uncompute.h"
 
 
-void sym6(qbit **x, qbit** out){
+void sym6(qbit **x, qbit** out,int deg){
 	qbit *anc[4];
-	Compute(1,4,40,20,0,0,0){
+	Compute(1,4,40,20,deg,0,0){
 		acquire(4, anc, 1, out);
 		Toffoli( x[0],x[1],anc[0]);
 		CNOT( x[0],x[1]);
@@ -65,7 +65,8 @@ int main(){
 	qbit **in = &new[0];
 	qbit **out = &new[6];
 	for (int i = 0; i < 3; i++)
-		sym6(in, out);
+		sym6(in, out, 3-i);
+    MeasZ(out[0]);
 	return 0;
 }
 

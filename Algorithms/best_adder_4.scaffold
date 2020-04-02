@@ -21,12 +21,12 @@ void CUma(qbit *ctrl, qbit *x, qbit *y, qbit *z) {
 
 
 /* In place: a,b -> a+b, b, arxiv:1202.6614*/
-void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
+void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n, int deg) {
 	qbit *anc[2];
 	qbit *cin;
 	qbit *cout;
 	qbit *x; qbit *y; qbit *z; // rename
-	Compute(n, 2, 6*N, 3*N, 0, 0, 0){
+	Compute(n, 2, 6*N, 3*N, deg, 0, 0){
 		acquire(2, anc, 1, a);
 		cin = anc[0];
 		cout = anc[1];
@@ -63,8 +63,8 @@ void cucarroAdderIn(qbit *ctrl, qbit **a, qbit **b, int n) {
 	} Free(anc,2) {}
 }
 
-void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n) {
-	cucarroAdderIn(ctrl, a, b, n);
+void inPlaceAdd(qbit *ctrl, qbit **a, qbit **b, int n,int deg) {
+	cucarroAdderIn(ctrl, a, b, n, deg);
 }
 
 
@@ -87,7 +87,7 @@ int main() {
 	//X(b[5]);
 	/* In place addition */
 	for (int i = 0; i < 4; i++)
-		inPlaceAdd(ctrl[0], a, b, N);
+		inPlaceAdd(ctrl[0], a, b, N, 4-i);
 	
 	for (int i = 0; i < N+1; i++) {
 		MeasZ(a[i]);

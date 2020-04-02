@@ -5,9 +5,9 @@
 #include "uncompute.h"
 
 
-void exec(qbit **x, qbit** out){
+void exec(qbit **x, qbit** out,int deg){
 	qbit *anc[2];
-	Compute(1,2,24,12,0,0,0){
+	Compute(1,2,24,12,deg,0,0){
 		acquire(2, anc, 1, out);	
 		Toffoli( x[0],x[1],anc[0]);
 		CNOT( x[0],x[1]);
@@ -48,7 +48,8 @@ int main(){
 	qbit **in = &new[0];
 	qbit **out = &new[5];
 	for (int i = 0; i < 6; i++)
-		exec(in, out);
+		exec(in, out,6-i);
+    MeasZ(out[0]);
 	return 0;
 }
 

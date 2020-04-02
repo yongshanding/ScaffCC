@@ -5,9 +5,9 @@
 #include "uncompute.h"
 
 
-void rd53(qbit **in, qbit** out){
+void rd53(qbit **in, qbit** out,int deg){
 	qbit *anc[3];
-	Compute(2,3,20,10,0,0,0){
+	Compute(2,3,20,10,deg,0,0){
 		acquire(3, anc, 2, out);
 		Toffoli(in[0], in[1], anc[0]);
 		CNOT(in[0], in[1]);
@@ -49,7 +49,9 @@ int main(){
 	qbit **in = &new[0];
 	qbit **out = &new[5];
 	for (int i = 0; i < 4; i++)
-		rd53(in, out);
+		rd53(in, out,4-i);
+    MeasZ(out[0]);
+    MeasZ(out[1]);
 	return 0;
 }
 

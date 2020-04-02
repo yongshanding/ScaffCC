@@ -267,14 +267,14 @@ def simulate(num_qubits, surf, sched, outfile, d, method='latest'):
                 schedule_gate(epoch, gname, ops, method)
         total_cycles += epoch.cycles
         completed += 1
-    print("Total cycles: ", total_cycles)
-    outfile.write("Total cycles: %d \n" % total_cycles)
+    print("Total cycles:\t", total_cycles)
+    outfile.write("Total cycles:\t%d\n" % total_cycles)
     for i in range(num_qubits):
         if (active_qubits[i] != -1):
             volume_on_qubits[i] += total_cycles - active_qubits[i]
         total_volume += volume_on_qubits[i]
-    print("Total volume: ", total_volume)
-    outfile.write("Total volume: %d \n" % total_volume)
+    print("Total volume:\t", total_volume)
+    outfile.write("Total volume:\t%d\n" % total_volume)
     return
 
 

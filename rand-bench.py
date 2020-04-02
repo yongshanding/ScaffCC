@@ -373,12 +373,12 @@ def rand_synth(outf, nq, na, ng, nl, nd):
                     suba = na
                     subg = ng
                 else:
-                    subq = random.randint(3, nq)
+                    subq = random.randint(2, nq)
                     suba = random.randint(1, na)
                     subg = random.randint(1, ng)
                     
             else:
-                subq = random.randint(3,min(nq, all_calls[i][2][0]+all_calls[i][2][1])) # fewer than nq+na of parent
+                subq = random.randint(2,min(nq, all_calls[i][2][0]+all_calls[i][2][1])) # fewer than nq+na of parent
                 #suba = random.randint(3,min(na, all_calls[i][2][1]))
                 suba = random.randint(1, na) # ancs dont have to be fewer 
                 #subg = random.randint(1,min(ng, all_calls[i][2][2]))
